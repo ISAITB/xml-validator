@@ -1,0 +1,119 @@
+package eu.europa.ec.itb.einvoice.validation;
+
+import com.gitb.core.AnyContent;
+import com.gitb.core.ValueEmbeddingEnumeration;
+import com.gitb.tr.*;
+import com.gitb.types.ObjectType;
+import com.gitb.types.SchemaType;
+import com.gitb.validation.common.AbstractReportHandler;
+import com.helger.schematron.svrl.AbstractSVRLMessage;
+import com.helger.schematron.svrl.SVRLHelper;
+import org.oclc.purl.dsdl.svrl.SchematronOutputType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+
+import javax.xml.bind.JAXBElement;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * Created by simatosc on 26/02/2016.
+ */
+public class SchematronReportHandler extends AbstractReportHandler {
+    private static final Logger logger = LoggerFactory.getLogger(SchematronReportHandler.class);
+    public static final String XML_ITEM_NAME = "XML";
+    public static final String SCH_ITEM_NAME = "SCH";
+    public static final String SVRL_ITEM_NAME = "SVRL";
+    private Node node;
+    private SchematronOutputType svrlReport;
+
+    public SchematronReportHandler(ObjectType xml, SchemaType sch, Node node, SchematronOutputType svrl) {
+        this.node = node;
+        this.svrlReport = svrl;
+        this.report.setName("Schematron Validation");
+        this.report.setReports(new TestAssertionGroupReportsType());
+        AnyContent attachment = new AnyContent();
+        attachment.setType("map");
+        AnyContent xmlAttachment = new AnyContent();
+        xmlAttachment.setName("XML");
+        xmlAttachment.setType("object");
+        xmlAttachment.setEmbeddingMethod(ValueEmbeddingEnumeration.STRING);
+        xmlAttachment.setValue(new String(xml.serializeByDefaultEncoding()));
+        attachment.getItem().add(xmlAttachment);
+        AnyContent schemaAttachment = new AnyContent();
+        schemaAttachment.setName("SCH");
+        schemaAttachment.setType("schema");
+        schemaAttachment.setEmbeddingMethod(ValueEmbeddingEnumeration.STRING);
+        schemaAttachment.setValue(new String(sch.serializeByDefaultEncoding()));
+        attachment.getItem().add(schemaAttachment);
+        this.report.setContext(attachment);
+    }
+
+    public TAR createReport() {
+        if(this.svrlReport != null) {
+            List error = SVRLHelper.getAllFailedAssertions(this.svrlReport);
+            List element;
+            if(error.size() > 0) {
+                this.report.setResult(TestResultType.FAILURE);
+                element = this.traverseSVRLMessages(error, true);
+                this.report.getReports().getInfoOrWarningOrError().addAll(element);
+            }
+
+            element = SVRLHelper.getAllSuccessfulReports(this.svrlReport);
+            if(element.size() > 0) {
+                List successReports = this.traverseSVRLMessages(element, false);
+                this.report.getReports().getInfoOrWarningOrError().addAll(successReports);
+            }
+        } else {
+            this.report.setResult(TestResultType.FAILURE);
+            BAR error1 = new BAR();
+            error1.setDescription("An error occurred when generating Schematron output due to a problem in given XML content.");
+            error1.setLocation("XML:1:0");
+            JAXBElement element1 = this.objectFactory.createTestAssertionGroupReportsTypeError(error1);
+            this.report.getReports().getInfoOrWarningOrError().add(element1);
+        }
+        return this.report;
+    }
+
+    private <T extends AbstractSVRLMessage> List<JAXBElement<TestAssertionReportType>> traverseSVRLMessages(List<T> svrlMessages, boolean failure) {
+        ArrayList reports = new ArrayList();
+
+        JAXBElement element;
+        for(Iterator var4 = svrlMessages.iterator(); var4.hasNext(); reports.add(element)) {
+            AbstractSVRLMessage message = (AbstractSVRLMessage)var4.next();
+            BAR error = new BAR();
+            if (message.getText() != null) {
+                error.setDescription(message.getText().trim());
+            }
+            error.setLocation("XML:" + this.getLineNumbeFromXPath(message.getLocation()) + ":0");
+            if (message.getTest() != null) {
+                error.setTest(message.getTest().trim());
+            }
+            element = null;
+            if(failure) {
+                element = this.objectFactory.createTestAssertionGroupReportsTypeError(error);
+            } else {
+                element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(error);
+            }
+        }
+        return reports;
+    }
+
+    private String getLineNumbeFromXPath(String xpathExpression) {
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        Node node = null;
+        try {
+            node = (Node)xPath.evaluate(xpathExpression, this.node, XPathConstants.NODE);
+            return (String)node.getUserData("lineNumber");
+        } catch (XPathExpressionException var5) {
+            logger.error(var5.getMessage());
+            return "0";
+        }
+    }
+}

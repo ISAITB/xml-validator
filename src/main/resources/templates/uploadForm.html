@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <title>UBL invoice validator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="icon" type="image/png" href="/itbfavicon.png" />
     <link rel="stylesheet" href="/webjars/font-awesome/4.5.0/css/font-awesome.min.css"/>
@@ -46,12 +47,24 @@
             </div>
             <div class="panel-body">
                 <div class="row">
+                    <label class="col-xs-2 control-label">Date:</label>
+                    <div class="col-xs-4" th:text="${report.date}">17/12/2016</div>
+                </div>
+                <div class="row">
                     <label class="col-xs-2 control-label">Result:</label>
                     <div class="col-xs-4" th:text="${report.result}">Success</div>
                 </div>
                 <div class="row">
-                    <label class="col-xs-2 control-label">Date:</label>
-                    <div class="col-xs-4" th:text="${report.date}">17/12/2016</div>
+                    <label class="col-xs-2 control-label">Errors:</label>
+                    <div class="col-xs-4" th:text="${report.counters.nrOfErrors}">0</div>
+                </div>
+                <div class="row">
+                    <label class="col-xs-2 control-label">Warnings:</label>
+                    <div class="col-xs-4" th:text="${report.counters.nrOfWarnings}">0</div>
+                </div>
+                <div class="row">
+                    <label class="col-xs-2 control-label">Messages:</label>
+                    <div class="col-xs-4" th:text="${report.counters.nrOfAssertions}">0</div>
                 </div>
                 <div class="row">
                     <div class="col-xs-12">

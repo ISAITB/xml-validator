@@ -6,8 +6,11 @@ import com.gitb.tr.*;
 import com.gitb.types.ObjectType;
 import com.gitb.types.SchemaType;
 import com.gitb.validation.common.AbstractReportHandler;
+import com.helger.commons.error.EErrorLevel;
 import com.helger.schematron.svrl.AbstractSVRLMessage;
+import com.helger.schematron.svrl.SVRLFailedAssert;
 import com.helger.schematron.svrl.SVRLHelper;
+import com.helger.schematron.svrl.SVRLSuccessfulReport;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,17 +59,15 @@ public class SchematronReportHandler extends AbstractReportHandler {
     }
 
     public TAR createReport() {
-        if(this.svrlReport != null) {
-            List error = SVRLHelper.getAllFailedAssertions(this.svrlReport);
-            List element;
-            if(error.size() > 0) {
+        if (this.svrlReport != null) {
+            List<SVRLFailedAssert> error = SVRLHelper.getAllFailedAssertions(this.svrlReport);
+            if (error.size() > 0) {
                 this.report.setResult(TestResultType.FAILURE);
-                element = this.traverseSVRLMessages(error, true);
+                List element = this.traverseSVRLMessages(error, true);
                 this.report.getReports().getInfoOrWarningOrError().addAll(element);
             }
-
-            element = SVRLHelper.getAllSuccessfulReports(this.svrlReport);
-            if(element.size() > 0) {
+            List<SVRLSuccessfulReport> element = SVRLHelper.getAllSuccessfulReports(this.svrlReport);
+            if (element.size() > 0) {
                 List successReports = this.traverseSVRLMessages(element, false);
                 this.report.getReports().getInfoOrWarningOrError().addAll(successReports);
             }
@@ -83,7 +84,6 @@ public class SchematronReportHandler extends AbstractReportHandler {
 
     private <T extends AbstractSVRLMessage> List<JAXBElement<TestAssertionReportType>> traverseSVRLMessages(List<T> svrlMessages, boolean failure) {
         ArrayList reports = new ArrayList();
-
         JAXBElement element;
         for(Iterator var4 = svrlMessages.iterator(); var4.hasNext(); reports.add(element)) {
             AbstractSVRLMessage message = (AbstractSVRLMessage)var4.next();
@@ -96,10 +96,15 @@ public class SchematronReportHandler extends AbstractReportHandler {
                 error.setTest(message.getTest().trim());
             }
             element = null;
-            if(failure) {
-                element = this.objectFactory.createTestAssertionGroupReportsTypeError(error);
-            } else {
+            int level = message.getFlag().getNumericLevel();
+            if (level == EErrorLevel.SUCCESS.getNumericLevel()) {
                 element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(error);
+            } else if (level == EErrorLevel.INFO.getNumericLevel()) {
+                element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(error);
+            } else if (level == EErrorLevel.WARN.getNumericLevel()) {
+                element = this.objectFactory.createTestAssertionGroupReportsTypeWarning(error);
+            } else { // ERROR, FATAL_ERROR
+                element = this.objectFactory.createTestAssertionGroupReportsTypeError(error);
             }
         }
         return reports;

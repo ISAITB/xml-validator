@@ -15,6 +15,7 @@ import org.springframework.util.StreamUtils;
 import org.w3c.dom.Node;
 
 import javax.xml.XMLConstants;
+import javax.xml.bind.JAXBElement;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Source;
 import javax.xml.transform.dom.DOMSource;
@@ -99,6 +100,25 @@ public class XMLValidator {
                 input.setValue(inputXML);
                 report.getContext().getItem().add(input);
             }
+            if (report.getCounters() == null) {
+                report.setCounters(new ValidationCounters());
+                int infos = 0;
+                int warnings = 0;
+                int errors = 0;
+                for (JAXBElement<TestAssertionReportType> item: report.getReports().getInfoOrWarningOrError()) {
+                    String itemName = item.getName().getLocalPart();
+                    if (itemName == "info") {
+                        infos += 1;
+                    } else if (itemName == "warning") {
+                        warnings += 1;
+                    } else if (itemName == "error") {
+                        errors += 1;
+                    }
+                }
+                report.getCounters().setNrOfErrors(BigInteger.valueOf(errors));
+                report.getCounters().setNrOfAssertions(BigInteger.valueOf(infos));
+                report.getCounters().setNrOfWarnings(BigInteger.valueOf(warnings));
+            }
         }
     }
 
@@ -124,21 +144,23 @@ public class XMLValidator {
     }
 
     private void logReport(TAR report, String name) {
-        StringBuilder logOutput = new StringBuilder();
-        logOutput.append("["+name+"]\n Result: ").append(report.getResult());
-        if (report.getCounters() != null) {
-            logOutput.append("\nOverview: total: ").append(report.getCounters().getNrOfAssertions())
-                    .append(" errors: ").append(report.getCounters().getNrOfErrors())
-                    .append(" warnings: ").append(report.getCounters().getNrOfWarnings());
-        }
-        logOutput.append("\nDetails");
-        report.getReports().getInfoOrWarningOrError().forEach((item) -> {
-            if (item.getValue() instanceof BAR) {
-                BAR reportItem = (BAR)item.getValue();
-                logOutput.append("\nDescription: ").append(reportItem.getDescription());
+        if (logger.isDebugEnabled()) {
+            StringBuilder logOutput = new StringBuilder();
+            logOutput.append("["+name+"]\n Result: ").append(report.getResult());
+            if (report.getCounters() != null) {
+                logOutput.append("\nOverview: total: ").append(report.getCounters().getNrOfAssertions())
+                        .append(" errors: ").append(report.getCounters().getNrOfErrors())
+                        .append(" warnings: ").append(report.getCounters().getNrOfWarnings());
             }
-        });
-        logger.info(logOutput.toString());
+            logOutput.append("\nDetails");
+            report.getReports().getInfoOrWarningOrError().forEach((item) -> {
+                if (item.getValue() instanceof BAR) {
+                    BAR reportItem = (BAR)item.getValue();
+                    logOutput.append("\nDescription: ").append(reportItem.getDescription());
+                }
+            });
+            logger.debug(logOutput.toString());
+        }
     }
 
 
@@ -169,13 +191,13 @@ public class XMLValidator {
                             mergedReport.getCounters().setNrOfErrors(BigInteger.ZERO);
                         }
                         if (report.getCounters().getNrOfAssertions() != null) {
-                            mergedReport.getCounters().getNrOfAssertions().add(report.getCounters().getNrOfAssertions());
+                            mergedReport.getCounters().setNrOfAssertions(mergedReport.getCounters().getNrOfAssertions().add(report.getCounters().getNrOfAssertions()));
                         }
                         if (report.getCounters().getNrOfWarnings() != null) {
-                            mergedReport.getCounters().getNrOfWarnings().add(report.getCounters().getNrOfWarnings());
+                            mergedReport.getCounters().setNrOfWarnings(mergedReport.getCounters().getNrOfWarnings().add(report.getCounters().getNrOfWarnings()));
                         }
                         if (report.getCounters().getNrOfErrors() != null) {
-                            mergedReport.getCounters().getNrOfErrors().add(report.getCounters().getNrOfErrors());
+                            mergedReport.getCounters().setNrOfErrors(mergedReport.getCounters().getNrOfErrors().add(report.getCounters().getNrOfErrors()));
                         }
                     }
                     if (report.getReports() != null) {

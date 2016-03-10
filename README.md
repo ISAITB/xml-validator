@@ -28,3 +28,6 @@ Update file `/etc/filters/dev-config.properties` with your environment values.
 The application is accessible at:
 * Web form: http://localhost:8080/invoice/upload
 * GITB-compliant WS: http://localhost:8080/invoice/api/validation?wsdl
+
+The application also accepts a flag `config.path` to point to the exact location of the configuration file to use. This
+can be passed either as a system property or be set as an environment variable.

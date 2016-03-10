@@ -1,6 +1,7 @@
 # Introduction
 
 Application used for the validation of XML documents by means of:
+
 * A GITB-compliance validation service (SOAP web service).
 * A simple web form that can receive an XML file.
 

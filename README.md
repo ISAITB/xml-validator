@@ -26,6 +26,7 @@ Update file `/etc/filters/dev-config.properties` with your environment values.
 # Running
 
 The application is accessible at:
+
 * Web form: http://localhost:8080/invoice/upload
 * GITB-compliant WS: http://localhost:8080/invoice/api/validation?wsdl
 

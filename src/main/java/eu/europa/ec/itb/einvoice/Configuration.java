@@ -5,6 +5,10 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by simatosc on 04/03/2016.
@@ -20,6 +24,7 @@ public class Configuration {
     private long minimumCachedInputFileAge;
     private long minimumCachedReportFileAge;
     private String reportFilePrefix;
+    private Set<String> acceptedMimeTypes;
 
     public File getSchematronFolder() {
         return schematronFolder;
@@ -49,8 +54,8 @@ public class Configuration {
         return minimumCachedReportFileAge;
     }
 
-    public String getFaviconIconPath() {
-        return null;
+    public Set<String> getAcceptedMimeTypes() {
+        return acceptedMimeTypes;
     }
 
     public static Configuration getInstance() {
@@ -60,11 +65,15 @@ public class Configuration {
             config.addConfiguration(new SystemConfiguration());
             config.addConfiguration(new EnvironmentConfiguration());
             String configPath = config.getString("config.path", "config.properties");
+            PropertiesConfiguration props = new PropertiesConfiguration();
+            props.setListDelimiter(',');
+            props.setFileName(configPath);
             try {
-                config.addConfiguration(new PropertiesConfiguration(configPath));
+                props.load();
             } catch (ConfigurationException e) {
-                throw new IllegalStateException("Unable to load configuration", e);
+                throw new IllegalStateException("Error loading configuration property file from ["+configPath+"]", e);
             }
+            config.addConfiguration(props);
             temp.schematronFolder = new File(config.getString("path.sch.folder"));
             if (!temp.schematronFolder.exists() || !temp.schematronFolder.isDirectory()) {
                 throw new IllegalStateException("Schematron source folder ["+temp.schematronFolder.getAbsolutePath()+"] is not a valid directory.");
@@ -86,6 +95,7 @@ public class Configuration {
             temp.minimumCachedReportFileAge = config.getLong("reportFile.minimumCacheTime", 600000L);
             temp.inputFilePrefix = config.getString("inputFile.prefix", "ITB-");
             temp.reportFilePrefix = config.getString("reportFile.prefix", "TAR-");
+            temp.acceptedMimeTypes = new HashSet<>(Arrays.asList(config.getStringArray("inputFile.acceptedMimeType")));
             instance  = temp;
         }
         return instance;

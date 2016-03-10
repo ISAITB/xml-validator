@@ -3,19 +3,19 @@
 <head>
     <title>UBL invoice validator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link rel="icon" type="image/png" href="/itbfavicon.png" />
-    <link rel="stylesheet" href="/webjars/font-awesome/4.5.0/css/font-awesome.min.css"/>
-    <link rel="stylesheet" href="/webjars/bootstrap/3.3.6/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="/webjars/codemirror/5.11/lib/codemirror.css"/>
-    <link rel="stylesheet" href="/css/style.css"/>
-    <script src="/webjars/jquery/2.0.3/jquery.min.js"></script>
-    <script src="/webjars/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-    <script src="/webjars/codemirror/5.11/lib/codemirror.js"></script>
-    <script src="/webjars/codemirror/5.11/mode/xml/xml.js"></script>
-    <script src="/js/busy.js"></script>
-    <script src="/js/FileSaver.min.js"></script>
-    <script src="/js/itb-upload.js"></script>
-    <script th:if="${report}" src="/js/itb-results.js"></script>
+    <link rel="icon" type="image/png" href="itbfavicon.png" />
+    <link rel="stylesheet" href="webjars/font-awesome/4.5.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="webjars/bootstrap/3.3.6/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="webjars/codemirror/5.11/lib/codemirror.css"/>
+    <link rel="stylesheet" href="css/style.css"/>
+    <script src="webjars/jquery/2.0.3/jquery.min.js"></script>
+    <script src="webjars/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="webjars/codemirror/5.11/lib/codemirror.js"></script>
+    <script src="webjars/codemirror/5.11/mode/xml/xml.js"></script>
+    <script src="js/busy.js"></script>
+    <script src="js/FileSaver.min.js"></script>
+    <script src="js/itb-upload.js"></script>
+    <script th:if="${report}" src="js/itb-results.js"></script>
     <script th:if="${report}" th:inline="text">
     /*<![CDATA[*/
         getReportData("[[${xmlID}]]");
@@ -26,7 +26,8 @@
 <div class="container view-section">
     <div class="view-section-input">
         <h2 class="view-section-title">Validation input</h2>
-        <form method="POST" enctype="multipart/form-data" action="/upload">
+        <div class="alert alert-danger" th:if="${message}" th:text="${message}">A message</div>
+        <form method="POST" enctype="multipart/form-data" action="upload">
             <div class="input-group input-group-lg">
                 <div class="input-group-btn">
                     <button class="btn btn-default" type="button" onclick="triggerFileUpload()"><i class="fa fa-folder-open-o"></i></button>
@@ -51,6 +52,10 @@
                     <div class="col-xs-4" th:text="${report.date}">17/12/2016</div>
                 </div>
                 <div class="row">
+                    <label class="col-xs-2 control-label">File name:</label>
+                    <div class="col-xs-4" th:text="${fileName}">file.xml</div>
+                </div>
+                <div class="row">
                     <label class="col-xs-2 control-label">Result:</label>
                     <div class="col-xs-4" th:text="${report.result}">Success</div>
                 </div>
@@ -66,7 +71,7 @@
                     <label class="col-xs-2 control-label">Messages:</label>
                     <div class="col-xs-4" th:text="${report.counters.nrOfAssertions}">0</div>
                 </div>
-                <div class="row">
+                <div class="row overview-button-row">
                     <div class="col-xs-12">
                         <div class="btn-group">
                             <button type="button" class="btn btn-default" id="viewInputButton" onclick="setCode()" disabled="true">View annotated input</button>

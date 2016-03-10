@@ -1,10 +1,14 @@
 package eu.europa.ec.itb.einvoice.upload;
 
 import com.gitb.tr.TAR;
+import eu.europa.ec.itb.einvoice.Configuration;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
+import org.apache.tika.Tika;
+import org.apache.tika.mime.MimeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +20,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,31 +44,44 @@ public class UploadController {
     @RequestMapping(method = RequestMethod.POST, value = "/upload")
     public ModelAndView handleUpload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
         InputStream stream = null;
+        Map<String, Object> attributes = new HashMap<String, Object>();
         try {
-            stream = file.getInputStream();
+            if (checkFileType(file)) {
+                stream = file.getInputStream();
+            } else {
+                attributes.put("message", "Provided input is not an XML document");
+            }
         } catch (IOException e) {
             logger.error("Error while reading uploaded file ["+e.getMessage()+"]", e);
-            redirectAttributes.addFlashAttribute("message", "Error in upload [" + e.getMessage() + "]");
+            attributes.put("message", "Error in upload [" + e.getMessage() + "]");
         }
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        if (stream != null) {
-            XMLValidator validator = new XMLValidator(stream);
-            TAR report = validator.validateAll();
-            attributes.put("message", "Validation result [" + report.getResult() + "]");
-            attributes.put("time", new Date());
-            attributes.put("report", report);
-            attributes.put("date", report.getDate().toString());
-            // Cache detailed report.
-            try {
-                String xmlID = fileController.writeXML(report.getContext().getItem().get(0).getValue());
-                attributes.put("xmlID", xmlID);
-                fileController.saveReport(report, xmlID);
-            } catch (IOException e) {
-                logger.error("Error generating detailed report ["+e.getMessage()+"]", e);
-                redirectAttributes.addFlashAttribute("message", "Error generating detailed report [" + e.getMessage() + "]");
+        try {
+            if (stream != null) {
+                XMLValidator validator = new XMLValidator(stream);
+                TAR report = validator.validateAll();
+                attributes.put("report", report);
+                attributes.put("date", report.getDate().toString());
+                attributes.put("fileName", file.getOriginalFilename());
+                // Cache detailed report.
+                try {
+                    String xmlID = fileController.writeXML(report.getContext().getItem().get(0).getValue());
+                    attributes.put("xmlID", xmlID);
+                    fileController.saveReport(report, xmlID);
+                } catch (IOException e) {
+                    logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
+                    attributes.put("message", "Error generating detailed report [" + e.getMessage() + "]");
+                }
             }
+        } catch(Exception e) {
+            logger.error("An error occurred during the validation [" + e.getMessage() + "]", e);
+            attributes.put("message", "An error occurred during the validation [" + e.getMessage() + "]");
         }
         return new ModelAndView("uploadForm", attributes);
     }
 
+    boolean checkFileType(MultipartFile file) throws IOException {
+        Tika tika = new Tika();
+        String type = tika.detect(file.getInputStream());
+        return Configuration.getInstance().getAcceptedMimeTypes().contains(type);
+    }
 }

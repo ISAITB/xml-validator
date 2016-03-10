@@ -4,6 +4,7 @@ import com.gitb.core.AnyContent;
 import com.gitb.tr.*;
 import com.gitb.types.ObjectType;
 import com.gitb.types.SchemaType;
+import com.gitb.utils.XMLDateTimeUtils;
 import com.gitb.utils.XMLUtils;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
@@ -15,10 +16,17 @@ import org.springframework.util.StreamUtils;
 import org.w3c.dom.Node;
 
 import javax.xml.XMLConstants;
+import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -35,6 +43,16 @@ import java.util.List;
 public class XMLValidator {
 
     private static final Logger logger = LoggerFactory.getLogger(XMLValidator.class);
+    private static JAXBContext SVRL_JAXB_CONTEXT;
+    protected ObjectFactory gitbTRObjectFactory = new ObjectFactory();
+
+    static {
+        try {
+            SVRL_JAXB_CONTEXT = JAXBContext.newInstance(SchematronOutputType.class);
+        } catch (JAXBException e) {
+            throw new IllegalStateException("Unable to create JAXB content for SchematronOutputType", e);
+        }
+    }
 
     private InputStream inputToValidate;
     private byte[] inputBytes;
@@ -74,20 +92,41 @@ public class XMLValidator {
         factory.setSchema(schema);
         Validator validator = schema.newValidator();
         validator.setErrorHandler(handler);
+        TAR report = null;
         try {
             // Use a StreamSource rather than a DomSource below to get the line & column number of possible errors.
             StreamSource source = new StreamSource(getInputStreamForValidation());
             validator.validate(source);
+            report = handler.createReport();
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            logger.warn("Error while validating XML ["+e.getMessage()+"]");
+            report = createFailureReport();
         }
-        TAR report = handler.createReport();
         completeReport(report);
+        return report;
+    }
+
+    private TAR createFailureReport() {
+        TAR report = new TAR();
+        report.setReports(new TestAssertionGroupReportsType());
+        report.setResult(TestResultType.FAILURE);
+        BAR error1 = new BAR();
+        error1.setDescription("An error occurred due to a problem in given XML content.");
+        error1.setLocation("XML:1:0");
+        JAXBElement element1 = this.gitbTRObjectFactory.createTestAssertionGroupReportsTypeError(error1);
+        report.getReports().getInfoOrWarningOrError().add(element1);
         return report;
     }
 
     private void completeReport(TAR report) {
         if (report != null) {
+            if (report.getDate() == null) {
+                try {
+                    report.setDate(XMLDateTimeUtils.getXMLGregorianCalendarDateTime());
+                } catch (DatatypeConfigurationException e) {
+                    logger.error("Exception while creating XMLGregorianCalendar", e);
+                }
+            }
             if (report.getContext() == null) {
                 report.setContext(new AnyContent());
                 String inputXML = null;
@@ -126,9 +165,11 @@ public class XMLValidator {
         File schematronFolder = getSchematronFolder();
         List<TAR> reports = new ArrayList<TAR>();
         for (File xslFile: schematronFolder.listFiles()) {
+            logger.info("Validating against ["+xslFile.getName()+"]");
             TAR report = validateSchematron(getInputStreamForValidation(), xslFile);
             logReport(report, xslFile.getName());
             reports.add(report);
+            logger.info("Validated against ["+xslFile.getName()+"]");
         }
         TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
         completeReport(report);
@@ -232,8 +273,13 @@ public class XMLValidator {
         if(schematron.isValidSchematron()) {
             try {
                 schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);
-                Source source = new DOMSource(schematronInput);
-                svrlOutput = schematron.applySchematronValidationToSVRL(source);
+                Transformer transformer = TransformerFactory.newInstance().newTransformer(new StreamSource(new FileInputStream(schematronFile)));
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                transformer.transform(new DOMSource(schematronInput), new StreamResult(bos));
+                bos.flush();
+                Unmarshaller jaxbUnmarshaller = SVRL_JAXB_CONTEXT.createUnmarshaller();
+                JAXBElement<SchematronOutputType> root = jaxbUnmarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(bos.toByteArray())), SchematronOutputType.class);
+                svrlOutput = root.getValue();
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }

@@ -7,10 +7,10 @@ function getReportData(xmlID) {
 	getResultReport(xmlID);
 }
 function getReport(xmlID) {
-	$.get("/xml/"+xmlID, function(data) {
+	$.get("xml/"+xmlID, function(data) {
 		itbReportData = data;
 		$.ajax({
-			url: "/xml/"+xmlID,
+			url: "xml/"+xmlID,
 			type: 'DELETE'
 		});
 		reportLoad.resolve();
@@ -19,12 +19,12 @@ function getReport(xmlID) {
 }
 function getResultReport(xmlID) {
 	$.ajax({
-		url: "/report/"+xmlID,
+		url: "report/"+xmlID,
 		type: 'GET',
 		success: function(data) {
 			itbResultReport = new Blob([data], { type: 'application/xml' });
 			$.ajax({
-				url: "/report/"+xmlID,
+				url: "report/"+xmlID,
 				type: 'DELETE'
 			});
 			resultLoad.resolve();
@@ -64,7 +64,7 @@ function setCode(reportItemElement) {
 			if ($(this).find('.item-info-error').length) {
 				type = 'error';
 				indicatorIcon = '<i class="fa fa-times-circle report-item-icon error-icon"></i>';
-			} else if ($(this).find('.item-info-error').length) {
+			} else if ($(this).find('.item-info-warning').length) {
 				type = 'warning';
 				indicatorIcon = '<i class="fa fa-exclamation-triangle report-item-icon warning-icon"></i>';
 			}

@@ -58,11 +58,23 @@ public class SchematronReportHandler extends AbstractReportHandler {
         this.report.setContext(attachment);
     }
 
+    private TestResultType getErrorLevel(List<SVRLFailedAssert> error) {
+        for (SVRLFailedAssert errorItem: error) {
+            if (errorItem.getFlag() != null) {
+                if (errorItem.getFlag().getNumericLevel() == EErrorLevel.ERROR.getNumericLevel()
+                    || errorItem.getFlag().getNumericLevel() == EErrorLevel.FATAL_ERROR.getNumericLevel()) {
+                    return TestResultType.FAILURE;
+                }
+            }
+        }
+        return TestResultType.SUCCESS;
+    }
+
     public TAR createReport() {
         if (this.svrlReport != null) {
             List<SVRLFailedAssert> error = SVRLHelper.getAllFailedAssertions(this.svrlReport);
             if (error.size() > 0) {
-                this.report.setResult(TestResultType.FAILURE);
+                this.report.setResult(getErrorLevel(error));
                 List element = this.traverseSVRLMessages(error, true);
                 this.report.getReports().getInfoOrWarningOrError().addAll(element);
             }

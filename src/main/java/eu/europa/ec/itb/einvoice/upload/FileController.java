@@ -117,22 +117,13 @@ public class FileController {
             m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             File outputFile = new File(Configuration.getInstance().getReportFolder(), getReportFileName(xmlID));
             outputFile.getParentFile().mkdirs();
-            OutputStream fos = null;
-            try {
-                fos = new FileOutputStream(outputFile);
+            try (OutputStream fos = new FileOutputStream(outputFile)) {
                 m.marshal(OBJECT_FACTORY.createTestStepReport(report), fos);
-            } finally {
-                if (fos != null) {
-                    try {
-                        fos.close();
-                    } catch (IOException e) {
-                    }
-                }
+            } catch(IOException e) {
+                logger.warn("Unable to save XML report", e);
             }
         } catch (JAXBException e) {
             logger.warn("Unable to marshal XML report", e);
-        } catch (FileNotFoundException e) {
-            logger.warn("Unable to save XML report", e);
         }
     }
 

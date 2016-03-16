@@ -11,11 +11,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
+import org.w3c.dom.Document;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.util.UUID;
 
@@ -117,12 +124,23 @@ public class FileController {
             m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             File outputFile = new File(Configuration.getInstance().getReportFolder(), getReportFileName(xmlID));
             outputFile.getParentFile().mkdirs();
+
+            DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+            Document document = docBuilderFactory.newDocumentBuilder().newDocument();
+            m.marshal(OBJECT_FACTORY.createTestStepReport(report), document);
+
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "{http://www.gitb.com/core/v1/}value");
             try (OutputStream fos = new FileOutputStream(outputFile)) {
-                m.marshal(OBJECT_FACTORY.createTestStepReport(report), fos);
+                transformer.transform(new DOMSource(document), new StreamResult(fos));
+                fos.flush();
             } catch(IOException e) {
                 logger.warn("Unable to save XML report", e);
             }
-        } catch (JAXBException e) {
+
+        } catch (Exception e) {
             logger.warn("Unable to marshal XML report", e);
         }
     }

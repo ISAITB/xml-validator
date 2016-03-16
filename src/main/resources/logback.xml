@@ -21,9 +21,9 @@
         </rollingPolicy>
     </appender>
 
-    <logger name="eu.europa.ec" level="WARN" additivity="true"/>
+    <logger name="eu.europa.ec" level="INFO" additivity="true"/>
 
-    <root level="WARN">
+    <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>

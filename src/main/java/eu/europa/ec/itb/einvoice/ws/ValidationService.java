@@ -10,9 +10,15 @@ import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.web.context.support.SpringBeanAutowiringSupport;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import javax.jws.WebParam;
 import javax.jws.WebService;
+import javax.servlet.ServletContext;
 import java.io.*;
 import java.net.Proxy;
 import java.net.ProxySelector;
@@ -24,11 +30,21 @@ import java.util.List;
  * Created by simatosc on 25/02/2016.
  */
 @WebService(endpointInterface = "com.gitb.vs.ValidationService")
-public class ValidationService implements com.gitb.vs.ValidationService {
+public class ValidationService extends SpringBeanAutowiringSupport implements com.gitb.vs.ValidationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ValidationService.class);
 
     private static String INPUT_XML = "xml";
+
+    @Resource
+    ServletContext ctx;
+
+    ApplicationContext beans;
+
+    @PostConstruct
+    public void init() {
+        beans = WebApplicationContextUtils.getRequiredWebApplicationContext(ctx);
+    }
 
     @Override
     public GetModuleDefinitionResponse getModuleDefinition(@WebParam(name = "GetModuleDefinitionRequest", targetNamespace = "http://www.gitb.com/vs/v1/", partName = "parameters") Void parameters) {
@@ -62,7 +78,7 @@ public class ValidationService implements com.gitb.vs.ValidationService {
         String invoiceToValidate = extractContent(validateRequest.getInput().get(0)).trim();
         XMLValidator validator;
         try {
-            validator = new XMLValidator(new ByteArrayInputStream(invoiceToValidate.getBytes("UTF-8")));
+            validator = beans.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes("UTF-8")));
         } catch (UnsupportedEncodingException e) {
             logger.warn("Unable to decode inout as UTF-8 - using default [{}]", e.getMessage());
             validator = new XMLValidator(new ByteArrayInputStream(invoiceToValidate.getBytes()));

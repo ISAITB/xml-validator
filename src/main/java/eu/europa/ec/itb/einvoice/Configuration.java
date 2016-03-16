@@ -2,7 +2,10 @@ package eu.europa.ec.itb.einvoice;
 
 import org.apache.commons.configuration.*;
 import org.apache.commons.io.FileUtils;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -13,6 +16,7 @@ import java.util.Set;
 /**
  * Created by simatosc on 04/03/2016.
  */
+@Component
 public class Configuration {
 
     private static Configuration instance;
@@ -25,6 +29,17 @@ public class Configuration {
     private long minimumCachedReportFileAge;
     private String reportFilePrefix;
     private Set<String> acceptedMimeTypes;
+    private String mailFrom;
+    private boolean mailAuthEnable;
+    private String mailAuthUsername;
+    private String mailAuthPassword;
+    private String mailOutboundHost;
+    private int mailOutboundPort;
+    private boolean mailOutboundSSLEnable;
+    private String mailInboundHost;
+    private int mailInboundPort;
+    private boolean mailInboundSSLEnable;
+    private String mailInboundFolder;
 
     public File getSchematronFolder() {
         return schematronFolder;
@@ -58,47 +73,104 @@ public class Configuration {
         return acceptedMimeTypes;
     }
 
-    public static Configuration getInstance() {
-        if (instance == null) {
-            Configuration temp = new Configuration();
-            CompositeConfiguration config = new CompositeConfiguration();
-            config.addConfiguration(new SystemConfiguration());
-            config.addConfiguration(new EnvironmentConfiguration());
-            String configPath = config.getString("config.path", "config.properties");
-            PropertiesConfiguration props = new PropertiesConfiguration();
-            props.setListDelimiter(',');
-            props.setFileName(configPath);
-            try {
-                props.load();
-            } catch (ConfigurationException e) {
-                throw new IllegalStateException("Error loading configuration property file from ["+configPath+"]", e);
-            }
-            config.addConfiguration(props);
-            temp.schematronFolder = new File(config.getString("path.sch.folder"));
-            if (!temp.schematronFolder.exists() || !temp.schematronFolder.isDirectory()) {
-                throw new IllegalStateException("Schematron source folder ["+temp.schematronFolder.getAbsolutePath()+"] is not a valid directory.");
-            }
-            temp.schemaFile = new File(config.getString("path.xsd.file"));
-            if (!temp.schemaFile.exists() || !temp.schemaFile.isFile()) {
-                throw new IllegalStateException("Schema file ["+temp.schemaFile.getAbsolutePath()+"] is not valid.");
-            }
-            temp.reportFolder = new File(config.getString("path.report.folder", "./reports"));
-            if (temp.reportFolder.exists() && temp.reportFolder.isDirectory()) {
-                try {
-                    FileUtils.deleteDirectory(temp.reportFolder);
-                } catch (IOException e) {
-                    throw new IllegalStateException("Unable to clean up report folder", e);
-                }
-            }
-            temp.reportFolder.mkdir();
-            temp.minimumCachedInputFileAge = config.getLong("inputFile.minimumCacheTime", 600000L);
-            temp.minimumCachedReportFileAge = config.getLong("reportFile.minimumCacheTime", 600000L);
-            temp.inputFilePrefix = config.getString("inputFile.prefix", "ITB-");
-            temp.reportFilePrefix = config.getString("reportFile.prefix", "TAR-");
-            temp.acceptedMimeTypes = new HashSet<>(Arrays.asList(config.getStringArray("inputFile.acceptedMimeType")));
-            instance  = temp;
+    public String getMailFrom() {
+        return mailFrom;
+    }
+
+    public boolean isMailAuthEnable() {
+        return mailAuthEnable;
+    }
+
+    public String getMailAuthUsername() {
+        return mailAuthUsername;
+    }
+
+    public String getMailAuthPassword() {
+        return mailAuthPassword;
+    }
+
+    public String getMailOutboundHost() {
+        return mailOutboundHost;
+    }
+
+    public int getMailOutboundPort() {
+        return mailOutboundPort;
+    }
+
+    public boolean isMailOutboundSSLEnable() {
+        return mailOutboundSSLEnable;
+    }
+
+    public String getMailInboundHost() {
+        return mailInboundHost;
+    }
+
+    public int getMailInboundPort() {
+        return mailInboundPort;
+    }
+
+    public boolean isMailInboundSSLEnable() {
+        return mailInboundSSLEnable;
+    }
+
+    public String getMailInboundFolder() {
+        return mailInboundFolder;
+    }
+
+    @Bean
+    public Configuration config() {
+        return new Configuration();
+    }
+
+    @PostConstruct
+    public void initialize() {
+        CompositeConfiguration config = new CompositeConfiguration();
+        config.addConfiguration(new SystemConfiguration());
+        config.addConfiguration(new EnvironmentConfiguration());
+        String configPath = config.getString("config.path", "config.properties");
+        PropertiesConfiguration props = new PropertiesConfiguration();
+        props.setListDelimiter(',');
+        props.setFileName(configPath);
+        try {
+            props.load();
+        } catch (ConfigurationException e) {
+            throw new IllegalStateException("Error loading configuration property file from ["+configPath+"]", e);
         }
-        return instance;
+        config.addConfiguration(props);
+        schematronFolder = new File(config.getString("path.sch.folder"));
+        if (!schematronFolder.exists() || !schematronFolder.isDirectory()) {
+            throw new IllegalStateException("Schematron source folder ["+schematronFolder.getAbsolutePath()+"] is not a valid directory.");
+        }
+        schemaFile = new File(config.getString("path.xsd.file"));
+        if (!schemaFile.exists() || !schemaFile.isFile()) {
+            throw new IllegalStateException("Schema file ["+schemaFile.getAbsolutePath()+"] is not valid.");
+        }
+        reportFolder = new File(config.getString("path.report.folder", "./reports"));
+        if (reportFolder.exists() && reportFolder.isDirectory()) {
+            try {
+                FileUtils.deleteDirectory(reportFolder);
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to clean up report folder", e);
+            }
+        }
+        reportFolder.mkdir();
+        minimumCachedInputFileAge = config.getLong("inputFile.minimumCacheTime", 600000L);
+        minimumCachedReportFileAge = config.getLong("reportFile.minimumCacheTime", 600000L);
+        inputFilePrefix = config.getString("inputFile.prefix", "ITB-");
+        reportFilePrefix = config.getString("reportFile.prefix", "TAR-");
+        acceptedMimeTypes = new HashSet<>(Arrays.asList(config.getStringArray("inputFile.acceptedMimeType")));
+
+        mailFrom = config.getString("mail.from", "UBL Invoice Validator <validate.invoice@gmail.com>");
+        mailAuthEnable = config.getBoolean("mail.auth.enable", true);
+        mailAuthUsername = config.getString("mail.auth.username", "validate.invoice@gmail.com");
+        mailAuthPassword = config.getString("mail.auth.password", "Admin12345_");
+        mailOutboundHost = config.getString("mail.outbound.host", "smtp.gmail.com");
+        mailOutboundPort = config.getInt("mail.outbound.port", 465);
+        mailOutboundSSLEnable = config.getBoolean("mail.outbound.ssl.enable", true);
+        mailInboundHost = config.getString("mail.inbound.host", "imap.gmail.com");
+        mailInboundPort = config.getInt("mail.inbound.port", 993);
+        mailInboundSSLEnable = config.getBoolean("mail.inbound.ssl.enable", true);
+        mailInboundFolder = config.getString("mail.inbound.folder", "INBOX");
     }
 
 }

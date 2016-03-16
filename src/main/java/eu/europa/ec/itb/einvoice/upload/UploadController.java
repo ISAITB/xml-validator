@@ -1,14 +1,11 @@
 package eu.europa.ec.itb.einvoice.upload;
 
 import com.gitb.tr.TAR;
-import eu.europa.ec.itb.einvoice.Configuration;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
-import org.apache.tika.Tika;
-import org.apache.tika.mime.MimeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,8 +17,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,6 +31,9 @@ public class UploadController {
     @Autowired
     FileController fileController;
 
+    @Autowired
+    BeanFactory beans;
+
     @RequestMapping(method = RequestMethod.GET, value = "/upload")
     public String upload(Model model) {
         return "uploadForm";
@@ -46,7 +44,7 @@ public class UploadController {
         InputStream stream = null;
         Map<String, Object> attributes = new HashMap<String, Object>();
         try {
-            if (checkFileType(file)) {
+            if (fileController.checkFileType(file.getInputStream())) {
                 stream = file.getInputStream();
             } else {
                 attributes.put("message", "Provided input is not an XML document");
@@ -57,7 +55,7 @@ public class UploadController {
         }
         try {
             if (stream != null) {
-                XMLValidator validator = new XMLValidator(stream);
+                XMLValidator validator = beans.getBean(XMLValidator.class, stream);
                 TAR report = validator.validateAll();
                 attributes.put("report", report);
                 attributes.put("date", report.getDate().toString());
@@ -79,9 +77,4 @@ public class UploadController {
         return new ModelAndView("uploadForm", attributes);
     }
 
-    boolean checkFileType(MultipartFile file) throws IOException {
-        Tika tika = new Tika();
-        String type = tika.detect(file.getInputStream());
-        return Configuration.getInstance().getAcceptedMimeTypes().contains(type);
-    }
 }

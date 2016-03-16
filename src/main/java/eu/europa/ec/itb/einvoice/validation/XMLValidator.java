@@ -12,6 +12,9 @@ import eu.europa.ec.itb.einvoice.Configuration;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 import org.w3c.dom.Node;
 
@@ -40,6 +43,8 @@ import java.util.List;
 /**
  * Created by simatosc on 26/02/2016.
  */
+@Component
+@Scope("prototype")
 public class XMLValidator {
 
     private static final Logger logger = LoggerFactory.getLogger(XMLValidator.class);
@@ -53,6 +58,12 @@ public class XMLValidator {
             throw new IllegalStateException("Unable to create JAXB content for SchematronOutputType", e);
         }
     }
+
+    @Autowired
+    Configuration config;
+
+    @Autowired
+    XSDResolver xsdResolver;
 
     private InputStream inputToValidate;
     private byte[] inputBytes;
@@ -79,7 +90,7 @@ public class XMLValidator {
         // Resolve schema.
         SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         schemaFactory.setErrorHandler(handler);
-        schemaFactory.setResourceResolver(new XSDResolver());
+        schemaFactory.setResourceResolver(xsdResolver);
         Schema schema;
         try {
             schema = schemaFactory.newSchema(new StreamSource(new FileInputStream(getSchemaFile())));
@@ -177,11 +188,11 @@ public class XMLValidator {
     }
 
     protected File getSchematronFolder() {
-        return Configuration.getInstance().getSchematronFolder();
+        return config.getSchematronFolder();
     }
 
     protected File getSchemaFile() {
-        return Configuration.getInstance().getSchemaFile();
+        return config.getSchemaFile();
     }
 
     private void logReport(TAR report, String name) {

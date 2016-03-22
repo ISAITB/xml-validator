@@ -8,7 +8,7 @@ import com.gitb.utils.XMLDateTimeUtils;
 import com.gitb.utils.XMLUtils;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
-import eu.europa.ec.itb.einvoice.Configuration;
+import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,6 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -60,7 +59,7 @@ public class XMLValidator {
     }
 
     @Autowired
-    Configuration config;
+    ApplicationConfig config;
 
     @Autowired
     XSDResolver xsdResolver;

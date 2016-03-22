@@ -1,11 +1,13 @@
 package eu.europa.ec.itb.einvoice.upload;
 
 import com.gitb.tr.TAR;
+import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +26,7 @@ import java.util.Map;
  * Created by simatosc on 07/03/2016.
  */
 @Controller
+@Profile("form")
 public class UploadController {
 
     private static Logger logger = LoggerFactory.getLogger(UploadController.class);
@@ -34,9 +37,14 @@ public class UploadController {
     @Autowired
     BeanFactory beans;
 
+    @Autowired
+    ApplicationConfig config;
+
     @RequestMapping(method = RequestMethod.GET, value = "/upload")
-    public String upload(Model model) {
-        return "uploadForm";
+    public ModelAndView upload(Model model) {
+        Map<String, Object> attributes = new HashMap<String, Object>();
+        attributes.put("title", config.getUploadTitle());
+        return new ModelAndView("uploadForm", attributes);
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/upload")
@@ -57,6 +65,7 @@ public class UploadController {
             if (stream != null) {
                 XMLValidator validator = beans.getBean(XMLValidator.class, stream);
                 TAR report = validator.validateAll();
+                attributes.put("title", config.getUploadTitle());
                 attributes.put("report", report);
                 attributes.put("date", report.getDate().toString());
                 attributes.put("fileName", file.getOriginalFilename());

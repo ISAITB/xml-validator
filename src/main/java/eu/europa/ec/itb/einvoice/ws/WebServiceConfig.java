@@ -8,11 +8,13 @@ import org.springframework.boot.context.embedded.ServletRegistrationBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Created by simatosc on 26/02/2016.
  */
 @Configuration
+@Profile("webservice")
 public class WebServiceConfig {
 
     @Autowired

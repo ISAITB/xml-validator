@@ -54,7 +54,7 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <finalName>invoice</finalName>
+        <finalName>validator</finalName>
     </build>
 
     <dependencies>

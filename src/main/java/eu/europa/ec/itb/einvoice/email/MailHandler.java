@@ -1,7 +1,7 @@
 package eu.europa.ec.itb.einvoice.email;
 
 import com.gitb.tr.TAR;
-import eu.europa.ec.itb.einvoice.Configuration;
+import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.upload.FileController;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.tika.Tika;
@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,6 +25,7 @@ import java.util.*;
  * Created by simatosc on 16/03/2016.
  */
 @Component
+@Profile("email")
 public class MailHandler {
 
     private static Logger logger = LoggerFactory.getLogger(MailHandler.class);
@@ -35,12 +37,13 @@ public class MailHandler {
     FileController fileController;
 
     @Autowired
-    Configuration config;
+    ApplicationConfig config;
 
     @Autowired
     BeanFactory beans;
 
-    @Scheduled(fixedDelayString = "${mail.polling.rate}")
+    @Scheduled(fixedDelayString = "${validator.mailPollingRate}")
+    @Profile("email")
     public void receiveEmail() {
         logger.info("Checking emails...");
         Properties props = new Properties();

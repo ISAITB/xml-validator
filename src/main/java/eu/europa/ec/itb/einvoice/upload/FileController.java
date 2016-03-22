@@ -2,7 +2,7 @@ package eu.europa.ec.itb.einvoice.upload;
 
 import com.gitb.tr.ObjectFactory;
 import com.gitb.tr.TAR;
-import eu.europa.ec.itb.einvoice.Configuration;
+import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import org.apache.commons.io.FileUtils;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
 
 import javax.servlet.http.HttpServletResponse;
@@ -21,10 +20,8 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
@@ -42,7 +39,7 @@ public class FileController {
     private static Logger logger = LoggerFactory.getLogger(FileController.class);
 
     @Autowired
-    Configuration config;
+    ApplicationConfig config;
 
     static {
         try {
@@ -143,7 +140,7 @@ public class FileController {
         }
     }
 
-    @Scheduled(fixedDelayString = "${cleanup.polling.rate}")
+    @Scheduled(fixedDelayString = "${validator.cleanupPollingRate}")
     public void cleanUpFiles() {
         long currentMillis = System.currentTimeMillis();
         File reportFolder = config.getReportFolder();

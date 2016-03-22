@@ -1,6 +1,6 @@
 package eu.europa.ec.itb.einvoice.validation;
 
-import eu.europa.ec.itb.einvoice.Configuration;
+import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.ls.LSInput;
@@ -17,7 +17,7 @@ import java.net.URISyntaxException;
 public class XSDResolver implements LSResourceResolver {
 
     @Autowired
-    Configuration config;
+    ApplicationConfig config;
 
     @Override
     public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {

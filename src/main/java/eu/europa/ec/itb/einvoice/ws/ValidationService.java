@@ -6,6 +6,7 @@ import com.gitb.vs.GetModuleDefinitionResponse;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
 import com.gitb.vs.Void;
+import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
@@ -40,27 +41,29 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
     ServletContext ctx;
 
     ApplicationContext beans;
+    ApplicationConfig config;
 
     @PostConstruct
     public void init() {
         beans = WebApplicationContextUtils.getRequiredWebApplicationContext(ctx);
+        config = beans.getBean(ApplicationConfig.class);
     }
 
     @Override
     public GetModuleDefinitionResponse getModuleDefinition(@WebParam(name = "GetModuleDefinitionRequest", targetNamespace = "http://www.gitb.com/vs/v1/", partName = "parameters") Void parameters) {
         GetModuleDefinitionResponse response = new GetModuleDefinitionResponse();
         response.setModule(new ValidationModule());
-        response.getModule().setId("UBLValidationService");
+        response.getModule().setId(config.getWebServiceId());
         response.getModule().setOperation("V");
         response.getModule().setMetadata(new Metadata());
-        response.getModule().getMetadata().setName("UBLValidationService");
+        response.getModule().getMetadata().setName(config.getWebServiceId());
         response.getModule().getMetadata().setVersion("1.0.0");
         response.getModule().setInputs(new TypedParameters());
         TypedParameter xmlInput =  new TypedParameter();
         xmlInput.setName(INPUT_XML);
         xmlInput.setUse(UsageEnumeration.R);
         xmlInput.setKind(ConfigurationType.SIMPLE);
-        xmlInput.setDesc("The XML content representing the UBL invoice to validate.");
+        xmlInput.setDesc(config.getWebServiceDescription());
         response.getModule().getInputs().getParam().add(xmlInput);
         return response;
     }
@@ -70,10 +73,10 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
         if (validateRequest == null
                 || validateRequest.getInput() == null
                 || validateRequest.getInput().isEmpty()) {
-            throw new IllegalArgumentException("You must provide the invoice to validate");
+            throw new IllegalArgumentException("You must provide the file to validate");
         }
         if (validateRequest.getInput().size() > 1) {
-            throw new IllegalArgumentException("A single invoice is expected");
+            throw new IllegalArgumentException("A single input file is expected");
         }
         String invoiceToValidate = extractContent(validateRequest.getInput().get(0)).trim();
         XMLValidator validator;

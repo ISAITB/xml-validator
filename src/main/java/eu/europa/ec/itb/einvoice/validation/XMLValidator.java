@@ -1,6 +1,7 @@
 package eu.europa.ec.itb.einvoice.validation;
 
 import com.gitb.core.AnyContent;
+import com.gitb.core.ValueEmbeddingEnumeration;
 import com.gitb.tr.*;
 import com.gitb.types.ObjectType;
 import com.gitb.types.SchemaType;
@@ -9,6 +10,7 @@ import com.gitb.utils.XMLUtils;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
+import eu.europa.ec.itb.einvoice.ws.ValidationService;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,6 +149,8 @@ public class XMLValidator {
                 }
                 AnyContent input = new AnyContent();
                 input.setValue(inputXML);
+                input.setName(ValidationService.INPUT_XML);
+                input.setEmbeddingMethod(ValueEmbeddingEnumeration.STRING);
                 report.getContext().getItem().add(input);
             }
             if (report.getCounters() == null) {

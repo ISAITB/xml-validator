@@ -4,9 +4,12 @@ Application used for the validation of XML documents by means of:
 
 * A GITB-compliance validation service (SOAP web service).
 * A simple web form that can receive an XML file.
+* Polling of an email address
 
-The application is built using Spring-Boot. The project is currently configured for UBL 2.1 invoices but could be
-re-engineered so that it is completely generic.
+The different application modes (above) can be disabled/enabled as Spring profiles (see `application.properties`).
+
+The application is built using Spring-Boot. The project is currently configured for UBL 2.1 invoices but it can be overriden
+at the level of configuration to accommodate any XML-based validation.
 
 # Building
 

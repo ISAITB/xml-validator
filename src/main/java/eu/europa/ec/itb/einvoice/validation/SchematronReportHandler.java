@@ -11,6 +11,7 @@ import com.helger.schematron.svrl.AbstractSVRLMessage;
 import com.helger.schematron.svrl.SVRLFailedAssert;
 import com.helger.schematron.svrl.SVRLHelper;
 import com.helger.schematron.svrl.SVRLSuccessfulReport;
+import eu.europa.ec.itb.einvoice.ws.ValidationService;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +31,6 @@ import java.util.List;
  */
 public class SchematronReportHandler extends AbstractReportHandler {
     private static final Logger logger = LoggerFactory.getLogger(SchematronReportHandler.class);
-    public static final String XML_ITEM_NAME = "XML";
-    public static final String SCH_ITEM_NAME = "SCH";
-    public static final String SVRL_ITEM_NAME = "SVRL";
     private Node node;
     private SchematronOutputType svrlReport;
 
@@ -87,7 +85,7 @@ public class SchematronReportHandler extends AbstractReportHandler {
             this.report.setResult(TestResultType.FAILURE);
             BAR error1 = new BAR();
             error1.setDescription("An error occurred when generating Schematron output due to a problem in given XML content.");
-            error1.setLocation("XML:1:0");
+            error1.setLocation(ValidationService.INPUT_XML+":1:0");
             JAXBElement element1 = this.objectFactory.createTestAssertionGroupReportsTypeError(error1);
             this.report.getReports().getInfoOrWarningOrError().add(element1);
         }
@@ -103,7 +101,7 @@ public class SchematronReportHandler extends AbstractReportHandler {
             if (message.getText() != null) {
                 error.setDescription(message.getText().trim());
             }
-            error.setLocation("XML:" + this.getLineNumbeFromXPath(message.getLocation()) + ":0");
+            error.setLocation(ValidationService.INPUT_XML+":" + this.getLineNumbeFromXPath(message.getLocation()) + ":0");
             if (message.getTest() != null) {
                 error.setTest(message.getTest().trim());
             }

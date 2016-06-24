@@ -2,6 +2,7 @@ package eu.europa.ec.itb.einvoice.ws;
 
 import com.gitb.core.*;
 import com.gitb.tr.TAR;
+import com.gitb.types.DataType;
 import com.gitb.vs.GetModuleDefinitionResponse;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
@@ -30,12 +31,17 @@ import java.util.List;
 /**
  * Created by simatosc on 25/02/2016.
  */
-@WebService(endpointInterface = "com.gitb.vs.ValidationService")
+@WebService(
+        name = "ValidationService",
+        serviceName = "ValidationService",
+        targetNamespace = "http://www.gitb.com/vs/v1/",
+        endpointInterface = "com.gitb.vs.ValidationService"
+)
 public class ValidationService extends SpringBeanAutowiringSupport implements com.gitb.vs.ValidationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ValidationService.class);
 
-    private static String INPUT_XML = "xml";
+    public static String INPUT_XML = "xml";
 
     @Resource
     ServletContext ctx;
@@ -61,6 +67,7 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
         response.getModule().setInputs(new TypedParameters());
         TypedParameter xmlInput =  new TypedParameter();
         xmlInput.setName(INPUT_XML);
+        xmlInput.setType(DataType.OBJECT_DATA_TYPE);
         xmlInput.setUse(UsageEnumeration.R);
         xmlInput.setKind(ConfigurationType.SIMPLE);
         xmlInput.setDesc(config.getWebServiceDescription());

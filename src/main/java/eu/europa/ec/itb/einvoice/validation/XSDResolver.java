@@ -34,7 +34,8 @@ public class XSDResolver implements LSResourceResolver {
             }
         }
         File referencedSchemaFile = new File(baseURIFile, systemId);
-        baseURI = referencedSchemaFile.toURI().toString();
+        baseURI = referencedSchemaFile.getParentFile().toURI().toString();
+        systemId = referencedSchemaFile.getName();
         try {
             return new LSInputImpl(publicId, systemId, baseURI, new InputStreamReader(new FileInputStream(referencedSchemaFile)));
         } catch (FileNotFoundException e) {

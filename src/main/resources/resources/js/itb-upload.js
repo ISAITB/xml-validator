@@ -1,6 +1,14 @@
 function fileInputChanged() {
 	$('#inputFileName').val($('#inputFile')[0].files[0].name);
-	$('#inputFileSubmit').prop('disabled', false);
+	checkForSubmit();
+}
+function validationTypeChanged() {
+	checkForSubmit();
+}
+function checkForSubmit() {
+	var inputFile = $('#inputFileName');
+	var inputType = $('#validationType');
+	$('#inputFileSubmit').prop('disabled', (inputFile.val() && (!inputType.length || inputType.val()))?false:true);
 }
 function triggerFileUpload() {
 	$('#inputFile').click();

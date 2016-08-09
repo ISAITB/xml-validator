@@ -2,6 +2,7 @@ package eu.europa.ec.itb.einvoice.validation;
 
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
@@ -14,7 +15,20 @@ import java.net.URISyntaxException;
  * Created by simatosc on 07/03/2016.
  */
 @Component
+@Scope("prototype")
 public class XSDResolver implements LSResourceResolver {
+
+    private String validationType;
+
+    public XSDResolver(String validationType) {
+        this.validationType = validationType;
+    }
+
+/*
+    public void setValidationType(String validationType) {
+        this.validationType = validationType;
+    }
+*/
 
     @Autowired
     ApplicationConfig config;
@@ -23,7 +37,7 @@ public class XSDResolver implements LSResourceResolver {
     public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {
         File baseURIFile;
         if (baseURI == null) {
-            baseURIFile = config.getSchemaFile().getParentFile();
+            baseURIFile = config.getSchemaFile().get(validationType).getParentFile();
         } else {
             try {
                 URI uri = new URI(baseURI);

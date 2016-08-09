@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" href="webjars/font-awesome/4.5.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="webjars/bootstrap/3.3.6/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="css/style.css"/>
+    <script src="webjars/jquery/2.0.3/jquery.min.js"></script>
+    <script src="webjars/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="js/busy.js"></script>
+    <script src="js/FileSaver.min.js"></script>
+    <script src="js/itb-upload.js"></script>
+</head>
+<body>
+<div class="container view-section">
+    <div class="view-section-input">
+        <form method="POST" enctype="multipart/form-data" action="upload" th:fragment="form">
+            <div class="input-group input-group-lg">
+                <div class="input-group-btn">
+                    <button class="btn btn-default" type="button" onclick="triggerFileUpload()"><i class="fa fa-folder-open-o"></i></button>
+                </div>
+                <input type="text" id="inputFileName" class="form-control" placeholder="Select file to validate..." onclick="triggerFileUpload()" readonly="readonly"/>
+                <div class="input-group-btn">
+                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()">Upload</button>
+                </div>
+            </div>
+            <input type="file" id="inputFile" name="file" onchange="fileInputChanged()"/>
+        </form>
+    </div>
+</div>
+</body>
+</html>

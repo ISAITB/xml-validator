@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -16,8 +18,8 @@ import java.util.Set;
 @ConfigurationProperties("validator")
 public class ApplicationConfig {
 
-    private File schematronFolder;
-    private File schemaFile;
+    private Map<String,File> schematronFolder;
+    private Map<String,File> schemaFile;
     private File reportFolder;
     private String inputFilePrefix = "ITB-";
     private long minimumCachedInputFileAge = 600000L;
@@ -37,15 +39,21 @@ public class ApplicationConfig {
     private String mailInboundFolder = "INBOX";
     private String uploadTitle = "Validator";
     private String webServiceId = "UBLValidationService";
-    private String webServiceDescription = "The XML content representing the UBL invoice to validate.";
+    private Map<String, String> webServiceDescription;
+    private List<String> type;
+    private Map<String, String> typeLabel;
 
     @PostConstruct
     public void init() {
-        if (!schematronFolder.exists() || !schematronFolder.isDirectory()) {
-            throw new IllegalStateException("Schematron source folder ["+schematronFolder.getAbsolutePath()+"] is not a valid directory.");
+        for (Map.Entry<String, File> fileToCheck: schematronFolder.entrySet()) {
+            if (!fileToCheck.getValue().exists() || !fileToCheck.getValue().isDirectory()) {
+                throw new IllegalStateException("Schematron source folder ["+fileToCheck.getValue().getAbsolutePath()+"] for ["+fileToCheck.getKey()+"] is not a valid directory.");
+            }
         }
-        if (!schemaFile.exists() || !schemaFile.isFile()) {
-            throw new IllegalStateException("Schema file ["+schemaFile.getAbsolutePath()+"] is not valid.");
+        for (Map.Entry<String, File> fileToCheck: schemaFile.entrySet()) {
+            if (!fileToCheck.getValue().exists() || !fileToCheck.getValue().isFile()) {
+                throw new IllegalStateException("Schematron source folder ["+fileToCheck.getValue().getAbsolutePath()+"] for ["+fileToCheck.getKey()+"] is not valid.");
+            }
         }
         if (reportFolder.exists() && reportFolder.isDirectory()) {
             try {
@@ -57,19 +65,19 @@ public class ApplicationConfig {
         reportFolder.mkdir();
     }
 
-    public File getSchematronFolder() {
+    public Map<String, File> getSchematronFolder() {
         return schematronFolder;
     }
 
-    public void setSchematronFolder(File schematronFolder) {
+    public void setSchematronFolder(Map<String, File> schematronFolder) {
         this.schematronFolder = schematronFolder;
     }
 
-    public File getSchemaFile() {
+    public Map<String, File> getSchemaFile() {
         return schemaFile;
     }
 
-    public void setSchemaFile(File schemaFile) {
+    public void setSchemaFile(Map<String, File> schemaFile) {
         this.schemaFile = schemaFile;
     }
 
@@ -225,11 +233,27 @@ public class ApplicationConfig {
         this.webServiceId = webServiceId;
     }
 
-    public String getWebServiceDescription() {
+    public Map<String, String> getWebServiceDescription() {
         return webServiceDescription;
     }
 
-    public void setWebServiceDescription(String webServiceDescription) {
+    public void setWebServiceDescription(Map<String, String> webServiceDescription) {
         this.webServiceDescription = webServiceDescription;
+    }
+
+    public Map<String, String> getTypeLabel() {
+        return typeLabel;
+    }
+
+    public List<String> getType() {
+        return type;
+    }
+
+    public void setTypeLabel(Map<String, String> typeLabel) {
+        this.typeLabel = typeLabel;
+    }
+
+    public void setType(List<String> type) {
+        this.type = type;
     }
 }

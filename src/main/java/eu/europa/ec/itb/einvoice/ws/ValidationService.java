@@ -26,6 +26,7 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,6 +42,7 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
 
     private static final Logger logger = LoggerFactory.getLogger(ValidationService.class);
 
+    public static String INPUT_TYPE = "type";
     public static String INPUT_XML = "xml";
 
     @Resource
@@ -65,38 +67,82 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
         response.getModule().getMetadata().setName(config.getWebServiceId());
         response.getModule().getMetadata().setVersion("1.0.0");
         response.getModule().setInputs(new TypedParameters());
+        if (config.getType().size() > 1) {
+            TypedParameter xmlInput =  new TypedParameter();
+            xmlInput.setName(INPUT_TYPE);
+            xmlInput.setType(DataType.STRING_DATA_TYPE);
+            xmlInput.setUse(UsageEnumeration.R);
+            xmlInput.setKind(ConfigurationType.SIMPLE);
+            xmlInput.setDesc(config.getWebServiceDescription().get(INPUT_TYPE));
+            response.getModule().getInputs().getParam().add(xmlInput);
+        }
         TypedParameter xmlInput =  new TypedParameter();
         xmlInput.setName(INPUT_XML);
         xmlInput.setType(DataType.OBJECT_DATA_TYPE);
         xmlInput.setUse(UsageEnumeration.R);
         xmlInput.setKind(ConfigurationType.SIMPLE);
-        xmlInput.setDesc(config.getWebServiceDescription());
+        xmlInput.setDesc(config.getWebServiceDescription().get(INPUT_XML));
         response.getModule().getInputs().getParam().add(xmlInput);
         return response;
     }
 
     @Override
     public ValidationResponse validate(@WebParam(name = "ValidateRequest", targetNamespace = "http://www.gitb.com/vs/v1/", partName = "parameters") ValidateRequest validateRequest) {
-        if (validateRequest == null
-                || validateRequest.getInput() == null
-                || validateRequest.getInput().isEmpty()) {
+        List<AnyContent> fileInputs = getXMLInput(validateRequest);
+        String validationType = null;
+        if (fileInputs.isEmpty()) {
             throw new IllegalArgumentException("You must provide the file to validate");
         }
-        if (validateRequest.getInput().size() > 1) {
+        if (fileInputs.size() > 1) {
             throw new IllegalArgumentException("A single input file is expected");
         }
-        String invoiceToValidate = extractContent(validateRequest.getInput().get(0)).trim();
+        if (config.getType().size() > 1) {
+            List<AnyContent> validationTypeInputs = getTypeInput(validateRequest);
+            if (validationTypeInputs.isEmpty()) {
+                throw new IllegalArgumentException("You must provide the type of validation to perform");
+            }
+            if (validationTypeInputs.size() > 1) {
+                throw new IllegalArgumentException("A single validation type is expected");
+            }
+            validationType = validationTypeInputs.get(0).getValue();
+            if (!config.getType().contains(validationType)) {
+                throw new IllegalArgumentException("Invalid validation type provided ["+validationType+"]");
+            }
+        }
+        String invoiceToValidate = extractContent(fileInputs.get(0)).trim();
         XMLValidator validator;
         try {
-            validator = beans.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes("UTF-8")));
+            validator = beans.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes("UTF-8")), validationType);
         } catch (UnsupportedEncodingException e) {
             logger.warn("Unable to decode inout as UTF-8 - using default [{}]", e.getMessage());
-            validator = new XMLValidator(new ByteArrayInputStream(invoiceToValidate.getBytes()));
+            validator = beans.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes()), validationType);
         }
         TAR report = validator.validateAll();
         ValidationResponse result = new ValidationResponse();
         result.setReport(report);
         return result;
+    }
+
+    private List<AnyContent> getXMLInput(ValidateRequest validateRequest) {
+        return getInputFor(validateRequest, INPUT_XML);
+    }
+
+    private List<AnyContent> getTypeInput(ValidateRequest validateRequest) {
+        return getInputFor(validateRequest, INPUT_TYPE);
+    }
+
+    private List<AnyContent> getInputFor(ValidateRequest validateRequest, String name) {
+        List<AnyContent> inputs = new ArrayList<AnyContent>();
+        if (validateRequest != null) {
+            if (validateRequest.getInput() != null) {
+                for (AnyContent anInput: validateRequest.getInput()) {
+                    if (name.equals(anInput.getName())) {
+                        inputs.add(anInput);
+                    }
+                }
+            }
+        }
+        return inputs;
     }
 
     /**

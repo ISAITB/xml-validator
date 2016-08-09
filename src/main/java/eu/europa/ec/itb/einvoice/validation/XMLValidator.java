@@ -14,12 +14,17 @@ import eu.europa.ec.itb.einvoice.ws.ValidationService;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 import org.w3c.dom.Node;
 
+import javax.annotation.PostConstruct;
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -46,10 +51,11 @@ import java.util.List;
  */
 @Component
 @Scope("prototype")
-public class XMLValidator {
+public class XMLValidator implements ApplicationContextAware {
 
     private static final Logger logger = LoggerFactory.getLogger(XMLValidator.class);
     private static JAXBContext SVRL_JAXB_CONTEXT;
+    private String validationType;
     protected ObjectFactory gitbTRObjectFactory = new ObjectFactory();
 
     static {
@@ -61,16 +67,26 @@ public class XMLValidator {
     }
 
     @Autowired
-    ApplicationConfig config;
-
-    @Autowired
-    XSDResolver xsdResolver;
+    private ApplicationConfig config;
 
     private InputStream inputToValidate;
     private byte[] inputBytes;
+    private ApplicationContext ctx;
 
     public XMLValidator(InputStream inputToValidate) {
+        this(inputToValidate, null);
+    }
+
+    public XMLValidator(InputStream inputToValidate, String validationType) {
         this.inputToValidate = inputToValidate;
+        this.validationType = validationType;
+    }
+
+    @PostConstruct
+    public void init() {
+        if (validationType == null) {
+            validationType = config.getType().get(0);
+        }
     }
 
     private InputStream getInputStreamForValidation() {
@@ -85,13 +101,17 @@ public class XMLValidator {
         return new ByteArrayInputStream(inputBytes);
     }
 
+    private XSDResolver getXSDResolver() {
+        return ctx.getBean(XSDResolver.class, validationType);
+    }
+
     public TAR validateAgainstSchema() {
         // Create error handler.
         XSDReportHandler handler = new XSDReportHandler();
         // Resolve schema.
         SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         schemaFactory.setErrorHandler(handler);
-        schemaFactory.setResourceResolver(xsdResolver);
+        schemaFactory.setResourceResolver(getXSDResolver());
         Schema schema;
         try {
             schema = schemaFactory.newSchema(new StreamSource(new FileInputStream(getSchemaFile())));
@@ -191,11 +211,11 @@ public class XMLValidator {
     }
 
     protected File getSchematronFolder() {
-        return config.getSchematronFolder();
+        return config.getSchematronFolder().get(validationType);
     }
 
     protected File getSchemaFile() {
-        return config.getSchemaFile();
+        return config.getSchemaFile().get(validationType);
     }
 
     private void logReport(TAR report, String name) {
@@ -304,4 +324,8 @@ public class XMLValidator {
     }
 
 
+    @Override
+    public void setApplicationContext(ApplicationContext ctx) throws BeansException {
+        this.ctx = ctx;
+    }
 }

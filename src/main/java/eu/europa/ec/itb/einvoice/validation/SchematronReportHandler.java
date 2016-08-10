@@ -26,15 +26,19 @@ import javax.xml.xpath.XPathFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by simatosc on 26/02/2016.
  */
 public class SchematronReportHandler extends AbstractReportHandler {
+    private static Pattern ARRAY_PATTERN = Pattern.compile("\\[\\d+\\]");
     private static final Logger logger = LoggerFactory.getLogger(SchematronReportHandler.class);
     private Document node;
     private SchematronOutputType svrlReport;
     private NamespaceContext namespaceContext;
+
 
     public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl) {
         this.node = node;
@@ -129,14 +133,35 @@ public class SchematronReportHandler extends AbstractReportHandler {
     }
 
     private String getLineNumbeFromXPath(String xpathExpression) {
+        String xpathExpressionConverted = convertToXPathExpression(xpathExpression);
         XPath xPath = XPathFactory.newInstance().newXPath();
         xPath.setNamespaceContext(getNamespaceContext());
+        Node node;
         try {
-            Node node = (Node)xPath.evaluate(xpathExpression, this.node, XPathConstants.NODE);
+            node = (Node)xPath.evaluate(xpathExpressionConverted, this.node, XPathConstants.NODE);
             return (String)node.getUserData("lineNumber");
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.error("Unable to locate line for expression ["+xpathExpression+"]["+xpathExpressionConverted+"]: "+e.getMessage());
             return "0";
+        }
+    }
+
+    private String convertToXPathExpression(String xpathExpression) {
+        /*
+        Schematron reports arrays as 0-based whereas xpath has 1-based arrays.
+        This is used to increment each array index by one.
+         */
+        Matcher m = ARRAY_PATTERN.matcher(xpathExpression);
+        try {
+            StringBuffer s = new StringBuffer();
+            while (m.find()) {
+                m.appendReplacement(s, "["+String.valueOf(1 + Integer.parseInt(m.group(0).substring(1, m.group(0).length()-1)))+"]");
+            }
+            m.appendTail(s);
+            return s.toString();
+        } catch (Exception e) {
+            logger.warn("Failed to convert XPath expression.", e);
+            return xpathExpression;
         }
     }
 }

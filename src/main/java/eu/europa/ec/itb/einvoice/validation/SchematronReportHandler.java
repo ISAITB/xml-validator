@@ -15,12 +15,13 @@ import eu.europa.ec.itb.einvoice.ws.ValidationService;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import javax.xml.bind.JAXBElement;
+import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -31,10 +32,11 @@ import java.util.List;
  */
 public class SchematronReportHandler extends AbstractReportHandler {
     private static final Logger logger = LoggerFactory.getLogger(SchematronReportHandler.class);
-    private Node node;
+    private Document node;
     private SchematronOutputType svrlReport;
+    private NamespaceContext namespaceContext;
 
-    public SchematronReportHandler(ObjectType xml, SchemaType sch, Node node, SchematronOutputType svrl) {
+    public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl) {
         this.node = node;
         this.svrlReport = svrl;
         this.report.setName("Schematron Validation");
@@ -54,6 +56,13 @@ public class SchematronReportHandler extends AbstractReportHandler {
         schemaAttachment.setValue(new String(sch.serializeByDefaultEncoding()));
         attachment.getItem().add(schemaAttachment);
         this.report.setContext(attachment);
+    }
+
+    private NamespaceContext getNamespaceContext() {
+        if (namespaceContext == null) {
+            namespaceContext = new DocumentNamespaceContext(node, false);
+        }
+        return namespaceContext;
     }
 
     private TestResultType getErrorLevel(List<SVRLFailedAssert> error) {
@@ -105,7 +114,6 @@ public class SchematronReportHandler extends AbstractReportHandler {
             if (message.getTest() != null) {
                 error.setTest(message.getTest().trim());
             }
-            element = null;
             int level = message.getFlag().getNumericLevel();
             if (level == EErrorLevel.SUCCESS.getNumericLevel()) {
                 element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(error);
@@ -122,12 +130,12 @@ public class SchematronReportHandler extends AbstractReportHandler {
 
     private String getLineNumbeFromXPath(String xpathExpression) {
         XPath xPath = XPathFactory.newInstance().newXPath();
-        Node node = null;
+        xPath.setNamespaceContext(getNamespaceContext());
         try {
-            node = (Node)xPath.evaluate(xpathExpression, this.node, XPathConstants.NODE);
+            Node node = (Node)xPath.evaluate(xpathExpression, this.node, XPathConstants.NODE);
             return (String)node.getUserData("lineNumber");
-        } catch (XPathExpressionException var5) {
-            logger.error(var5.getMessage());
+        } catch (Exception e) {
+            logger.error(e.getMessage());
             return "0";
         }
     }

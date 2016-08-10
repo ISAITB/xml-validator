@@ -46,13 +46,13 @@ public class ApplicationConfig {
     @PostConstruct
     public void init() {
         for (Map.Entry<String, File> fileToCheck: schematronFolder.entrySet()) {
-            if (!fileToCheck.getValue().exists() || !fileToCheck.getValue().isDirectory()) {
-                throw new IllegalStateException("Schematron source folder ["+fileToCheck.getValue().getAbsolutePath()+"] for ["+fileToCheck.getKey()+"] is not a valid directory.");
+            if (!fileToCheck.getValue().exists()) {
+                throw new IllegalStateException("Schematron source folder ["+fileToCheck.getValue().getAbsolutePath()+"] for ["+fileToCheck.getKey()+"] is not valid.");
             }
         }
         for (Map.Entry<String, File> fileToCheck: schemaFile.entrySet()) {
-            if (!fileToCheck.getValue().exists() || !fileToCheck.getValue().isFile()) {
-                throw new IllegalStateException("Schematron source folder ["+fileToCheck.getValue().getAbsolutePath()+"] for ["+fileToCheck.getKey()+"] is not valid.");
+            if (!fileToCheck.getValue().exists()) {
+                throw new IllegalStateException("Schema source folder ["+fileToCheck.getValue().getAbsolutePath()+"] for ["+fileToCheck.getKey()+"] is not valid.");
             }
         }
         if (reportFolder.exists() && reportFolder.isDirectory()) {

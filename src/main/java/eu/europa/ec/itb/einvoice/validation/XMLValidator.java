@@ -8,6 +8,7 @@ import com.gitb.types.SchemaType;
 import com.gitb.utils.XMLDateTimeUtils;
 import com.gitb.utils.XMLUtils;
 import com.helger.schematron.ISchematronResource;
+import com.helger.schematron.pure.SchematronResourcePure;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.ws.ValidationService;
@@ -21,8 +22,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
-import org.springframework.web.context.support.WebApplicationContextUtils;
-import org.w3c.dom.Node;
+import org.w3c.dom.Document;
 
 import javax.annotation.PostConstruct;
 import javax.xml.XMLConstants;
@@ -106,6 +106,33 @@ public class XMLValidator implements ApplicationContextAware {
     }
 
     public TAR validateAgainstSchema() {
+        File schemaFile = getSchemaFile();
+        List<TAR> reports = new ArrayList<TAR>();
+        List<File> schemaFiles = new ArrayList<>();
+        if (schemaFile.isFile()) {
+            // We are pointing to a single master schema file.
+            schemaFiles.add(schemaFile);
+        } else {
+            // All schemas are to be processed.
+            for (File aSchemaFile: schemaFile.listFiles()) {
+                if (aSchemaFile.isFile()) {
+                    schemaFiles.add(aSchemaFile);
+                }
+            }
+        }
+        for (File aSchemaFile: schemaFiles) {
+            logger.info("Validating against ["+aSchemaFile.getName()+"]");
+            TAR report = validateSchema(getInputStreamForValidation(), aSchemaFile);
+            logReport(report, aSchemaFile.getName());
+            reports.add(report);
+            logger.info("Validated against ["+aSchemaFile.getName()+"]");
+        }
+        TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
+        completeReport(report);
+        return report;
+    }
+
+    public TAR validateSchema(InputStream inputSource, File schemaFile) {
         // Create error handler.
         XSDReportHandler handler = new XSDReportHandler();
         // Resolve schema.
@@ -114,7 +141,8 @@ public class XMLValidator implements ApplicationContextAware {
         schemaFactory.setResourceResolver(getXSDResolver());
         Schema schema;
         try {
-            schema = schemaFactory.newSchema(new StreamSource(new FileInputStream(getSchemaFile())));
+            schemaFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, false);
+            schema = schemaFactory.newSchema(new StreamSource(new FileInputStream(schemaFile)));
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -127,7 +155,7 @@ public class XMLValidator implements ApplicationContextAware {
         TAR report = null;
         try {
             // Use a StreamSource rather than a DomSource below to get the line & column number of possible errors.
-            StreamSource source = new StreamSource(getInputStreamForValidation());
+            StreamSource source = new StreamSource(inputSource);
             validator.validate(source);
             report = handler.createReport();
         } catch (Exception e) {
@@ -198,12 +226,24 @@ public class XMLValidator implements ApplicationContextAware {
     public TAR validateAgainstSchematron() {
         File schematronFolder = getSchematronFolder();
         List<TAR> reports = new ArrayList<TAR>();
-        for (File xslFile: schematronFolder.listFiles()) {
-            logger.info("Validating against ["+xslFile.getName()+"]");
-            TAR report = validateSchematron(getInputStreamForValidation(), xslFile);
-            logReport(report, xslFile.getName());
+        List<File> schematronFiles = new ArrayList<>();
+        if (schematronFolder.isFile()) {
+            // We are pointing to a single master schematron file.
+            schematronFiles.add(schematronFolder);
+        } else {
+            // All schematrons are to be processed.
+            for (File schematronFile: schematronFolder.listFiles()) {
+                if (schematronFile.isFile()) {
+                    schematronFiles.add(schematronFile);
+                }
+            }
+        }
+        for (File schematronFile: schematronFiles) {
+            logger.info("Validating against ["+schematronFile.getName()+"]");
+            TAR report = validateSchematron(getInputStreamForValidation(), schematronFile);
+            logReport(report, schematronFile.getName());
             reports.add(report);
-            logger.info("Validated against ["+xslFile.getName()+"]");
+            logger.info("Validated against ["+schematronFile.getName()+"]");
         }
         TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
         completeReport(report);
@@ -301,21 +341,40 @@ public class XMLValidator implements ApplicationContextAware {
     }
 
     public TAR validateSchematron(InputStream inputSource, File schematronFile) {
-        final ISchematronResource schematron = SchematronResourceXSLT.fromFile(schematronFile);
-        Node schematronInput = null;
+        Document schematronInput = null;
         SchematronOutputType svrlOutput = null;
-        if(schematron.isValidSchematron()) {
-            try {
-                schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);
-                Transformer transformer = TransformerFactory.newInstance().newTransformer(new StreamSource(new FileInputStream(schematronFile)));
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                transformer.transform(new DOMSource(schematronInput), new StreamResult(bos));
-                bos.flush();
-                Unmarshaller jaxbUnmarshaller = SVRL_JAXB_CONTEXT.createUnmarshaller();
-                JAXBElement<SchematronOutputType> root = jaxbUnmarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(bos.toByteArray())), SchematronOutputType.class);
-                svrlOutput = root.getValue();
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
+        ISchematronResource schematron = null;
+        if (schematronFile.getName().endsWith("xslt") || schematronFile.getName().endsWith("xsl")) {
+            // Validate as XSLT.
+            schematron = SchematronResourceXSLT.fromFile(schematronFile);
+            if(schematron.isValidSchematron()) {
+                try {
+                    schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);
+                    Transformer transformer = TransformerFactory.newInstance().newTransformer(new StreamSource(new FileInputStream(schematronFile)));
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    transformer.transform(new DOMSource(schematronInput), new StreamResult(bos));
+                    bos.flush();
+                    Unmarshaller jaxbUnmarshaller = SVRL_JAXB_CONTEXT.createUnmarshaller();
+                    JAXBElement<SchematronOutputType> root = jaxbUnmarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(bos.toByteArray())), SchematronOutputType.class);
+                    svrlOutput = root.getValue();
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            } else {
+                throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid");
+            }
+        } else {
+            // Validate as raw schematron.
+            schematron = SchematronResourcePure.fromFile(schematronFile);
+            if(schematron.isValidSchematron()) {
+                try {
+                    schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);
+                    svrlOutput = schematron.applySchematronValidationToSVRL(new DOMSource(schematronInput));
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            } else {
+                throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid");
             }
         }
         //handle validation report

@@ -15,9 +15,12 @@ import eu.europa.ec.itb.einvoice.ws.ValidationService;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBElement;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
@@ -34,11 +37,12 @@ import java.util.regex.Pattern;
  */
 public class SchematronReportHandler extends AbstractReportHandler {
     private static Pattern ARRAY_PATTERN = Pattern.compile("\\[\\d+\\]");
+    private static Pattern DEFAULTNS_PATTERN = Pattern.compile("\\/[\\w]+:?");
     private static final Logger logger = LoggerFactory.getLogger(SchematronReportHandler.class);
     private Document node;
     private SchematronOutputType svrlReport;
     private NamespaceContext namespaceContext;
-
+    private Boolean hasDefaultNamespace;
 
     public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl) {
         this.node = node;
@@ -141,7 +145,7 @@ public class SchematronReportHandler extends AbstractReportHandler {
             node = (Node)xPath.evaluate(xpathExpressionConverted, this.node, XPathConstants.NODE);
             return (String)node.getUserData("lineNumber");
         } catch (Exception e) {
-            logger.error("Unable to locate line for expression ["+xpathExpression+"]["+xpathExpressionConverted+"]: "+e.getMessage());
+            logger.error("Unable to locate line for expression ["+xpathExpression+"] ["+xpathExpressionConverted+"]: "+e.getMessage());
             return "0";
         }
     }
@@ -151,17 +155,47 @@ public class SchematronReportHandler extends AbstractReportHandler {
         Schematron reports arrays as 0-based whereas xpath has 1-based arrays.
         This is used to increment each array index by one.
          */
-        Matcher m = ARRAY_PATTERN.matcher(xpathExpression);
         try {
             StringBuffer s = new StringBuffer();
+            Matcher m = ARRAY_PATTERN.matcher(xpathExpression);
             while (m.find()) {
                 m.appendReplacement(s, "["+String.valueOf(1 + Integer.parseInt(m.group(0).substring(1, m.group(0).length()-1)))+"]");
             }
             m.appendTail(s);
+            if (documentHasDefaultNamespace(node)) {
+                m = DEFAULTNS_PATTERN.matcher(s.toString());
+                s.delete(0, s.length());
+                while (m.find()) {
+                    String match = m.group(0);
+                    if (match.indexOf(':') == -1) {
+                        match = "/"+DocumentNamespaceContext.DEFAULT_NS+":"+match.substring(1);
+                    }
+                    m.appendReplacement(s, match);
+                }
+                m.appendTail(s);
+            }
             return s.toString();
         } catch (Exception e) {
             logger.warn("Failed to convert XPath expression.", e);
             return xpathExpression;
         }
     }
+
+    private boolean documentHasDefaultNamespace(Document node) {
+        if (hasDefaultNamespace == null) {
+            NamedNodeMap attributes = node.getFirstChild().getAttributes();
+            for (int i = 0; i < attributes.getLength(); i++) {
+                Node attribute = attributes.item(i);
+                if (attribute.getNodeName().equals(XMLConstants.XMLNS_ATTRIBUTE)) {
+                    hasDefaultNamespace = Boolean.TRUE;
+                    break;
+                }
+            }
+            if (hasDefaultNamespace == null) {
+                hasDefaultNamespace = Boolean.FALSE;
+            }
+        }
+        return hasDefaultNamespace.booleanValue();
+    }
+
 }

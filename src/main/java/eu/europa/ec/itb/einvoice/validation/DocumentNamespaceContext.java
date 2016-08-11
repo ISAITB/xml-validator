@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public class DocumentNamespaceContext implements NamespaceContext {
 
-    private static final String DEFAULT_NS = "";
+    public static final String DEFAULT_NS = "default";
     private Map<String, String> prefix2Uri = new HashMap<>();
     private Map<String, String> uri2Prefix = new HashMap<>();
 
@@ -65,16 +65,15 @@ public class DocumentNamespaceContext implements NamespaceContext {
      */
     private void storeAttribute(Attr attribute) {
         // examine the attributes in namespace xmlns
+        if (attribute.getNodeName().equals(XMLConstants.XMLNS_ATTRIBUTE)) {
+            putInCache(DEFAULT_NS, attribute.getNodeValue());
+        }
         if (attribute.getNamespaceURI() != null && attribute.getNamespaceURI().equals(XMLConstants.XMLNS_ATTRIBUTE_NS_URI)) {
-            if (attribute.getNodeName().equals(XMLConstants.XMLNS_ATTRIBUTE)) {
-                putInCache(DEFAULT_NS, attribute.getNodeValue());
-            } else {
-                putInCache(attribute.getLocalName(), attribute.getNodeValue());
-            }
-        } else if (attribute.getName().startsWith("xmlns:")) {
+            putInCache(attribute.getLocalName(), attribute.getNodeValue());
+        } else if (attribute.getName().startsWith(XMLConstants.XMLNS_ATTRIBUTE+":")) {
             // Extract manually local name.
-            int pos = attribute.getName().indexOf("xmlns:");
-            int len = "xmlns:".length();
+            int pos = attribute.getName().indexOf(XMLConstants.XMLNS_ATTRIBUTE+":");
+            int len = XMLConstants.XMLNS_ATTRIBUTE.length()+1;
             if (attribute.getName().length() >= (pos + len)) {
                 putInCache(attribute.getName().substring(pos+len), attribute.getNodeValue());
             }
@@ -95,7 +94,7 @@ public class DocumentNamespaceContext implements NamespaceContext {
      * @return uri
      */
     public String getNamespaceURI(String prefix) {
-        if (prefix == null || prefix.equals(XMLConstants.DEFAULT_NS_PREFIX)) {
+        if (prefix == null || prefix.equals(XMLConstants.DEFAULT_NS_PREFIX) || prefix.equals(DEFAULT_NS)) {
             return prefix2Uri.get(DEFAULT_NS);
         } else {
             return prefix2Uri.get(prefix);

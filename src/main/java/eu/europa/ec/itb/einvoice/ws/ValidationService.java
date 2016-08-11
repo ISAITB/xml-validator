@@ -109,7 +109,12 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
                 throw new IllegalArgumentException("Invalid validation type provided ["+validationType+"]");
             }
         }
-        String invoiceToValidate = extractContent(fileInputs.get(0)).trim();
+        String invoiceToValidate = null;
+        try {
+            invoiceToValidate = extractContent(fileInputs.get(0)).trim();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Could not read provided input", e);
+        }
         XMLValidator validator;
         try {
             validator = beans.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes("UTF-8")), validationType);
@@ -151,7 +156,7 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
      * @param content The content to process.
      * @return The content's String representation.
      */
-    private String extractContent(AnyContent content) {
+    private String extractContent(AnyContent content) throws IOException {
         String stringContent = null;
         if (content != null && content.getValue() != null) {
             switch (content.getEmbeddingMethod()) {
@@ -196,7 +201,15 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
                     break;
                 default: // BASE_64
                     // Construct the string from its BASE64 encoded bytes.
-                    stringContent = new String(Base64.decodeBase64(content.getValue()));
+                    char[] buffer = new char[1024];
+                    int numCharsRead;
+                    StringBuilder sb = new StringBuilder();
+                    try (BomStrippingReader reader = new BomStrippingReader(new ByteArrayInputStream(Base64.decodeBase64(content.getValue())))) {
+                        while ((numCharsRead = reader.read(buffer, 0, buffer.length)) != -1) {
+                            sb.append(buffer, 0, numCharsRead);
+                        }
+                    }
+                    stringContent = sb.toString();
                     break;
             }
         }

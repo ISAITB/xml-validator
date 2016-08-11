@@ -344,6 +344,7 @@ public class XMLValidator implements ApplicationContextAware {
         Document schematronInput = null;
         SchematronOutputType svrlOutput = null;
         ISchematronResource schematron = null;
+        boolean convertXPathExpressions = false;
         if (schematronFile.getName().endsWith("xslt") || schematronFile.getName().endsWith("xsl")) {
             // Validate as XSLT.
             schematron = SchematronResourceXSLT.fromFile(schematronFile);
@@ -365,6 +366,7 @@ public class XMLValidator implements ApplicationContextAware {
             }
         } else {
             // Validate as raw schematron.
+            convertXPathExpressions = true;
             schematron = SchematronResourcePure.fromFile(schematronFile);
             if(schematron.isValidSchematron()) {
                 try {
@@ -378,7 +380,7 @@ public class XMLValidator implements ApplicationContextAware {
             }
         }
         //handle validation report
-        SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput);
+        SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput, convertXPathExpressions);
         return handler.createReport();
     }
 

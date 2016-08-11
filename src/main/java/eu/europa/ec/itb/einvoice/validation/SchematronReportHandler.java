@@ -15,7 +15,6 @@ import eu.europa.ec.itb.einvoice.ws.ValidationService;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -43,8 +42,9 @@ public class SchematronReportHandler extends AbstractReportHandler {
     private SchematronOutputType svrlReport;
     private NamespaceContext namespaceContext;
     private Boolean hasDefaultNamespace;
+    private boolean convertXPathExpressions;
 
-    public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl) {
+    public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions) {
         this.node = node;
         this.svrlReport = svrl;
         this.report.setName("Schematron Validation");
@@ -64,6 +64,7 @@ public class SchematronReportHandler extends AbstractReportHandler {
         schemaAttachment.setValue(new String(sch.serializeByDefaultEncoding()));
         attachment.getItem().add(schemaAttachment);
         this.report.setContext(attachment);
+        this.convertXPathExpressions = convertXPathExpressions;
     }
 
     private NamespaceContext getNamespaceContext() {
@@ -155,30 +156,38 @@ public class SchematronReportHandler extends AbstractReportHandler {
         Schematron reports arrays as 0-based whereas xpath has 1-based arrays.
         This is used to increment each array index by one.
          */
-        try {
-            StringBuffer s = new StringBuffer();
-            Matcher m = ARRAY_PATTERN.matcher(xpathExpression);
-            while (m.find()) {
-                m.appendReplacement(s, "["+String.valueOf(1 + Integer.parseInt(m.group(0).substring(1, m.group(0).length()-1)))+"]");
-            }
-            m.appendTail(s);
-            if (documentHasDefaultNamespace(node)) {
-                m = DEFAULTNS_PATTERN.matcher(s.toString());
-                s.delete(0, s.length());
+        if (isXPathConversionNeeded()) {
+            try {
+                StringBuffer s = new StringBuffer();
+                Matcher m = ARRAY_PATTERN.matcher(xpathExpression);
                 while (m.find()) {
-                    String match = m.group(0);
-                    if (match.indexOf(':') == -1) {
-                        match = "/"+DocumentNamespaceContext.DEFAULT_NS+":"+match.substring(1);
-                    }
-                    m.appendReplacement(s, match);
+                    m.appendReplacement(s, "["+String.valueOf(1 + Integer.parseInt(m.group(0).substring(1, m.group(0).length()-1)))+"]");
                 }
                 m.appendTail(s);
+                if (documentHasDefaultNamespace(node)) {
+                    m = DEFAULTNS_PATTERN.matcher(s.toString());
+                    s.delete(0, s.length());
+                    while (m.find()) {
+                        String match = m.group(0);
+                        if (match.indexOf(':') == -1) {
+                            match = "/"+DocumentNamespaceContext.DEFAULT_NS+":"+match.substring(1);
+                        }
+                        m.appendReplacement(s, match);
+                    }
+                    m.appendTail(s);
+                }
+                return s.toString();
+            } catch (Exception e) {
+                logger.warn("Failed to convert XPath expression.", e);
+                return xpathExpression;
             }
-            return s.toString();
-        } catch (Exception e) {
-            logger.warn("Failed to convert XPath expression.", e);
+        } else {
             return xpathExpression;
         }
+    }
+
+    private boolean isXPathConversionNeeded() {
+        return convertXPathExpressions;
     }
 
     private boolean documentHasDefaultNamespace(Document node) {

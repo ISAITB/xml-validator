@@ -65,6 +65,10 @@ public class ApplicationConfig {
         reportFolder.mkdir();
     }
 
+    public boolean hasMultipleValidationTypes() {
+        return type != null && type.size() > 1;
+    }
+
     public Map<String, File> getSchematronFolder() {
         return schematronFolder;
     }

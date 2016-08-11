@@ -70,7 +70,7 @@ public class UploadController {
         if (StringUtils.isBlank(validationType)) {
             validationType = null;
         }
-        if (config.getType().size() > 1 && (validationType == null || !config.getType().contains(validationType))) {
+        if (config.hasMultipleValidationTypes() && (validationType == null || !config.getType().contains(validationType))) {
             // A validation type is required.
             attributes.put("message", "Provided validation type is not valid");
         }
@@ -101,7 +101,7 @@ public class UploadController {
 
     public List<ValidationType> getValidationTypes() {
         List<ValidationType> types = new ArrayList<>();
-        if (config.getType().size() > 1) {
+        if (config.hasMultipleValidationTypes()) {
             for (String type: config.getType()) {
                 types.add(new ValidationType(type, config.getTypeLabel().get(type)));
             }

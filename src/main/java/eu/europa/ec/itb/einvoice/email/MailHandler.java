@@ -4,6 +4,9 @@ import com.gitb.tr.TAR;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.upload.FileController;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.output.StringBuilderWriter;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +22,7 @@ import javax.mail.*;
 import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.*;
 
 /**
@@ -69,36 +73,53 @@ public class MailHandler {
                 List<FileReport> reports = new ArrayList<>();
                 try {
                     Object contentObj = message.getContent();
-                    if (contentObj instanceof Multipart) {
-                        logger.info("Processing message ["+message.getSubject()+"]");
-                        Multipart content = (Multipart)contentObj;
-                        for (int i=0; i < content.getCount(); i++) {
-                            BodyPart part = content.getBodyPart(i);
-                            boolean acceptableFileType = false;
-                            try (InputStream is = part.getInputStream()) {
-                                acceptableFileType = checkFileType(is);
-                            }
-                            if (acceptableFileType) {
-                                logger.info("Processing file ["+part.getFileName()+"] of ["+message.getSubject()+"]");
+                    StringBuilder messageAdditionalText = new StringBuilder();
+                    try {
+                        if (contentObj instanceof Multipart) {
+                            logger.info("Processing message ["+message.getSubject()+"]");
+                            Multipart content = (Multipart)contentObj;
+                            for (int i=0; i < content.getCount(); i++) {
+                                BodyPart part = content.getBodyPart(i);
+                                boolean acceptableFileType = false;
                                 try (InputStream is = part.getInputStream()) {
-                                    XMLValidator validator = beans.getBean(XMLValidator.class, is);
-                                    TAR report = validator.validateAll();
-                                    reports.add(new FileReport(part.getFileName(), report));
-                                    logger.info("Processed message ["+message.getSubject()+"], file ["+part.getFileName()+"]");
+                                    acceptableFileType = checkFileType(is);
                                 }
-                            } else {
-                                logger.info("Ignoring file ["+part.getFileName()+"] of ["+message.getSubject()+"]");
+                                if (acceptableFileType) {
+                                    String validationType = getValidationType(part.getFileName());
+                                    logger.info("Processing file ["+part.getFileName()+"] of ["+message.getSubject()+"] for ["+validationType+"]");
+                                    try (InputStream is = part.getInputStream()) {
+                                        XMLValidator validator = beans.getBean(XMLValidator.class, is, validationType);
+                                        TAR report = validator.validateAll();
+                                        reports.add(new FileReport(part.getFileName(), report));
+                                        logger.info("Processed message ["+message.getSubject()+"], file ["+part.getFileName()+"]");
+                                    }
+                                } else {
+                                    logger.info("Ignoring file ["+part.getFileName()+"] of ["+message.getSubject()+"]");
+                                }
                             }
-                        }
-                        if (reports.isEmpty()) {
-                            logger.info("No reports to send for ["+message.getSubject()+"]");
+                            if (reports.isEmpty()) {
+                                String msg = "No reports to send for ["+message.getSubject()+"]";
+                                messageAdditionalText.append(msg);
+                                logger.info(msg);
+                            }
                         } else {
-                            logger.info("Sending email response for ["+message.getSubject()+"]");
-                            sendEmail(message, reports);
+                            String msg = "Skipping message ["+message.getSubject()+"] as non-multipart";
+                            messageAdditionalText.append(msg);
+                            logger.info(msg);
+                        }
+                    } catch (Exception e) {
+                        // Send error response to sender.
+                        messageAdditionalText.append("Failed to process message ["+message.getSubject()+"]: "+e.getMessage()+"\n");
+                        e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
+                    } finally {
+                        logger.info("Sending email response for ["+message.getSubject()+"]");
+                        try {
+                            sendEmail(message, reports, messageAdditionalText.toString());
+                        } catch(MessagingException e) {
+                            logger.error("Failed to send email response", e);
+                        } finally {
                             message.setFlag(Flags.Flag.DELETED, true);
                         }
-                    } else {
-                        logger.info("Skipping message ["+message.getSubject()+"] as non-multipart");
                     }
                 } catch (MessagingException e) {
                     logger.error("Failed to read email messages", e);
@@ -126,7 +147,28 @@ public class MailHandler {
         logger.info("Checking emails completed.");
     }
 
-    public void sendEmail(Message inputMessage, Collection<FileReport> reports) {
+    private String getValidationType(String fileName) {
+        /*
+         The validation type is determined from the file name's prefix. The format of the filename
+         is as follows: [VALIDATION_TYPE].[NAME].[EXT]
+         If wanting to target validation type "abc" the file name would e.g. be "abc.originalName.xml".
+         If there is only one type of validation supported then the prefix can be omitted.
+         */
+        String validationType;
+        if (config.hasMultipleValidationTypes()) {
+            String prefix = fileName.substring(0, fileName.indexOf('.'));
+            if (config.getType().contains(prefix)) {
+                validationType = prefix;
+            } else {
+                throw new IllegalStateException("Validation type ["+prefix+"] determined for file ["+fileName+"] is not supported");
+            }
+        } else {
+            validationType = config.getType().get(0);
+        }
+        return validationType;
+    }
+
+    public void sendEmail(Message inputMessage, Collection<FileReport> reports, String messageAdditionalText) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         List<String> idsToDelete = new ArrayList<>();
         try {
@@ -136,6 +178,9 @@ public class MailHandler {
             helper.setFrom(config.getMailFrom());
             helper.setSubject("Validation report ["+inputMessage.getSubject()+"]");
             StringBuilder sb = new StringBuilder();
+            if (!StringUtils.isBlank(messageAdditionalText)) {
+                sb.append(messageAdditionalText).append("\n\n");
+            }
             for (FileReport report: reports) {
                 String fileID = UUID.randomUUID().toString();
                 fileController.saveReport(report.getReport(), fileID);
@@ -147,6 +192,7 @@ public class MailHandler {
             logger.info("Email sent to ["+to+"] for ["+inputMessage.getSubject()+"]");
         } catch (MessagingException e) {
             logger.error("Failed to send email message", e);
+            throw e;
         }
         if (idsToDelete != null) {
             idsToDelete.parallelStream().forEach(id -> fileController.deleteReport(id));

@@ -67,7 +67,7 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
         response.getModule().getMetadata().setName(config.getWebServiceId());
         response.getModule().getMetadata().setVersion("1.0.0");
         response.getModule().setInputs(new TypedParameters());
-        if (config.getType().size() > 1) {
+        if (config.hasMultipleValidationTypes()) {
             TypedParameter xmlInput =  new TypedParameter();
             xmlInput.setName(INPUT_TYPE);
             xmlInput.setType(DataType.STRING_DATA_TYPE);
@@ -96,7 +96,7 @@ public class ValidationService extends SpringBeanAutowiringSupport implements co
         if (fileInputs.size() > 1) {
             throw new IllegalArgumentException("A single input file is expected");
         }
-        if (config.getType().size() > 1) {
+        if (config.hasMultipleValidationTypes()) {
             List<AnyContent> validationTypeInputs = getTypeInput(validateRequest);
             if (validationTypeInputs.isEmpty()) {
                 throw new IllegalArgumentException("You must provide the type of validation to perform");

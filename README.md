@@ -39,7 +39,11 @@ mvn spring-boot:run
 
 And get the artifact from the `xmlvalidator-war` module.
 
-# Running the web application
+# Running the applications
+
+Both web and standalone versions require Java 8 to run.
+
+## Web application
 
 The application is accessible at:
 
@@ -49,9 +53,21 @@ The application is accessible at:
 The application also accepts a flag `config.path` to point to the exact location of the configuration file to use. This
 can be passed either as a system property or be set as an environment variable.
 
-# Standalone validator
+## Standalone
 
 The standalone mode loads the validation resources from the jar file produced from the the resources' module that is
 copied as an entry to the standalone jar's contents. Because of this however, the standalone version can't be ran from
 within the IDE. In addition make sure that the validation resources are placed in the xmlvalidator-resources module in
 paths that match the config properties specified in dev-config.properties.
+
+To build the standalone validator issue
+
+```
+mvn clean install
+```
+
+And get `validator.jar` from the jar module's target folder. To run this issue:
+
+```
+java -jar validator.jar
+```

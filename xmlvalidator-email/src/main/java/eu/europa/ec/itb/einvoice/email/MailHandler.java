@@ -83,21 +83,26 @@ public class MailHandler {
                             Multipart content = (Multipart)contentObj;
                             for (int i=0; i < content.getCount(); i++) {
                                 BodyPart part = content.getBodyPart(i);
-                                boolean acceptableFileType = false;
-                                try (InputStream is = part.getInputStream()) {
-                                    acceptableFileType = checkFileType(is);
-                                }
-                                if (acceptableFileType) {
-                                    String validationType = getValidationType(part.getFileName());
-                                    logger.info("Processing file ["+part.getFileName()+"] of ["+message.getSubject()+"] for ["+validationType+"]");
+                                if (!StringUtils.isBlank(part.getFileName())) {
+                                    boolean acceptableFileType = false;
                                     try (InputStream is = part.getInputStream()) {
-                                        XMLValidator validator = beans.getBean(XMLValidator.class, is, validationType);
-                                        TAR report = validator.validateAll();
-                                        reports.add(new FileReport(part.getFileName(), report));
-                                        logger.info("Processed message ["+message.getSubject()+"], file ["+part.getFileName()+"]");
+                                        acceptableFileType = checkFileType(is);
                                     }
-                                } else {
-                                    logger.info("Ignoring file ["+part.getFileName()+"] of ["+message.getSubject()+"]");
+                                    if (acceptableFileType) {
+                                        String validationType = getValidationType(part.getFileName());
+                                        logger.info("Processing file ["+part.getFileName()+"] of ["+message.getSubject()+"] for ["+validationType+"]");
+                                        try (InputStream is = part.getInputStream()) {
+                                            XMLValidator validator = beans.getBean(XMLValidator.class, is, validationType);
+                                            TAR report = validator.validateAll();
+                                            reports.add(new FileReport(part.getFileName(), report));
+                                            logger.info("Processed message ["+message.getSubject()+"], file ["+part.getFileName()+"]");
+                                        } catch (Exception e) {
+                                            messageAdditionalText.append("Failed to validate file ["+part.getFileName()+"]: "+e.getMessage()+"\n");
+                                            logger.warn("Failed to validate file ["+part.getFileName()+"]", e);
+                                        }
+                                    } else {
+                                        logger.info("Ignoring file ["+part.getFileName()+"] of ["+message.getSubject()+"]");
+                                    }
                                 }
                             }
                             if (reports.isEmpty()) {

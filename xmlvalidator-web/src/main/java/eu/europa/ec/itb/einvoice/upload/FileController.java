@@ -3,6 +3,7 @@ package eu.europa.ec.itb.einvoice.upload;
 import com.gitb.tr.ObjectFactory;
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
+import eu.europa.ec.itb.einvoice.util.FileManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
@@ -34,25 +35,17 @@ import java.util.UUID;
 @RestController
 public class FileController {
 
-    private static JAXBContext REPORT_CONTEXT;
-    private static ObjectFactory OBJECT_FACTORY = new ObjectFactory();
     private static Logger logger = LoggerFactory.getLogger(FileController.class);
 
     @Autowired
     ApplicationConfig config;
-
-    static {
-        try {
-            REPORT_CONTEXT = JAXBContext.newInstance(TAR.class);
-        } catch (JAXBException e) {
-            throw new IllegalStateException("Unable to create JAXB context for TAR class", e);
-        }
-    }
+    @Autowired
+    FileManager fileManager;
 
     @RequestMapping(value = "/xml/{id}", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody
     public FileSystemResource getXML(@PathVariable String id) {
-        File reportFile = new File(config.getReportFolder(), getInputFileName(id));
+        File reportFile = new File(config.getReportFolder(), fileManager.getInputFileName(id));
         if (reportFile.exists() && reportFile.isFile()) {
             return new FileSystemResource(reportFile);
         } else {
@@ -63,7 +56,7 @@ public class FileController {
     @RequestMapping(value = "/report/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ResponseBody
     public FileSystemResource getReport(@PathVariable String id, HttpServletResponse response) {
-        File reportFile = new File(config.getReportFolder(), getReportFileName(id));
+        File reportFile = new File(config.getReportFolder(), fileManager.getReportFileName(id));
         if (reportFile.exists() && reportFile.isFile()) {
             if (response != null) {
                 response.setHeader("Content-Disposition", "attachment; filename=report_"+id+".xml");
@@ -81,7 +74,7 @@ public class FileController {
     @RequestMapping(value = "/report/{id}", method = RequestMethod.DELETE)
     @ResponseBody
     public void deleteReport(@PathVariable String id) {
-        File reportFile = new File(config.getReportFolder(), getReportFileName(id));
+        File reportFile = new File(config.getReportFolder(), fileManager.getReportFileName(id));
         if (reportFile.exists() && reportFile.isFile()) {
             FileUtils.deleteQuietly(reportFile);
         }
@@ -90,53 +83,9 @@ public class FileController {
     @RequestMapping(value = "/xml/{id}", method = RequestMethod.DELETE)
     @ResponseBody
     public void deleteXML(@PathVariable String id) {
-        File reportFile = new File(config.getReportFolder(), getInputFileName(id));
+        File reportFile = new File(config.getReportFolder(), fileManager.getInputFileName(id));
         if (reportFile.exists() && reportFile.isFile()) {
             FileUtils.deleteQuietly(reportFile);
-        }
-    }
-
-    public String writeXML(String xml) throws IOException {
-        UUID fileUUID = UUID.randomUUID();
-        String xmlID = fileUUID.toString();
-        File outputFile = new File(config.getReportFolder(), getInputFileName(xmlID));
-        outputFile.getParentFile().mkdirs();
-        FileUtils.writeStringToFile(outputFile, xml);
-        return xmlID;
-    }
-
-    private String getInputFileName(String uuid) {
-        return config.getInputFilePrefix()+uuid+".xml";
-    }
-
-    private String getReportFileName(String uuid) {
-        return config.getReportFilePrefix()+uuid+".xml";
-    }
-
-    public void saveReport(TAR report, String xmlID) {
-        try {
-            Marshaller m = REPORT_CONTEXT.createMarshaller();
-            m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-            File outputFile = new File(config.getReportFolder(), getReportFileName(xmlID));
-            outputFile.getParentFile().mkdirs();
-
-            DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
-            Document document = docBuilderFactory.newDocumentBuilder().newDocument();
-            m.marshal(OBJECT_FACTORY.createTestStepReport(report), document);
-
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "{http://www.gitb.com/core/v1/}value");
-            try (OutputStream fos = new FileOutputStream(outputFile)) {
-                transformer.transform(new DOMSource(document), new StreamResult(fos));
-                fos.flush();
-            } catch(IOException e) {
-                logger.warn("Unable to save XML report", e);
-            }
-
-        } catch (Exception e) {
-            logger.warn("Unable to marshal XML report", e);
         }
     }
 
@@ -165,12 +114,6 @@ public class FileController {
             }
         }
         return handled;
-    }
-
-    boolean checkFileType(InputStream stream) throws IOException {
-        Tika tika = new Tika();
-        String type = tika.detect(stream);
-        return config.getAcceptedMimeTypes().contains(type);
     }
 
     @ResponseStatus(value = HttpStatus.NOT_FOUND)

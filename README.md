@@ -18,8 +18,18 @@ at the level of configuration to accommodate any XML-based validation.
 Update file `/etc/filters/dev-config.properties` with your environment values.
 
  ```
- mvn spring-boot:run
+ mvn install
  ```
+
+To run change first to the required module:
+- `xmlvalidator-war` to run as a web app
+- `xmlvalidator-jar` to run as a command line tool
+
+Then, from this directory do
+
+```
+mvn spring-boot:run
+```
 
 ## For use in a docker container
 
@@ -27,7 +37,9 @@ Update file `/etc/filters/dev-config.properties` with your environment values.
  mvn -Pdocker package
  ```
 
-# Running
+And get the artifact from the `xmlvalidator-war` module.
+
+# Running the web application
 
 The application is accessible at:
 
@@ -36,3 +48,10 @@ The application is accessible at:
 
 The application also accepts a flag `config.path` to point to the exact location of the configuration file to use. This
 can be passed either as a system property or be set as an environment variable.
+
+# Standalone validator
+
+The standalone mode loads the validation resources from the jar file produced from the the resources' module that is
+copied as an entry to the standalone jar's contents. Because of this however, the standalone version can't be ran from
+within the IDE. In addition make sure that the validation resources are placed in the xmlvalidator-resources module in
+paths that match the config properties specified in dev-config.properties.

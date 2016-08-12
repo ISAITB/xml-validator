@@ -9,10 +9,16 @@ public class FileReport {
 
     private final String fileName;
     private final TAR report;
+    private final boolean reportSaved;
 
     public FileReport(String fileName, TAR report) {
+        this(fileName, report, true);
+    }
+
+    public FileReport(String fileName, TAR report, boolean reportSaved) {
         this.fileName = fileName;
         this.report = report;
+        this.reportSaved = reportSaved;
     }
 
     public String getFileName() {
@@ -36,7 +42,9 @@ public class FileReport {
         sb.append("\n- Errors: ").append(report.getCounters().getNrOfErrors());
         sb.append("\n- Warnings: ").append(report.getCounters().getNrOfWarnings());
         sb.append("\n- Messages: ").append(report.getCounters().getNrOfAssertions());
-        sb.append("\n- Detailed report in: [").append(getReportFileName()).append(']');
+        if (reportSaved) {
+            sb.append("\n- Detailed report in: [").append(getReportFileName()).append(']');
+        }
         return sb.toString();
     }
 }

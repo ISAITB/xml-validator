@@ -1,4 +1,4 @@
-package eu.europa.ec.itb.einvoice;
+package eu.europa.ec.itb.einvoice.standalone;
 
 import java.io.File;
 import java.io.InputStream;

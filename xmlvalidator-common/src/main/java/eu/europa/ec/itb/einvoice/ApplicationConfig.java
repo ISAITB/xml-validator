@@ -1,12 +1,9 @@
 package eu.europa.ec.itb.einvoice;
 
-import org.apache.commons.io.FileUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,8 +15,10 @@ import java.util.Set;
 @ConfigurationProperties("validator")
 public class ApplicationConfig {
 
-    private Map<String,File> schematronFolder;
-    private Map<String,File> schemaFile;
+    private boolean standalone = false;
+    private String resourceRoot;
+    private Map<String,String> schematronFile;
+    private Map<String,String> schemaFile;
     private File reportFolder;
     private String inputFilePrefix = "ITB-";
     private long minimumCachedInputFileAge = 600000L;
@@ -43,45 +42,23 @@ public class ApplicationConfig {
     private List<String> type;
     private Map<String, String> typeLabel;
 
-    @PostConstruct
-    public void init() {
-        for (Map.Entry<String, File> fileToCheck: schematronFolder.entrySet()) {
-            if (!fileToCheck.getValue().exists()) {
-                throw new IllegalStateException("Schematron source folder ["+fileToCheck.getValue().getAbsolutePath()+"] for ["+fileToCheck.getKey()+"] is not valid.");
-            }
-        }
-        for (Map.Entry<String, File> fileToCheck: schemaFile.entrySet()) {
-            if (!fileToCheck.getValue().exists()) {
-                throw new IllegalStateException("Schema source folder ["+fileToCheck.getValue().getAbsolutePath()+"] for ["+fileToCheck.getKey()+"] is not valid.");
-            }
-        }
-        if (reportFolder.exists() && reportFolder.isDirectory()) {
-            try {
-                FileUtils.deleteDirectory(reportFolder);
-            } catch (IOException e) {
-                throw new IllegalStateException("Unable to clean up report folder", e);
-            }
-        }
-        reportFolder.mkdir();
-    }
-
     public boolean hasMultipleValidationTypes() {
         return type != null && type.size() > 1;
     }
 
-    public Map<String, File> getSchematronFolder() {
-        return schematronFolder;
+    public Map<String, String> getSchematronFile() {
+        return schematronFile;
     }
 
-    public void setSchematronFolder(Map<String, File> schematronFolder) {
-        this.schematronFolder = schematronFolder;
+    public void setSchematronFile(Map<String, String> schematronFile) {
+        this.schematronFile = schematronFile;
     }
 
-    public Map<String, File> getSchemaFile() {
+    public Map<String, String> getSchemaFile() {
         return schemaFile;
     }
 
-    public void setSchemaFile(Map<String, File> schemaFile) {
+    public void setSchemaFile(Map<String, String> schemaFile) {
         this.schemaFile = schemaFile;
     }
 
@@ -259,5 +236,21 @@ public class ApplicationConfig {
 
     public void setType(List<String> type) {
         this.type = type;
+    }
+
+    public boolean isStandalone() {
+        return standalone;
+    }
+
+    public void setStandalone(boolean standalone) {
+        this.standalone = standalone;
+    }
+
+    public String getResourceRoot() {
+        return resourceRoot;
+    }
+
+    public void setResourceRoot(String resourceRoot) {
+        this.resourceRoot = resourceRoot;
     }
 }

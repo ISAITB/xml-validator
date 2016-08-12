@@ -7,6 +7,7 @@
     <artifactId>xmlvalidator</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <modules>
+        <module>xmlvalidator-resources</module>
         <module>xmlvalidator-common</module>
         <module>xmlvalidator-web</module>
         <module>xmlvalidator-email</module>
@@ -22,6 +23,7 @@
     </parent>
     <properties>
         <java.version>1.8</java.version>
+        <validatorBuild.resourceJar>validator-resources</validatorBuild.resourceJar>
         <!--
         <start-class>eu.europa.ec.itb.einvoice.Application</start-class>
         -->

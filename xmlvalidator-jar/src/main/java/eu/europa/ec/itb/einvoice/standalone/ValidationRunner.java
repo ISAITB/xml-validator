@@ -1,6 +1,8 @@
-package eu.europa.ec.itb.einvoice;
+package eu.europa.ec.itb.einvoice.standalone;
 
 import com.gitb.tr.TAR;
+import eu.europa.ec.itb.einvoice.ApplicationConfig;
+import eu.europa.ec.itb.einvoice.util.FileManager;
 import eu.europa.ec.itb.einvoice.validation.FileReport;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.slf4j.Logger;
@@ -15,30 +17,28 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by simatosc on 12/08/2016.
  */
-@SpringBootApplication
 @Component
 public class ValidationRunner implements ApplicationContextAware {
 
     private static Logger logger = LoggerFactory.getLogger(ValidationRunner.class);
+    private static Logger loggerFeedback = LoggerFactory.getLogger("FEEDBACK");
+    private static Logger loggerFeedbackFile = LoggerFactory.getLogger("VALIDATION_RESULT");
 
     @Autowired
     ApplicationConfig config;
+    @Autowired
+    FileManager fileManager;
     private ApplicationContext applicationContext;
 
-    public static void main(String[] args) {
-        ApplicationContext ctx = SpringApplication.run(ValidationRunner.class, args);
-        ValidationRunner runner = ctx.getBean(ValidationRunner.class);
-        runner.bootstrap(args);
-    }
-
-    private void bootstrap(String[] args) {
-        System.out.println("LALALA");
+    protected void bootstrap(String[] args) {
         // Process input arguments
         List<ValidationInput> inputs = new ArrayList<>();
         boolean noReports = false;
@@ -78,7 +78,8 @@ public class ValidationRunner implements ApplicationContextAware {
                 i++;
             }
         } catch (IllegalArgumentException e) {
-            System.out.println("\nInvalid arguments provided: "+e.getMessage());
+            loggerFeedback.info("\nInvalid arguments provided: "+e.getMessage());
+            inputs.clear();
         }
         if (inputs.isEmpty()) {
             printUsage();
@@ -87,19 +88,25 @@ public class ValidationRunner implements ApplicationContextAware {
             StringBuilder summary = new StringBuilder();
             summary.append("\n");
             for (ValidationInput input: inputs) {
+                loggerFeedback.info("\nValidating ["+input.getInputFile().getAbsolutePath()+"]...");
                 try (FileInputStream stream = new FileInputStream(input.getInputFile())) {
                     XMLValidator validator = applicationContext.getBean(XMLValidator.class, stream, input.getValidationType());
                     TAR report = validator.validateAll();
-                    // TODO save report
-                    FileReport reporter = new FileReport(input.getInputFile().getAbsolutePath(), report);
-                    summary.append(reporter.toString()).append("\n");
+                    FileReport reporter = new FileReport(input.getInputFile().getAbsolutePath(), report, !noReports);
+                    if (!noReports) {
+                        // Serialize report.
+                        fileManager.saveReport(report, new File(reporter.getReportFileName()));
+                    }
+                    summary.append("\n").append(reporter.toString()).append("\n");
                 } catch (Exception e) {
-                    System.out.println("An unexpected error occurred: "+e.getMessage());
-                    // TODO log exception.
+                    loggerFeedback.info("\nAn unexpected error occurred: "+e.getMessage());
+                    logger.error("An unexpected error occurred: "+e.getMessage(), e);
+                    break;
                 }
+                loggerFeedback.info(" Done.\n");
             }
-            logger.info(summary.toString());
-            System.out.println(summary.toString());
+            loggerFeedback.info(summary.toString());
+            loggerFeedbackFile.info(summary.toString());
         }
     }
 

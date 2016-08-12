@@ -3,7 +3,7 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>%msg%n</Pattern>
+            <Pattern>%msg</Pattern>
         </encoder>
     </appender>
 
@@ -18,12 +18,16 @@
         <appender-ref ref="FILE" />
     </logger>
 
-    <logger name="eu.europa.ec" level="WARN" additivity="true">
-        <!--<appender-ref ref="STDOUT" />-->
+    <logger name="FEEDBACK" level="INFO" additivity="true">
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+    <logger name="VALIDATION_RESULT" level="INFO" additivity="true">
         <appender-ref ref="FILE" />
     </logger>
 
-    <root level="WARN">
-        <appender-ref ref="FILE"/>
-    </root>
+    <logger name="eu.europa.ec" level="INFO" additivity="true">
+        <appender-ref ref="FILE" />
+    </logger>
+
 </configuration>

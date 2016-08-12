@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 import org.w3c.dom.Document;
+import org.w3c.dom.ls.LSResourceResolver;
 
 import javax.annotation.PostConstruct;
 import javax.xml.XMLConstants;
@@ -100,8 +101,8 @@ public class XMLValidator implements ApplicationContextAware {
         return new ByteArrayInputStream(inputBytes);
     }
 
-    private XSDResolver getXSDResolver() {
-        return ctx.getBean(XSDResolver.class, validationType);
+    private LSResourceResolver getXSDResolver() {
+        return ctx.getBean(XSDFileResolver.class, validationType);
     }
 
     public TAR validateAgainstSchema() {
@@ -223,38 +224,38 @@ public class XMLValidator implements ApplicationContextAware {
     }
 
     public TAR validateAgainstSchematron() {
-        File schematronFolder = getSchematronFolder();
+        File schematronFile = getSchematronFile();
         List<TAR> reports = new ArrayList<TAR>();
         List<File> schematronFiles = new ArrayList<>();
-        if (schematronFolder.isFile()) {
+        if (schematronFile.isFile()) {
             // We are pointing to a single master schematron file.
-            schematronFiles.add(schematronFolder);
+            schematronFiles.add(schematronFile);
         } else {
             // All schematrons are to be processed.
-            for (File schematronFile: schematronFolder.listFiles()) {
-                if (schematronFile.isFile()) {
-                    schematronFiles.add(schematronFile);
+            for (File aSchematronFile: schematronFile.listFiles()) {
+                if (aSchematronFile.isFile()) {
+                    schematronFiles.add(aSchematronFile);
                 }
             }
         }
-        for (File schematronFile: schematronFiles) {
-            logger.info("Validating against ["+schematronFile.getName()+"]");
-            TAR report = validateSchematron(getInputStreamForValidation(), schematronFile);
-            logReport(report, schematronFile.getName());
+        for (File aSchematronFile: schematronFiles) {
+            logger.info("Validating against ["+aSchematronFile.getName()+"]");
+            TAR report = validateSchematron(getInputStreamForValidation(), aSchematronFile);
+            logReport(report, aSchematronFile.getName());
             reports.add(report);
-            logger.info("Validated against ["+schematronFile.getName()+"]");
+            logger.info("Validated against ["+aSchematronFile.getName()+"]");
         }
         TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
         completeReport(report);
         return report;
     }
 
-    protected File getSchematronFolder() {
-        return config.getSchematronFolder().get(validationType);
+    protected File getSchematronFile() {
+        return new File(config.getResourceRoot()+config.getSchematronFile().get(validationType));
     }
 
     protected File getSchemaFile() {
-        return config.getSchemaFile().get(validationType);
+        return new File(config.getResourceRoot()+config.getSchemaFile().get(validationType));
     }
 
     private void logReport(TAR report, String name) {
@@ -361,7 +362,7 @@ public class XMLValidator implements ApplicationContextAware {
                     throw new IllegalStateException(e);
                 }
             } else {
-                throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid");
+                throw new IllegalStateException("Schematron file ["+schematronFile.getAbsolutePath()+"] is invalid");
             }
         } else {
             // Validate as raw schematron.
@@ -375,14 +376,13 @@ public class XMLValidator implements ApplicationContextAware {
                     throw new IllegalStateException(e);
                 }
             } else {
-                throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid");
+                throw new IllegalStateException("Schematron file ["+schematronFile.getAbsolutePath()+"] is invalid");
             }
         }
         //handle validation report
         SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput, convertXPathExpressions);
         return handler.createReport();
     }
-
 
     @Override
     public void setApplicationContext(ApplicationContext ctx) throws BeansException {

@@ -2,6 +2,7 @@ package eu.europa.ec.itb.einvoice.upload;
 
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
+import eu.europa.ec.itb.einvoice.util.FileManager;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -35,14 +36,13 @@ public class UploadController {
     private static Logger logger = LoggerFactory.getLogger(UploadController.class);
 
     @Autowired
-    FileController fileController;
+    FileManager fileManager;
 
     @Autowired
     BeanFactory beans;
 
     @Autowired
     ApplicationConfig config;
-    private List validationTypes;
 
     @RequestMapping(method = RequestMethod.GET, value = "/upload")
     public ModelAndView upload(Model model) {
@@ -58,7 +58,7 @@ public class UploadController {
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put("validationTypes", getValidationTypes());
         try {
-            if (fileController.checkFileType(file.getInputStream())) {
+            if (fileManager.checkFileType(file.getInputStream())) {
                 stream = file.getInputStream();
             } else {
                 attributes.put("message", "Provided input is not an XML document");
@@ -84,9 +84,9 @@ public class UploadController {
                 attributes.put("fileName", file.getOriginalFilename());
                 // Cache detailed report.
                 try {
-                    String xmlID = fileController.writeXML(report.getContext().getItem().get(0).getValue());
+                    String xmlID = fileManager.writeXML(report.getContext().getItem().get(0).getValue());
                     attributes.put("xmlID", xmlID);
-                    fileController.saveReport(report, xmlID);
+                    fileManager.saveReport(report, xmlID);
                 } catch (IOException e) {
                     logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
                     attributes.put("message", "Error generating detailed report [" + e.getMessage() + "]");

@@ -3,6 +3,7 @@ package eu.europa.ec.itb.einvoice.email;
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.upload.FileController;
+import eu.europa.ec.itb.einvoice.util.FileManager;
 import eu.europa.ec.itb.einvoice.validation.FileReport;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.commons.io.output.StringBuilderWriter;
@@ -37,6 +38,8 @@ public class MailHandler {
     @Autowired
     JavaMailSender mailSender;
 
+    @Autowired
+    FileManager fileManager;
     @Autowired
     FileController fileController;
 
@@ -183,7 +186,7 @@ public class MailHandler {
             }
             for (FileReport report: reports) {
                 String fileID = UUID.randomUUID().toString();
-                fileController.saveReport(report.getReport(), fileID);
+                fileManager.saveReport(report.getReport(), fileID);
                 helper.addAttachment(report.getReportFileName(), fileController.getReport(fileID));
                 sb.append(report.toString()).append("\n\n");
             }

@@ -62,6 +62,8 @@ public class Application {
             resourceRoot += File.separator;
         }
         config.setResourceRoot(resourceRoot);
+        // Set also as report folder for use as a temp file generation target.
+        config.setReportFolder(tempFolder);
     }
 
 }

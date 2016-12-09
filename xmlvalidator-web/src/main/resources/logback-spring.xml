@@ -8,13 +8,13 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>@validator.logPath@/validator.log</file>
+        <file>${LOG_PATH}/validator.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <maxHistory>20</maxHistory>
-            <fileNamePattern>@validator.logPath@/validator.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>10</maxHistory>
+            <fileNamePattern>${LOG_PATH}/validator.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>10MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -24,7 +24,6 @@
     <logger name="eu.europa.ec" level="INFO" additivity="true"/>
 
     <root level="INFO">
-        <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

@@ -54,15 +54,17 @@ public class MailHandler {
     public void receiveEmail() {
         logger.info("Checking emails...");
         Properties props = new Properties();
-        props.setProperty("mail.store.protocol", "imaps");
+        String storeName = "imap";
         if (config.isMailInboundSSLEnable()) {
             props.setProperty("mail.imap.ssl.enable", "true");
+            storeName = "imaps";
         }
+        props.setProperty("mail.store.protocol", storeName);
         Session session = Session.getInstance(props);
         Store store = null;
         Folder folder = null;
         try {
-            store = session.getStore("imaps");
+            store = session.getStore(storeName);
             String username = null;
             String password = null;
             if (config.isMailAuthEnable()) {

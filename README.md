@@ -71,3 +71,10 @@ And get `validator.jar` from the jar module's target folder. To run this issue:
 ```
 java -jar validator.jar
 ```
+
+# Artefact preparation
+
+The XLSs are taken from http://www.peppol.eu/ressource-library/technical-specifications/post-award/mandatory
+The latest version considered is the one updated on 14-11-2016. The schematron files are used by:
+1. Taking the root schematron files and placing them in the top level folder (the paths internally are then adapted).
+2. In each file the following prefix is declared: `<ns prefix="xs" uri="http://www.w3.org/2001/XMLSchema"/>`

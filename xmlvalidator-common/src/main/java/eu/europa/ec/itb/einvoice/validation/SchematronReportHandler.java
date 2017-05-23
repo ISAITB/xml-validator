@@ -73,11 +73,11 @@ public class SchematronReportHandler extends AbstractReportHandler {
         return namespaceContext;
     }
 
-    private TestResultType getErrorLevel(List<SVRLFailedAssert> error) {
-        for (SVRLFailedAssert errorItem: error) {
-            if (errorItem.getFlag() != null) {
-                if (errorItem.getFlag().getNumericLevel() == EErrorLevel.ERROR.getNumericLevel()
-                    || errorItem.getFlag().getNumericLevel() == EErrorLevel.FATAL_ERROR.getNumericLevel()) {
+    private <T extends AbstractSVRLMessage> TestResultType getErrorLevel(List<T> messages) {
+        for (AbstractSVRLMessage item: messages) {
+            if (item.getFlag() != null) {
+                if (item.getFlag().getNumericLevel() == EErrorLevel.ERROR.getNumericLevel()
+                    || item.getFlag().getNumericLevel() == EErrorLevel.FATAL_ERROR.getNumericLevel()) {
                     return TestResultType.FAILURE;
                 }
             }
@@ -88,6 +88,7 @@ public class SchematronReportHandler extends AbstractReportHandler {
     public TAR createReport() {
         if (this.svrlReport != null) {
             List<SVRLFailedAssert> error = SVRLHelper.getAllFailedAssertions(this.svrlReport);
+            this.report.setResult(TestResultType.SUCCESS);
             if (error.size() > 0) {
                 this.report.setResult(getErrorLevel(error));
                 List element = this.traverseSVRLMessages(error, true);
@@ -95,6 +96,9 @@ public class SchematronReportHandler extends AbstractReportHandler {
             }
             List<SVRLSuccessfulReport> element = SVRLHelper.getAllSuccessfulReports(this.svrlReport);
             if (element.size() > 0) {
+                if (this.report.getResult() == TestResultType.SUCCESS) {
+                    this.report.setResult(getErrorLevel(element));
+                }
                 List successReports = this.traverseSVRLMessages(element, false);
                 this.report.getReports().getInfoOrWarningOrError().addAll(successReports);
             }

@@ -238,16 +238,20 @@ public class XMLValidator implements ApplicationContextAware {
                 }
             }
         }
-        for (File aSchematronFile: schematronFiles) {
-            logger.info("Validating against ["+aSchematronFile.getName()+"]");
-            TAR report = validateSchematron(getInputStreamForValidation(), aSchematronFile);
-            logReport(report, aSchematronFile.getName());
-            reports.add(report);
-            logger.info("Validated against ["+aSchematronFile.getName()+"]");
+        if (schematronFiles.isEmpty()) {
+            return null;
+        } else {
+            for (File aSchematronFile: schematronFiles) {
+                logger.info("Validating against ["+aSchematronFile.getName()+"]");
+                TAR report = validateSchematron(getInputStreamForValidation(), aSchematronFile);
+                logReport(report, aSchematronFile.getName());
+                reports.add(report);
+                logger.info("Validated against ["+aSchematronFile.getName()+"]");
+            }
+            TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
+            completeReport(report);
+            return report;
         }
-        TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
-        completeReport(report);
-        return report;
     }
 
     protected File getSchematronFile() {
@@ -280,13 +284,17 @@ public class XMLValidator implements ApplicationContextAware {
 
 
     public TAR validateAll() {
-        TAR overallResult = null;
+        TAR overallResult;
         TAR schemaResult = validateAgainstSchema();
         if (schemaResult.getResult() != TestResultType.SUCCESS) {
             overallResult = schemaResult;
         } else {
             TAR schematronResult = validateAgainstSchematron();
-            overallResult = mergeReports(new TAR[] {schemaResult, schematronResult});
+            if (schematronResult != null) {
+                overallResult = mergeReports(new TAR[] {schemaResult, schematronResult});
+            } else {
+                overallResult = mergeReports(new TAR[] {schemaResult});
+            }
         }
         completeReport(overallResult);
         return overallResult;

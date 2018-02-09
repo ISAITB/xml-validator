@@ -11,6 +11,7 @@ import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
+import org.apache.commons.io.FilenameUtils;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -233,7 +234,7 @@ public class XMLValidator implements ApplicationContextAware {
         } else {
             // All schematrons are to be processed.
             for (File aSchematronFile: schematronFile.listFiles()) {
-                if (aSchematronFile.isFile()) {
+                if (aSchematronFile.isFile() && config.getAcceptedSchematronExtensions().contains(FilenameUtils.getExtension(aSchematronFile.getName().toLowerCase()))) {
                     schematronFiles.add(aSchematronFile);
                 }
             }
@@ -353,7 +354,8 @@ public class XMLValidator implements ApplicationContextAware {
         SchematronOutputType svrlOutput = null;
         ISchematronResource schematron = null;
         boolean convertXPathExpressions = false;
-        if (schematronFile.getName().endsWith("xslt") || schematronFile.getName().endsWith("xsl")) {
+        String schematronFileName = schematronFile.getName().toLowerCase();
+        if (schematronFileName.endsWith("xslt") || schematronFileName.endsWith("xsl")) {
             // Validate as XSLT.
             schematron = SchematronResourceXSLT.fromFile(schematronFile);
             if(schematron.isValidSchematron()) {

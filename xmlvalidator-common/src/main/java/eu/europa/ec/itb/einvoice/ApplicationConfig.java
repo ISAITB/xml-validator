@@ -25,6 +25,7 @@ public class ApplicationConfig {
     private long minimumCachedReportFileAge = 600000L;
     private String reportFilePrefix = "TAR-";
     private Set<String> acceptedMimeTypes;
+    private Set<String> acceptedSchematronExtensions;
     private String mailFrom;
     private boolean mailAuthEnable = true;
     private String mailAuthUsername = "validate.invoice@gmail.com";
@@ -252,5 +253,13 @@ public class ApplicationConfig {
 
     public void setResourceRoot(String resourceRoot) {
         this.resourceRoot = resourceRoot;
+    }
+
+    public Set<String> getAcceptedSchematronExtensions() {
+        return acceptedSchematronExtensions;
+    }
+
+    public void setAcceptedSchematronExtensions(Set<String> acceptedSchematronExtensions) {
+        this.acceptedSchematronExtensions = acceptedSchematronExtensions;
     }
 }

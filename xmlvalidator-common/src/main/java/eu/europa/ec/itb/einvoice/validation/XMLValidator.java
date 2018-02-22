@@ -232,18 +232,21 @@ public class XMLValidator implements ApplicationContextAware {
         File schematronFile = getSchematronFile();
         List<TAR> reports = new ArrayList<TAR>();
         List<File> schematronFiles = new ArrayList<>();
-        if (schematronFile.isFile()) {
-            // We are pointing to a single master schematron file.
-            schematronFiles.add(schematronFile);
-        } else {
-            // All schematrons are to be processed.
-            for (File aSchematronFile: schematronFile.listFiles()) {
-                if (aSchematronFile.isFile() && config.getAcceptedSchematronExtensions().contains(FilenameUtils.getExtension(aSchematronFile.getName().toLowerCase()))) {
-                    schematronFiles.add(aSchematronFile);
+        if (schematronFile != null && schematronFile.exists()) {
+            if (schematronFile.isFile()) {
+                // We are pointing to a single master schematron file.
+                schematronFiles.add(schematronFile);
+            } else {
+                // All schematrons are to be processed.
+                for (File aSchematronFile: schematronFile.listFiles()) {
+                    if (aSchematronFile.isFile() && config.getAcceptedSchematronExtensions().contains(FilenameUtils.getExtension(aSchematronFile.getName().toLowerCase()))) {
+                        schematronFiles.add(aSchematronFile);
+                    }
                 }
             }
         }
         if (schematronFiles.isEmpty()) {
+            logger.info("No schematrons to validate against ["+schematronFile+"]");
             return null;
         } else {
             for (File aSchematronFile: schematronFiles) {

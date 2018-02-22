@@ -106,6 +106,10 @@ public class XMLValidator implements ApplicationContextAware {
         return ctx.getBean(XSDFileResolver.class, validationType);
     }
 
+    private javax.xml.transform.URIResolver getURIResolver(File schematronFile) {
+        return ctx.getBean(URIResolver.class, validationType, schematronFile);
+    }
+
     public TAR validateAgainstSchema() {
         File schemaFile = getSchemaFile();
         List<TAR> reports = new ArrayList<TAR>();
@@ -363,6 +367,7 @@ public class XMLValidator implements ApplicationContextAware {
                     schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);
                     Transformer transformer = TransformerFactory.newInstance().newTransformer(new StreamSource(new FileInputStream(schematronFile)));
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    transformer.setURIResolver(getURIResolver(schematronFile));
                     transformer.transform(new DOMSource(schematronInput), new StreamResult(bos));
                     bos.flush();
                     Unmarshaller jaxbUnmarshaller = SVRL_JAXB_CONTEXT.createUnmarshaller();

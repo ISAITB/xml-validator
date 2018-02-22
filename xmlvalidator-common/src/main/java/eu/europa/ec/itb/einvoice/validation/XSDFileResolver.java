@@ -1,7 +1,6 @@
 package eu.europa.ec.itb.einvoice.validation;
 
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
-import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

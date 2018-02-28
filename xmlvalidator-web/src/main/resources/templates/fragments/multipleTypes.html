@@ -2,19 +2,19 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link rel="stylesheet" href="webjars/font-awesome/4.5.0/css/font-awesome.min.css"/>
-    <link rel="stylesheet" href="webjars/bootstrap/3.3.6/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="css/style.css"/>
-    <script src="webjars/jquery/2.0.3/jquery.min.js"></script>
-    <script src="webjars/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-    <script src="js/busy.js"></script>
-    <script src="js/FileSaver.min.js"></script>
-    <script src="js/itb-upload.js"></script>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.5.0/css/font-awesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/3.3.6/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <script th:src="@{/webjars/jquery/2.0.3/jquery.min.js}"></script>
+    <script th:src="@{/webjars/bootstrap/3.3.6/js/bootstrap.min.js}"></script>
+    <script th:src="@{/js/busy.js}"></script>
+    <script th:src="@{/js/FileSaver.min.js}"></script>
+    <script th:src="@{/js/itb-upload.js}"></script>
 </head>
 <body>
 <div class="container view-section">
     <div class="view-section-input">
-        <form method="POST" enctype="multipart/form-data" action="upload" class="form-horizontal" th:fragment="form">
+        <form method="POST" enctype="multipart/form-data" th:action="@{upload}" class="form-horizontal" th:fragment="form">
             <div class="form-group">
                 <label for="fileToValidate" class="col-sm-2 control-label">File to validate</label>
                 <div class="col-sm-10">

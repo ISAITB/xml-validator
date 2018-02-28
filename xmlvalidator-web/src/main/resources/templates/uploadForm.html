@@ -3,18 +3,18 @@
 <head>
     <title th:text="${title}">Validator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link rel="stylesheet" href="webjars/font-awesome/4.5.0/css/font-awesome.min.css"/>
-    <link rel="stylesheet" href="webjars/bootstrap/3.3.6/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="webjars/codemirror/5.11/lib/codemirror.css"/>
-    <link rel="stylesheet" href="css/style.css"/>
-    <script src="webjars/jquery/2.0.3/jquery.min.js"></script>
-    <script src="webjars/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-    <script src="webjars/codemirror/5.11/lib/codemirror.js"></script>
-    <script src="webjars/codemirror/5.11/mode/xml/xml.js"></script>
-    <script src="js/busy.js"></script>
-    <script src="js/FileSaver.min.js"></script>
-    <script src="js/itb-upload.js"></script>
-    <script th:if="${report}" src="js/itb-results.js"></script>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.5.0/css/font-awesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/3.3.6/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/codemirror/5.11/lib/codemirror.css}"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <script th:src="@{/webjars/jquery/2.0.3/jquery.min.js}"></script>
+    <script th:src="@{/webjars/bootstrap/3.3.6/js/bootstrap.min.js}"></script>
+    <script th:src="@{/webjars/codemirror/5.11/lib/codemirror.js}"></script>
+    <script th:src="@{/webjars/codemirror/5.11/mode/xml/xml.js}"></script>
+    <script th:src="@{/js/busy.js}"></script>
+    <script th:src="@{/js/FileSaver.min.js}"></script>
+    <script th:src="@{/js/itb-upload.js}"></script>
+    <script th:if="${report}" th:src="@{/js/itb-results.js}"></script>
     <script th:if="${report}" th:inline="text">
     /*<![CDATA[*/
         getReportData("[[${xmlID}]]");

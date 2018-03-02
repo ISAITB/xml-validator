@@ -95,7 +95,7 @@ public class ValidationRunner implements ApplicationContextAware {
                     FileReport reporter = new FileReport(input.getInputFile().getAbsolutePath(), report, !noReports);
                     if (!noReports) {
                         // Serialize report.
-                        fileManager.saveReport(report, new File(reporter.getReportFileName()));
+                        fileManager.saveReport(report, new File(reporter.getReportXmlFileName()));
                     }
                     summary.append("\n").append(reporter.toString()).append("\n");
                 } catch (Exception e) {

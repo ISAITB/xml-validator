@@ -194,7 +194,8 @@ public class MailHandler {
             for (FileReport report: reports) {
                 String fileID = UUID.randomUUID().toString();
                 fileManager.saveReport(report.getReport(), fileID);
-                helper.addAttachment(report.getReportFileName(), fileController.getReport(fileID));
+                helper.addAttachment(report.getReportXmlFileName(), fileController.getReportXml(fileID));
+                helper.addAttachment(report.getReportPdfFileName(), fileController.getReportPdf(fileID));
                 sb.append(report.toString()).append("\n\n");
             }
             helper.setText(sb.toString());

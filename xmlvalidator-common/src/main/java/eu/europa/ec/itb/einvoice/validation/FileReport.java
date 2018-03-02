@@ -29,8 +29,12 @@ public class FileReport {
         return report;
     }
 
-    public String getReportFileName() {
+    public String getReportXmlFileName() {
         return fileName.substring(0, fileName.lastIndexOf('.'))+".report.xml";
+    }
+
+    public String getReportPdfFileName() {
+        return fileName.substring(0, fileName.lastIndexOf('.'))+".report.pdf";
     }
 
     @Override
@@ -43,7 +47,7 @@ public class FileReport {
         sb.append("\n- Warnings: ").append(report.getCounters().getNrOfWarnings());
         sb.append("\n- Messages: ").append(report.getCounters().getNrOfAssertions());
         if (reportSaved) {
-            sb.append("\n- Detailed report in: [").append(getReportFileName()).append(']');
+            sb.append("\n- Detailed report in: XML [").append(getReportXmlFileName()).append("] and PDF [").append(getReportPdfFileName()).append("]");
         }
         return sb.toString();
     }

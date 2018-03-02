@@ -1,7 +1,9 @@
 var itbReportData;
-var itbResultReport;
+var itbResultReportXML;
+var itbResultReportPDF;
 var reportLoad = jQuery.Deferred();
-var resultLoad = jQuery.Deferred();
+var resultLoadXML = jQuery.Deferred();
+var resultLoadPDF = jQuery.Deferred();
 function getReportData(xmlID) {
 	getReport(xmlID);
 	getResultReport(xmlID);
@@ -19,22 +21,48 @@ function getReport(xmlID) {
 }
 function getResultReport(xmlID) {
 	$.ajax({
-		url: "report/"+xmlID,
+		url: "report/"+xmlID+"/xml",
 		type: 'GET',
 		success: function(data) {
-			itbResultReport = new Blob([data], { type: 'application/xml' });
-			$.ajax({
-				url: "report/"+xmlID,
-				type: 'DELETE'
-			});
-			resultLoad.resolve();
-			$('#downloadReportButton').prop('disabled', false);
+			itbResultReportXML = new Blob([data], { type: 'application/xml' });
+            $('#downloadReportButtonXML').prop('disabled', false);
+			resultLoadXML.resolve();
 		}
 	});
+
+    var ajax = new XMLHttpRequest();
+    ajax.open("GET", "report/"+xmlID+"/pdf", true);
+    ajax.onreadystatechange = function() {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                itbResultReportPDF = new Blob([this.response], {type: "application/octet-stream"});
+                $('#downloadReportButtonPDF').prop('disabled', false);
+                resultLoadPDF.resolve();
+            }
+        } else if (this.readyState == 2) {
+            if (this.status == 200) {
+                this.responseType = "blob";
+            } else {
+                this.responseType = "text";
+            }
+        }
+    };
+    ajax.send(null);
+	$.when(resultLoadXML, resultLoadPDF).done(function () {
+        $.ajax({
+            url: "report/"+xmlID,
+            type: 'DELETE'
+        });
+	})
 }
-function downloadReport() {
-	resultLoad.done(function() {
-		saveAs(itbResultReport, "report.xml");
+function downloadReportXML() {
+	resultLoadXML.done(function() {
+		saveAs(itbResultReportXML, "report.xml");
+	});
+}
+function downloadReportPDF() {
+	resultLoadPDF.done(function() {
+		saveAs(itbResultReportPDF, "report.pdf");
 	});
 }
 function getLineFromPositionString(positionString) {

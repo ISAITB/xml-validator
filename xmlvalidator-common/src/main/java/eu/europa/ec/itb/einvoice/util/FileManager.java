@@ -57,12 +57,16 @@ public class FileManager {
         return config.getInputFilePrefix()+uuid+".xml";
     }
 
-    public String getReportFileName(String uuid) {
+    public String getReportFileNameXml(String uuid) {
         return config.getReportFilePrefix()+uuid+".xml";
     }
 
+    public String getReportFileNamePdf(String uuid) {
+        return config.getReportFilePrefix()+uuid+".pdf";
+    }
+
     public void saveReport(TAR report, String xmlID) {
-        File outputFile = new File(config.getReportFolder(), getReportFileName(xmlID));
+        File outputFile = new File(config.getReportFolder(), getReportFileNameXml(xmlID));
         saveReport(report, outputFile);
     }
 

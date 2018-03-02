@@ -41,6 +41,8 @@ public class FileController {
     ApplicationConfig config;
     @Autowired
     FileManager fileManager;
+    @Autowired
+    ReportGeneratorBean reportGenerator;
 
     @RequestMapping(value = "/xml/{id}", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody
@@ -53,10 +55,10 @@ public class FileController {
         }
     }
 
-    @RequestMapping(value = "/report/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @RequestMapping(value = "/report/{id}/xml", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ResponseBody
-    public FileSystemResource getReport(@PathVariable String id, HttpServletResponse response) {
-        File reportFile = new File(config.getReportFolder(), fileManager.getReportFileName(id));
+    public FileSystemResource getReportXml(@PathVariable String id, HttpServletResponse response) {
+        File reportFile = new File(config.getReportFolder(), fileManager.getReportFileNameXml(id));
         if (reportFile.exists() && reportFile.isFile()) {
             if (response != null) {
                 response.setHeader("Content-Disposition", "attachment; filename=report_"+id+".xml");
@@ -67,14 +69,41 @@ public class FileController {
         }
     }
 
-    public FileSystemResource getReport(String id) {
-        return this.getReport(id, null);
+    @RequestMapping(value = "/report/{id}/pdf", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ResponseBody
+    public FileSystemResource getReportPdf(@PathVariable String id, HttpServletResponse response) {
+        File reportFile = new File(config.getReportFolder(), fileManager.getReportFileNamePdf(id));
+        if (!(reportFile.exists() && reportFile.isFile())) {
+            // Generate the PDF.
+            File reportFileXml = new File(config.getReportFolder(), fileManager.getReportFileNameXml(id));
+            if (reportFileXml.exists() && reportFileXml.isFile()) {
+                reportGenerator.writeReport(reportFileXml, reportFile);
+            } else {
+                throw new ResourceNotFoundException();
+            }
+        }
+        if (response != null) {
+            response.setHeader("Content-Disposition", "attachment; filename=report_"+id+".pdf");
+        }
+        return new FileSystemResource(reportFile);
+    }
+
+    public FileSystemResource getReportXml(String id) {
+        return this.getReportXml(id, null);
+    }
+
+    public FileSystemResource getReportPdf(String id) {
+        return this.getReportPdf(id, null);
     }
 
     @RequestMapping(value = "/report/{id}", method = RequestMethod.DELETE)
     @ResponseBody
     public void deleteReport(@PathVariable String id) {
-        File reportFile = new File(config.getReportFolder(), fileManager.getReportFileName(id));
+        File reportFile = new File(config.getReportFolder(), fileManager.getReportFileNameXml(id));
+        if (reportFile.exists() && reportFile.isFile()) {
+            FileUtils.deleteQuietly(reportFile);
+        }
+        reportFile = new File(config.getReportFolder(), fileManager.getReportFileNamePdf(id));
         if (reportFile.exists() && reportFile.isFile()) {
             FileUtils.deleteQuietly(reportFile);
         }

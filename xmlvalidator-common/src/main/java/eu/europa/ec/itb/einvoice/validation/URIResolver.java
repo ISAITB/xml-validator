@@ -48,34 +48,43 @@ public class URIResolver implements javax.xml.transform.URIResolver {
 
     @Override
     public Source resolve(String href, String base) throws TransformerException {
-        File baseFile;
-        if (StringUtils.isBlank(base)) {
-            baseFile = getBaseFile();
-        } else {
+        if (StringUtils.isBlank(base) && StringUtils.isBlank(href)) {
             try {
-                URI uri = new URI(base);
-                baseFile = new File(uri);
-                baseFile = baseFile.getParentFile();
-            } catch (URISyntaxException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-        // Lookup file directly under the base.
-        File referencedFile = new File(baseFile, href);
-        if (!referencedFile.exists()) {
-            // Try next to the current XSLT.
-            referencedFile = new File(schematronFile.getParent(), href);
-        }
-        if (referencedFile.exists()) {
-            try {
-                return new StreamSource(new FileInputStream(referencedFile));
+                return new StreamSource(new FileInputStream(schematronFile));
             } catch (FileNotFoundException e) {
+                LOG.error("Base schematron file not found base["+base+"] href["+href+"] file ["+schematronFile+"]");
+                throw new IllegalStateException("Base schematron file not found base["+base+"] href["+href+"] file ["+schematronFile+"]");
+            }
+        } else {
+            File baseFile;
+            if (StringUtils.isBlank(base)) {
+                baseFile = getBaseFile();
+            } else {
+                try {
+                    URI uri = new URI(base);
+                    baseFile = new File(uri);
+                    baseFile = baseFile.getParentFile();
+                } catch (URISyntaxException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+            // Lookup file directly under the base.
+            File referencedFile = new File(baseFile, href);
+            if (!referencedFile.exists()) {
+                // Try next to the current XSLT.
+                referencedFile = new File(schematronFile.getParent(), href);
+            }
+            if (referencedFile.exists()) {
+                try {
+                    return new StreamSource(new FileInputStream(referencedFile));
+                } catch (FileNotFoundException e) {
+                    LOG.error("Referenced file not found base["+base+"] href["+href+"] file ["+referencedFile+"]");
+                    throw new IllegalStateException("Referenced file not found base["+base+"] href["+href+"]");
+                }
+            } else {
                 LOG.error("Referenced file not found base["+base+"] href["+href+"] file ["+referencedFile+"]");
                 throw new IllegalStateException("Referenced file not found base["+base+"] href["+href+"]");
             }
-        } else {
-            LOG.error("Referenced file not found base["+base+"] href["+href+"] file ["+referencedFile+"]");
-            throw new IllegalStateException("Referenced file not found base["+base+"] href["+href+"]");
         }
     }
 }

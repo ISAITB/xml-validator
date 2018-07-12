@@ -65,6 +65,9 @@ public class XMLValidator implements ApplicationContextAware {
     @Value("${validator.includeTestDefinition:true}")
     private boolean includeTestDefinition;
 
+    @Value("${validator.reportsOrdered:false}")
+    private boolean reportsOrdered;
+
     static {
         try {
             SVRL_JAXB_CONTEXT = JAXBContext.newInstance(SchematronOutputType.class);
@@ -404,7 +407,7 @@ public class XMLValidator implements ApplicationContextAware {
             }
         }
         //handle validation report
-        SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput, convertXPathExpressions, includeTestDefinition);
+        SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput, convertXPathExpressions, includeTestDefinition, reportsOrdered);
         return handler.createReport();
     }
 

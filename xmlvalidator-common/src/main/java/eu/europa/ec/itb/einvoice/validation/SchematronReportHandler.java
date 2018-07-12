@@ -24,9 +24,7 @@ import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,8 +41,9 @@ public class SchematronReportHandler extends AbstractReportHandler {
     private Boolean hasDefaultNamespace;
     private boolean convertXPathExpressions;
     private boolean includeTest;
+    private boolean reportsOrdered;
 
-    public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest) {
+    public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered) {
         this.node = node;
         this.svrlReport = svrl;
         this.report.setName("Schematron Validation");
@@ -66,6 +65,7 @@ public class SchematronReportHandler extends AbstractReportHandler {
         this.report.setContext(attachment);
         this.convertXPathExpressions = convertXPathExpressions;
         this.includeTest = includeTest;
+        this.reportsOrdered = reportsOrdered;
     }
 
     private NamespaceContext getNamespaceContext() {
@@ -111,6 +111,9 @@ public class SchematronReportHandler extends AbstractReportHandler {
             error1.setLocation(ValidationConstants.INPUT_XML+":1:0");
             JAXBElement element1 = this.objectFactory.createTestAssertionGroupReportsTypeError(error1);
             this.report.getReports().getInfoOrWarningOrError().add(element1);
+        }
+        if (reportsOrdered) {
+            Collections.sort(this.report.getReports().getInfoOrWarningOrError(), new ReportItemComparator());
         }
         return this.report;
     }
@@ -212,4 +215,33 @@ public class SchematronReportHandler extends AbstractReportHandler {
         return hasDefaultNamespace.booleanValue();
     }
 
+    private static class ReportItemComparator implements Comparator<JAXBElement<TestAssertionReportType>> {
+
+        @Override
+        public int compare(JAXBElement<TestAssertionReportType> o1, JAXBElement<TestAssertionReportType> o2) {
+            if (o1 == null && o1 == null) {
+                return 0;
+            } else if (o1 == null) {
+                return -1;
+            } else if (o2 == null) {
+                return 1;
+            } else {
+                String name1 = o1.getName().getLocalPart();
+                String name2 = o2.getName().getLocalPart();
+                if (name1.equals(name2)) {
+                    return 0;
+                } else if ("error".equals(name1)) {
+                    return -1;
+                } else if ("error".equals(name2)) {
+                    return 1;
+                } else if ("warning".equals(name1)) {
+                    return -1;
+                } else if ("warning".equals(name2)) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+        }
+    }
 }

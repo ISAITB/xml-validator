@@ -42,8 +42,9 @@ public class SchematronReportHandler extends AbstractReportHandler {
     private NamespaceContext namespaceContext;
     private Boolean hasDefaultNamespace;
     private boolean convertXPathExpressions;
+    private boolean includeTest;
 
-    public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions) {
+    public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest) {
         this.node = node;
         this.svrlReport = svrl;
         this.report.setName("Schematron Validation");
@@ -64,6 +65,7 @@ public class SchematronReportHandler extends AbstractReportHandler {
         attachment.getItem().add(schemaAttachment);
         this.report.setContext(attachment);
         this.convertXPathExpressions = convertXPathExpressions;
+        this.includeTest = includeTest;
     }
 
     private NamespaceContext getNamespaceContext() {
@@ -123,7 +125,7 @@ public class SchematronReportHandler extends AbstractReportHandler {
                 error.setDescription(message.getText().trim());
             }
             error.setLocation(ValidationConstants.INPUT_XML+":" + this.getLineNumbeFromXPath(message.getLocation()) + ":0");
-            if (message.getTest() != null) {
+            if (message.getTest() != null && includeTest) {
                 error.setTest(message.getTest().trim());
             }
             int level = message.getFlag().getNumericLevel();

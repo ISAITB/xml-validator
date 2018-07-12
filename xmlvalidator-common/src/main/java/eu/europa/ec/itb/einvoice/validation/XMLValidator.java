@@ -9,6 +9,8 @@ import com.gitb.utils.XMLDateTimeUtils;
 import com.gitb.utils.XMLUtils;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
+import com.helger.schematron.pure.bound.PSBoundSchemaCache;
+import com.helger.schematron.xslt.SchematronResourceSCH;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import org.apache.commons.io.FilenameUtils;
@@ -17,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
@@ -58,6 +61,9 @@ public class XMLValidator implements ApplicationContextAware {
     private static JAXBContext SVRL_JAXB_CONTEXT;
     private String validationType;
     protected ObjectFactory gitbTRObjectFactory = new ObjectFactory();
+
+    @Value("${validator.includeTestDefinition:true}")
+    private boolean includeTestDefinition;
 
     static {
         try {
@@ -398,7 +404,7 @@ public class XMLValidator implements ApplicationContextAware {
             }
         }
         //handle validation report
-        SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput, convertXPathExpressions);
+        SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput, convertXPathExpressions, includeTestDefinition);
         return handler.createReport();
     }
 

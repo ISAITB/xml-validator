@@ -86,7 +86,7 @@
                                 <span style="visibility: hidden" th:text="${item.value.location}" class="item-info-location">XML:0:0</span>
                             </div>
                         </div>
-                        <div class="col-xs-12 report-item-test"><span class="report-item-test-label">Test:</span><span th:text="${item.value.test}">Test</span></div>
+                        <div class="col-xs-12 report-item-test" th:if="${item.value.test != null}"><span class="report-item-test-label">Test:</span><span th:text="${item.value.test}">Test</span></div>
                     </div>
                 </div>
             </div>

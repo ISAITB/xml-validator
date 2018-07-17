@@ -27,7 +27,7 @@
         <dependency>
             <groupId>net.sf.saxon</groupId>
             <artifactId>Saxon-HE</artifactId>
-            <version>9.5.1-6</version>
+            <version>9.8.0-12</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tika</groupId>
@@ -42,7 +42,7 @@
         <dependency>
             <groupId>com.helger</groupId>
             <artifactId>ph-schematron</artifactId>
-            <version>4.0.1</version>
+            <version>5.0.4</version>
         </dependency>
         <dependency>
             <groupId>com.gitb</groupId>

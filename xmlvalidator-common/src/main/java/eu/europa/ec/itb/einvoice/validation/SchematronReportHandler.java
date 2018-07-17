@@ -6,7 +6,7 @@ import com.gitb.tr.*;
 import com.gitb.types.ObjectType;
 import com.gitb.types.SchemaType;
 import com.gitb.validation.common.AbstractReportHandler;
-import com.helger.commons.error.EErrorLevel;
+import com.helger.commons.error.level.EErrorLevel;
 import com.helger.schematron.svrl.AbstractSVRLMessage;
 import com.helger.schematron.svrl.SVRLFailedAssert;
 import com.helger.schematron.svrl.SVRLHelper;
@@ -145,9 +145,13 @@ public class SchematronReportHandler extends AbstractReportHandler {
         return reports;
     }
 
+    private XPathFactory getXPathFactory() {
+        return new net.sf.saxon.xpath.XPathFactoryImpl();
+    }
+
     private String getLineNumbeFromXPath(String xpathExpression) {
         String xpathExpressionConverted = convertToXPathExpression(xpathExpression);
-        XPath xPath = XPathFactory.newInstance().newXPath();
+        XPath xPath = getXPathFactory().newXPath();
         xPath.setNamespaceContext(getNamespaceContext());
         Node node;
         try {

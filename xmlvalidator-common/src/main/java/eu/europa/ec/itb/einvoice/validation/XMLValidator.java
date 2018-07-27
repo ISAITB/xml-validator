@@ -9,11 +9,10 @@ import com.gitb.utils.XMLDateTimeUtils;
 import com.gitb.utils.XMLUtils;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
-import com.helger.schematron.pure.bound.PSBoundSchemaCache;
-import com.helger.schematron.xslt.SchematronResourceSCH;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -150,7 +149,7 @@ public class XMLValidator implements ApplicationContextAware {
         // Create error handler.
         XSDReportHandler handler = new XSDReportHandler();
         // Resolve schema.
-        SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        SchemaFactory schemaFactory = XMLSchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         schemaFactory.setErrorHandler(handler);
         schemaFactory.setResourceResolver(getXSDResolver());
         Schema schema;

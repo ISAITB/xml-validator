@@ -367,33 +367,29 @@ public class XMLValidator implements ApplicationContextAware {
     public TAR validateSchematron(InputStream inputSource, File schematronFile) {
         Document schematronInput = null;
         SchematronOutputType svrlOutput = null;
-        ISchematronResource schematron = null;
         boolean convertXPathExpressions = false;
         String schematronFileName = schematronFile.getName().toLowerCase();
         if (schematronFileName.endsWith("xslt") || schematronFileName.endsWith("xsl")) {
             // Validate as XSLT.
-            schematron = SchematronResourceXSLT.fromFile(schematronFile);
-            if(schematron.isValidSchematron()) {
-                try {
-                    schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);
-                    Transformer transformer = TransformerFactory.newInstance().newTransformer(new StreamSource(new FileInputStream(schematronFile)));
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    transformer.setURIResolver(getURIResolver(schematronFile));
-                    transformer.transform(new DOMSource(schematronInput), new StreamResult(bos));
-                    bos.flush();
-                    Unmarshaller jaxbUnmarshaller = SVRL_JAXB_CONTEXT.createUnmarshaller();
-                    JAXBElement<SchematronOutputType> root = jaxbUnmarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(bos.toByteArray())), SchematronOutputType.class);
-                    svrlOutput = root.getValue();
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
-            } else {
-                throw new IllegalStateException("Schematron file ["+schematronFile.getAbsolutePath()+"] is invalid");
+            try {
+                schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);
+                TransformerFactory factory = TransformerFactory.newInstance();
+                factory.setURIResolver(getURIResolver(schematronFile));
+                Transformer transformer = factory.newTransformer(new StreamSource(new FileInputStream(schematronFile)));
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                transformer.setURIResolver(factory.getURIResolver());
+                transformer.transform(new DOMSource(schematronInput), new StreamResult(bos));
+                bos.flush();
+                Unmarshaller jaxbUnmarshaller = SVRL_JAXB_CONTEXT.createUnmarshaller();
+                JAXBElement<SchematronOutputType> root = jaxbUnmarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(bos.toByteArray())), SchematronOutputType.class);
+                svrlOutput = root.getValue();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
             }
         } else {
             // Validate as raw schematron.
             convertXPathExpressions = true;
-            schematron = SchematronResourcePure.fromFile(schematronFile);
+            ISchematronResource schematron = SchematronResourcePure.fromFile(schematronFile);
             if(schematron.isValidSchematron()) {
                 try {
                     schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);

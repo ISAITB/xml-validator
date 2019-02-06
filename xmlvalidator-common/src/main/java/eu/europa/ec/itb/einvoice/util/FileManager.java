@@ -44,9 +44,9 @@ public class FileManager {
     @Autowired
     ApplicationConfig config;
 
-    public String writeXML(String xml) throws IOException {
+    public String writeXML(String domain, String xml) throws IOException {
         UUID fileUUID = UUID.randomUUID();
-        String xmlID = fileUUID.toString();
+        String xmlID = domain+"_"+fileUUID.toString();
         File outputFile = new File(config.getReportFolder(), getInputFileName(xmlID));
         outputFile.getParentFile().mkdirs();
         FileUtils.writeStringToFile(outputFile, xml);

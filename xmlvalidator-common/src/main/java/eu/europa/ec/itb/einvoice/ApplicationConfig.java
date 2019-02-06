@@ -1,12 +1,16 @@
 package eu.europa.ec.itb.einvoice;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
-import java.util.List;
-import java.util.Map;
+import java.io.FileFilter;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by simatosc on 21/03/2016.
@@ -15,10 +19,10 @@ import java.util.Set;
 @ConfigurationProperties("validator")
 public class ApplicationConfig {
 
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationConfig.class);
+
     private boolean standalone = false;
     private String resourceRoot;
-    private Map<String,String> schematronFile;
-    private Map<String,String> schemaFile;
     private File reportFolder;
     private String inputFilePrefix = "ITB-";
     private long minimumCachedInputFileAge = 600000L;
@@ -26,42 +30,7 @@ public class ApplicationConfig {
     private String reportFilePrefix = "TAR-";
     private Set<String> acceptedMimeTypes;
     private Set<String> acceptedSchematronExtensions;
-    private String mailFrom;
-    private boolean mailAuthEnable = true;
-    private String mailAuthUsername = "validate.invoice@gmail.com";
-    private String mailAuthPassword = "Admin12345_";
-    private String mailOutboundHost = "smtp.gmail.com";
-    private int mailOutboundPort = 465;
-    private boolean mailOutboundSSLEnable = true;
-    private String mailInboundHost = "imap.gmail.com";
-    private int mailInboundPort = 993;
-    private boolean mailInboundSSLEnable = true;
-    private String mailInboundFolder = "INBOX";
-    private String uploadTitle = "Validator";
-    private String webServiceId = "UBLValidationService";
-    private Map<String, String> webServiceDescription;
-    private List<String> type;
-    private Map<String, String> typeLabel;
-
-    public boolean hasMultipleValidationTypes() {
-        return type != null && type.size() > 1;
-    }
-
-    public Map<String, String> getSchematronFile() {
-        return schematronFile;
-    }
-
-    public void setSchematronFile(Map<String, String> schematronFile) {
-        this.schematronFile = schematronFile;
-    }
-
-    public Map<String, String> getSchemaFile() {
-        return schemaFile;
-    }
-
-    public void setSchemaFile(Map<String, String> schemaFile) {
-        this.schemaFile = schemaFile;
-    }
+    private Set<String> domain;
 
     public File getReportFolder() {
         return reportFolder;
@@ -111,134 +80,6 @@ public class ApplicationConfig {
         this.acceptedMimeTypes = acceptedMimeTypes;
     }
 
-    public String getMailFrom() {
-        return mailFrom;
-    }
-
-    public void setMailFrom(String mailFrom) {
-        this.mailFrom = mailFrom;
-    }
-
-    public boolean isMailAuthEnable() {
-        return mailAuthEnable;
-    }
-
-    public void setMailAuthEnable(boolean mailAuthEnable) {
-        this.mailAuthEnable = mailAuthEnable;
-    }
-
-    public String getMailAuthUsername() {
-        return mailAuthUsername;
-    }
-
-    public void setMailAuthUsername(String mailAuthUsername) {
-        this.mailAuthUsername = mailAuthUsername;
-    }
-
-    public String getMailAuthPassword() {
-        return mailAuthPassword;
-    }
-
-    public void setMailAuthPassword(String mailAuthPassword) {
-        this.mailAuthPassword = mailAuthPassword;
-    }
-
-    public String getMailOutboundHost() {
-        return mailOutboundHost;
-    }
-
-    public void setMailOutboundHost(String mailOutboundHost) {
-        this.mailOutboundHost = mailOutboundHost;
-    }
-
-    public int getMailOutboundPort() {
-        return mailOutboundPort;
-    }
-
-    public void setMailOutboundPort(int mailOutboundPort) {
-        this.mailOutboundPort = mailOutboundPort;
-    }
-
-    public boolean isMailOutboundSSLEnable() {
-        return mailOutboundSSLEnable;
-    }
-
-    public void setMailOutboundSSLEnable(boolean mailOutboundSSLEnable) {
-        this.mailOutboundSSLEnable = mailOutboundSSLEnable;
-    }
-
-    public String getMailInboundHost() {
-        return mailInboundHost;
-    }
-
-    public void setMailInboundHost(String mailInboundHost) {
-        this.mailInboundHost = mailInboundHost;
-    }
-
-    public int getMailInboundPort() {
-        return mailInboundPort;
-    }
-
-    public void setMailInboundPort(int mailInboundPort) {
-        this.mailInboundPort = mailInboundPort;
-    }
-
-    public boolean isMailInboundSSLEnable() {
-        return mailInboundSSLEnable;
-    }
-
-    public void setMailInboundSSLEnable(boolean mailInboundSSLEnable) {
-        this.mailInboundSSLEnable = mailInboundSSLEnable;
-    }
-
-    public String getMailInboundFolder() {
-        return mailInboundFolder;
-    }
-
-    public void setMailInboundFolder(String mailInboundFolder) {
-        this.mailInboundFolder = mailInboundFolder;
-    }
-
-    public String getUploadTitle() {
-        return uploadTitle;
-    }
-
-    public void setUploadTitle(String uploadTitle) {
-        this.uploadTitle = uploadTitle;
-    }
-
-    public String getWebServiceId() {
-        return webServiceId;
-    }
-
-    public void setWebServiceId(String webServiceId) {
-        this.webServiceId = webServiceId;
-    }
-
-    public Map<String, String> getWebServiceDescription() {
-        return webServiceDescription;
-    }
-
-    public void setWebServiceDescription(Map<String, String> webServiceDescription) {
-        this.webServiceDescription = webServiceDescription;
-    }
-
-    public Map<String, String> getTypeLabel() {
-        return typeLabel;
-    }
-
-    public List<String> getType() {
-        return type;
-    }
-
-    public void setTypeLabel(Map<String, String> typeLabel) {
-        this.typeLabel = typeLabel;
-    }
-
-    public void setType(List<String> type) {
-        this.type = type;
-    }
-
     public boolean isStandalone() {
         return standalone;
     }
@@ -261,5 +102,30 @@ public class ApplicationConfig {
 
     public void setAcceptedSchematronExtensions(Set<String> acceptedSchematronExtensions) {
         this.acceptedSchematronExtensions = acceptedSchematronExtensions;
+    }
+
+    public Set<String> getDomain() {
+        return domain;
+    }
+
+    public void setDomain(Set<String> domain) {
+        this.domain = domain;
+    }
+
+    @PostConstruct
+    public void init() {
+        if (domain == null || domain.isEmpty()) {
+            File[] directories = new File(resourceRoot).listFiles(new FileFilter() {
+                @Override
+                public boolean accept(File file) {
+                    return file.isDirectory();
+                }
+            });
+            if (directories == null || directories.length == 0) {
+                throw new IllegalStateException("The resource root directory ["+resourceRoot+"] is empty");
+            }
+            domain = Arrays.stream(directories).map(File::getName).collect(Collectors.toSet());
+        }
+        logger.info("Loaded validation domains: "+domain);
     }
 }

@@ -1,6 +1,7 @@
 package eu.europa.ec.itb.einvoice.validation;
 
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
+import eu.europa.ec.itb.einvoice.DomainConfig;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,25 +17,28 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 
 @Component
 @Scope("prototype")
 public class URIResolver implements javax.xml.transform.URIResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(URIResolver.class);
-    private String validationType;
-    private File schematronFile;
+    private final DomainConfig domainConfig;
+    private final String validationType;
+    private final File schematronFile;
 
-    public URIResolver(String validationType, File schematronFile) {
+    public URIResolver(String validationType, File schematronFile, DomainConfig domainConfig) {
         this.validationType = validationType;
         this.schematronFile = schematronFile;
+        this.domainConfig = domainConfig;
     }
 
     @Autowired
     ApplicationConfig config;
 
     private File getBaseFile() {
-        File baseFile = new File(config.getResourceRoot()+config.getSchematronFile().get(validationType));
+        File baseFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronFile().get(validationType)).toFile();
         if (baseFile.exists()) {
             if (baseFile.isDirectory()) {
                 return baseFile;

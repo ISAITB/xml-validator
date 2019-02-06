@@ -1,6 +1,7 @@
 package eu.europa.ec.itb.einvoice.validation;
 
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
+import eu.europa.ec.itb.einvoice.DomainConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import org.w3c.dom.ls.LSResourceResolver;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 
 /**
  * Created by simatosc on 07/03/2016.
@@ -18,10 +20,12 @@ import java.net.URISyntaxException;
 @Scope("prototype")
 public class XSDFileResolver implements LSResourceResolver {
 
-    private String validationType;
+    private final DomainConfig domainConfig;
+    private final String validationType;
 
-    public XSDFileResolver(String validationType) {
+    public XSDFileResolver(String validationType, DomainConfig domainConfig) {
         this.validationType = validationType;
+        this.domainConfig = domainConfig;
     }
 
     @Autowired
@@ -31,7 +35,7 @@ public class XSDFileResolver implements LSResourceResolver {
     public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {
         File baseURIFile;
         if (baseURI == null) {
-            baseURIFile = new File(config.getResourceRoot()+config.getSchemaFile().get(validationType)).getParentFile();
+            baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile().getParentFile();
         } else {
             try {
                 URI uri = new URI(baseURI);

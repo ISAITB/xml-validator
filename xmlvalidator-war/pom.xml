@@ -31,27 +31,22 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>eu.europa.ec.itb.einvoice</groupId>
             <artifactId>xmlvalidator-common</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>eu.europa.ec.itb.einvoice</groupId>
             <artifactId>xmlvalidator-web</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>eu.europa.ec.itb.einvoice</groupId>
             <artifactId>xmlvalidator-ws</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>eu.europa.ec.itb.einvoice</groupId>
             <artifactId>xmlvalidator-email</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>

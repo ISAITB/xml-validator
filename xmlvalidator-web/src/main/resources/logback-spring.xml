@@ -5,14 +5,14 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>%d{dd/MM/yyyy HH:mm:ss.SSS} [${validatorApp}] %-5level %logger{36} - %msg%n</Pattern>
+            <Pattern>%d{dd/MM/yyyy HH:mm:ss.SSS} [%X{domain}] %-5level %logger{36} - %msg%n</Pattern>
         </encoder>
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/validator.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>%d{dd/MM/yyyy HH:mm:ss.SSS} [${validatorApp}] %-5level %logger{36} - %msg%n</Pattern>
+            <Pattern>%d{dd/MM/yyyy HH:mm:ss.SSS} [%X{domain}] %-5level %logger{36} - %msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <maxHistory>10</maxHistory>

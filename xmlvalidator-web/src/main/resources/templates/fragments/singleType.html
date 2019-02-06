@@ -7,8 +7,8 @@
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
     <script th:src="@{/webjars/jquery/2.0.3/jquery.min.js}"></script>
     <script th:src="@{/webjars/bootstrap/3.3.6/js/bootstrap.min.js}"></script>
-    <script th:src="@{/js/busy.js}"></script>
-    <script th:src="@{/js/FileSaver.min.js}"></script>
+    <script th:src="@{/js/lib/busy.js}"></script>
+    <script th:src="@{/js/lib/FileSaver.min.js}"></script>
     <script th:src="@{/js/itb-upload.js}"></script>
 </head>
 <body>
@@ -19,9 +19,9 @@
                 <div class="input-group-btn">
                     <button class="btn btn-default" type="button" onclick="triggerFileUpload()"><i class="fa fa-folder-open-o"></i></button>
                 </div>
-                <input type="text" id="inputFileName" class="form-control" placeholder="Select file to validate..." onclick="triggerFileUpload()" readonly="readonly"/>
+                <input type="text" id="inputFileName" class="form-control" th:placeholder="${config.label.fileInputPlaceholder}" onclick="triggerFileUpload()" readonly="readonly"/>
                 <div class="input-group-btn">
-                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()">Upload</button>
+                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()" th:text="${config.label.uploadButton}">Upload</button>
                 </div>
             </div>
             <input type="file" id="inputFile" name="file" onchange="fileInputChanged()"/>

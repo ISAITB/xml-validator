@@ -9,8 +9,8 @@ import com.gitb.utils.XMLDateTimeUtils;
 import com.gitb.utils.XMLUtils;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
-import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
+import eu.europa.ec.itb.einvoice.DomainConfig;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
@@ -27,7 +26,6 @@ import org.springframework.util.StreamUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.ls.LSResourceResolver;
 
-import javax.annotation.PostConstruct;
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -46,6 +44,7 @@ import javax.xml.validation.Validator;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,14 +57,16 @@ public class XMLValidator implements ApplicationContextAware {
 
     private static final Logger logger = LoggerFactory.getLogger(XMLValidator.class);
     private static JAXBContext SVRL_JAXB_CONTEXT;
+
+    @Autowired
+    private ApplicationConfig config;
+
+    private InputStream inputToValidate;
+    private byte[] inputBytes;
+    private ApplicationContext ctx;
+    private final DomainConfig domainConfig;
     private String validationType;
-    protected ObjectFactory gitbTRObjectFactory = new ObjectFactory();
-
-    @Value("${validator.includeTestDefinition:true}")
-    private boolean includeTestDefinition;
-
-    @Value("${validator.reportsOrdered:false}")
-    private boolean reportsOrdered;
+    private ObjectFactory gitbTRObjectFactory = new ObjectFactory();
 
     static {
         try {
@@ -75,27 +76,10 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
-    @Autowired
-    private ApplicationConfig config;
-
-    private InputStream inputToValidate;
-    private byte[] inputBytes;
-    private ApplicationContext ctx;
-
-    public XMLValidator(InputStream inputToValidate) {
-        this(inputToValidate, null);
-    }
-
-    public XMLValidator(InputStream inputToValidate, String validationType) {
+    public XMLValidator(InputStream inputToValidate, String validationType, DomainConfig domainConfig) {
         this.inputToValidate = inputToValidate;
         this.validationType = validationType;
-    }
-
-    @PostConstruct
-    public void init() {
-        if (validationType == null) {
-            validationType = config.getType().get(0);
-        }
+        this.domainConfig = domainConfig;
     }
 
     private InputStream getInputStreamForValidation() {
@@ -111,11 +95,11 @@ public class XMLValidator implements ApplicationContextAware {
     }
 
     private LSResourceResolver getXSDResolver() {
-        return ctx.getBean(XSDFileResolver.class, validationType);
+        return ctx.getBean(XSDFileResolver.class, validationType, domainConfig);
     }
 
     private javax.xml.transform.URIResolver getURIResolver(File schematronFile) {
-        return ctx.getBean(URIResolver.class, validationType, schematronFile);
+        return ctx.getBean(URIResolver.class, validationType, schematronFile, domainConfig);
     }
 
     public TAR validateAgainstSchema() {
@@ -246,9 +230,12 @@ public class XMLValidator implements ApplicationContextAware {
                 schematronFiles.add(schematronFile);
             } else {
                 // All schematrons are to be processed.
-                for (File aSchematronFile: schematronFile.listFiles()) {
-                    if (aSchematronFile.isFile() && config.getAcceptedSchematronExtensions().contains(FilenameUtils.getExtension(aSchematronFile.getName().toLowerCase()))) {
-                        schematronFiles.add(aSchematronFile);
+                File[] files = schematronFile.listFiles();
+                if (files != null) {
+                    for (File aSchematronFile: files) {
+                        if (aSchematronFile.isFile() && config.getAcceptedSchematronExtensions().contains(FilenameUtils.getExtension(aSchematronFile.getName().toLowerCase()))) {
+                            schematronFiles.add(aSchematronFile);
+                        }
                     }
                 }
             }
@@ -270,12 +257,12 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
-    protected File getSchematronFile() {
-        return new File(config.getResourceRoot()+config.getSchematronFile().get(validationType));
+    private File getSchematronFile() {
+        return Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronFile().get(validationType)).toFile();
     }
 
-    protected File getSchemaFile() {
-        return new File(config.getResourceRoot()+config.getSchemaFile().get(validationType));
+    private File getSchemaFile() {
+        return Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile();
     }
 
     private void logReport(TAR report, String name) {
@@ -401,8 +388,8 @@ public class XMLValidator implements ApplicationContextAware {
                 throw new IllegalStateException("Schematron file ["+schematronFile.getAbsolutePath()+"] is invalid");
             }
         }
-        //handle validation report
-        SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput, convertXPathExpressions, includeTestDefinition, reportsOrdered);
+        //handle invoice report
+        SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered());
         return handler.createReport();
     }
 

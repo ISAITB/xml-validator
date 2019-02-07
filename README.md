@@ -105,16 +105,20 @@ To use as a standalone application the simplest approach is as follows:
 
 To use as a docker container do the following:
 1. Create a folder `my-app`.
-2. In this folder copy create a folder named `resources`.
-3. Copy in the `resources` folder the validation artefacts and domain configuration property file.
+2. In this folder copy create a folder named e.g. `domain`.
+3. Copy in the `domain` folder the validation artefacts and domain configuration property file.
 4. Create a Dockerfile as follows:
 ```
 FROM isaitb/xml-validator:latest
 
-ENV validator.resourceRoot /validator/resources/
-COPY resources /validator/resources/
+ENV validator.resourceRoot /validator/
+COPY domain /validator/domain/
 ```  
 5. Build the docker image and proceed to use it.
+
+**Important:** The naming of the `domain` folder in the above example is important as it will be used for the 
+request paths for both the web UI (e.g. http://localhost:8080/domain/upload) and also for the web service endpoints
+(e.g. http://localhost:8080/api/domain/validation?wsdl). 
 
 ## Configuration property reference
 

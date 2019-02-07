@@ -84,13 +84,13 @@ public class DomainConfigCache {
                 domainConfig.setMailAuthPassword(config.getString("validator.mailAuthPassword", null));
                 domainConfig.setMailOutboundHost(config.getString("validator.mailOutboundHost", null));
                 domainConfig.setMailOutboundPort(config.getInt("validator.mailOutboundPort", -1));
-                domainConfig.setMailOutboundSSLEnable(config.getBoolean("validator.mailOutboundSSLEnable", true));
+                domainConfig.setMailOutboundSSLEnable(config.getBoolean("validator.mailOutboundSSLEnable", false));
                 domainConfig.setMailInboundHost(config.getString("validator.mailInboundHost", null));
                 domainConfig.setMailInboundPort(config.getInt("validator.mailInboundPort", -1));
-                domainConfig.setMailInboundSSLEnable(config.getBoolean("validator.mailInboundSSLEnable", true));
+                domainConfig.setMailInboundSSLEnable(config.getBoolean("validator.mailInboundSSLEnable", false));
                 domainConfig.setMailInboundFolder(config.getString("validator.mailInboundFolder", "INBOX"));
                 domainConfig.setTypeLabel(parseMap("validator.typeLabel", config, domainConfig.getType()));
-                domainConfig.setWebServiceDescription(parseMap("validator.webServiceDescription", config, domainConfig.getType()));
+                domainConfig.setWebServiceDescription(parseMap("validator.webServiceDescription", config, Arrays.asList("xml", "type")));
                 domainConfig.setSchemaFile(parseMap("validator.schemaFile", config, domainConfig.getType()));
                 domainConfig.setSchematronFile(parseMap("validator.schematronFile", config, domainConfig.getType()));
                 domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));

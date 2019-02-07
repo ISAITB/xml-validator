@@ -3,6 +3,7 @@ package eu.europa.ec.itb.einvoice.upload;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
 import eu.europa.ec.itb.einvoice.DomainConfigCache;
+import eu.europa.ec.itb.einvoice.ValidatorChannel;
 import eu.europa.ec.itb.einvoice.util.FileManager;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.MDC;
@@ -34,7 +35,7 @@ public class FileController {
     @ResponseBody
     public FileSystemResource getXML(@PathVariable String domain, @PathVariable String id) {
         DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
-        if (domainConfig == null) {
+        if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
         MDC.put("domain", domain);
@@ -50,7 +51,7 @@ public class FileController {
     @ResponseBody
     public FileSystemResource getReportXml(@PathVariable String domain, @PathVariable String id, HttpServletResponse response) {
         DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
-        if (domainConfig == null) {
+        if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
         MDC.put("domain", domain);
@@ -69,7 +70,7 @@ public class FileController {
     @ResponseBody
     public FileSystemResource getReportPdf(@PathVariable String domain, @PathVariable String id, HttpServletResponse response) {
         DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
-        if (domainConfig == null) {
+        if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
         MDC.put("domain", domain);
@@ -101,7 +102,7 @@ public class FileController {
     @ResponseBody
     public void deleteReport(@PathVariable String domain, @PathVariable String id) {
         DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
-        if (domainConfig == null) {
+        if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
         MDC.put("domain", domain);
@@ -119,7 +120,7 @@ public class FileController {
     @ResponseBody
     public void deleteXML(@PathVariable String domain, @PathVariable String id) {
         DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
-        if (domainConfig == null) {
+        if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
         MDC.put("domain", domain);

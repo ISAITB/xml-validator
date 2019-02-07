@@ -3,6 +3,7 @@ package eu.europa.ec.itb.einvoice.upload;
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.einvoice.DomainConfig;
 import eu.europa.ec.itb.einvoice.DomainConfigCache;
+import eu.europa.ec.itb.einvoice.ValidatorChannel;
 import eu.europa.ec.itb.einvoice.util.FileManager;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.commons.lang.StringUtils;
@@ -48,12 +49,11 @@ public class UploadController {
     @RequestMapping(method = RequestMethod.GET, value = "/{domain}/upload")
     public ModelAndView upload(@PathVariable("domain") String domain, Model model) {
         DomainConfig config = domainConfigs.getConfigForDomain(domain);
-        if (config == null) {
+        if (config == null || !config.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
         MDC.put("domain", domain);
         Map<String, Object> attributes = new HashMap<String, Object>();
-//        attributes.put("title", config.getUploadTitle());
         attributes.put("config", config);
         attributes.put("validationTypes", getValidationTypes(config));
         return new ModelAndView("uploadForm", attributes);
@@ -62,7 +62,7 @@ public class UploadController {
     @RequestMapping(method = RequestMethod.POST, value = "/{domain}/upload")
     public ModelAndView handleUpload(@PathVariable("domain") String domain, @RequestParam("file") MultipartFile file, @RequestParam(value = "validationType", defaultValue = "") String validationType, RedirectAttributes redirectAttributes) {
         DomainConfig config = domainConfigs.getConfigForDomain(domain);
-        if (config == null) {
+        if (config == null || !config.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
         MDC.put("domain", domain);
@@ -90,7 +90,6 @@ public class UploadController {
             if (stream != null) {
                 XMLValidator validator = beans.getBean(XMLValidator.class, stream, validationType, config);
                 TAR report = validator.validateAll();
-//                attributes.put("title", config.getUploadTitle());
                 attributes.put("config", config);
                 attributes.put("report", report);
                 attributes.put("date", report.getDate().toString());

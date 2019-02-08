@@ -13,12 +13,7 @@ function getReport(xmlID) {
 		itbReportData = data;
 		$.ajax({
 			url: "xml/"+xmlID,
-			type: 'DELETE',
-            beforeSend: function(xhr) {
-                var token = $("meta[name='_csrf']").attr("content");
-                var header = $("meta[name='_csrf_header']").attr("content");
-                xhr.setRequestHeader(header, token);
-            }
+			type: 'DELETE'
 		});
 		reportLoad.resolve();
 		$('#viewInputButton').prop('disabled', false);
@@ -56,12 +51,7 @@ function getResultReport(xmlID) {
 	$.when(resultLoadXML, resultLoadPDF).done(function () {
         $.ajax({
             url: "report/"+xmlID,
-            type: 'DELETE',
-            beforeSend: function(xhr) {
-                var token = $("meta[name='_csrf']").attr("content");
-                var header = $("meta[name='_csrf_header']").attr("content");
-                xhr.setRequestHeader(header, token);
-            }
+            type: 'DELETE'
         });
 	})
 }

@@ -14,6 +14,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        // Disabling as this has issues when running behind a reverse proxy for a stateless app.
+        http.csrf().disable();
     }
 
     @Override

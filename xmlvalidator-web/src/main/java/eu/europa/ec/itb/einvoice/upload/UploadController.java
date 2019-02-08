@@ -1,6 +1,7 @@
 package eu.europa.ec.itb.einvoice.upload;
 
 import com.gitb.tr.TAR;
+import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
 import eu.europa.ec.itb.einvoice.DomainConfigCache;
 import eu.europa.ec.itb.einvoice.ValidatorChannel;
@@ -46,6 +47,9 @@ public class UploadController {
     @Autowired
     DomainConfigCache domainConfigs;
 
+    @Autowired
+    ApplicationConfig appConfig;
+
     @RequestMapping(method = RequestMethod.GET, value = "/{domain}/upload")
     public ModelAndView upload(@PathVariable("domain") String domain, Model model) {
         DomainConfig config = domainConfigs.getConfigForDomain(domain);
@@ -55,6 +59,7 @@ public class UploadController {
         MDC.put("domain", domain);
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put("config", config);
+        attributes.put("appConfig", appConfig);
         attributes.put("validationTypes", getValidationTypes(config));
         return new ModelAndView("uploadForm", attributes);
     }
@@ -91,6 +96,7 @@ public class UploadController {
                 XMLValidator validator = beans.getBean(XMLValidator.class, stream, validationType, config);
                 TAR report = validator.validateAll();
                 attributes.put("config", config);
+                attributes.put("appConfig", appConfig);
                 attributes.put("report", report);
                 attributes.put("date", report.getDate().toString());
                 attributes.put("fileName", file.getOriginalFilename());

@@ -80,11 +80,13 @@ public class XMLValidator implements ApplicationContextAware {
         this.inputToValidate = inputToValidate;
         this.validationType = validationType;
         this.domainConfig = domainConfig;
+        if (validationType == null) {
+            this.validationType = domainConfig.getType().get(0);
+        }
     }
 
     private InputStream getInputStreamForValidation() {
         if (inputBytes == null) {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
             try {
                 inputBytes = StreamUtils.copyToByteArray(inputToValidate);
             } catch (IOException e) {

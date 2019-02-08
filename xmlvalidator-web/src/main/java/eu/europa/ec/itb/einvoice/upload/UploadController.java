@@ -74,6 +74,8 @@ public class UploadController {
         InputStream stream = null;
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put("validationTypes", getValidationTypes(config));
+        attributes.put("config", config);
+        attributes.put("appConfig", appConfig);
         try {
             if (fileManager.checkFileType(file.getInputStream())) {
                 stream = file.getInputStream();
@@ -89,14 +91,12 @@ public class UploadController {
         }
         if (config.hasMultipleValidationTypes() && (validationType == null || !config.getType().contains(validationType))) {
             // A invoice type is required.
-            attributes.put("message", "Provided invoice type is not valid");
+            attributes.put("message", "Provided validation type is not valid");
         }
         try {
             if (stream != null) {
                 XMLValidator validator = beans.getBean(XMLValidator.class, stream, validationType, config);
                 TAR report = validator.validateAll();
-                attributes.put("config", config);
-                attributes.put("appConfig", appConfig);
                 attributes.put("report", report);
                 attributes.put("date", report.getDate().toString());
                 attributes.put("fileName", file.getOriginalFilename());
@@ -111,8 +111,8 @@ public class UploadController {
                 }
             }
         } catch (Exception e) {
-            logger.error("An error occurred during the invoice [" + e.getMessage() + "]", e);
-            attributes.put("message", "An error occurred during the invoice [" + e.getMessage() + "]");
+            logger.error("An error occurred during the validation [" + e.getMessage() + "]", e);
+            attributes.put("message", "An error occurred during the validation [" + e.getMessage() + "]");
         }
         return new ModelAndView("uploadForm", attributes);
     }

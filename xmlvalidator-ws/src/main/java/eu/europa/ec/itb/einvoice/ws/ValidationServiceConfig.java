@@ -52,6 +52,7 @@ public class ValidationServiceConfig {
         for (DomainConfig domainConfig: domainConfigCache.getAllDomainConfigurations()) {
             if (domainConfig.getChannels().contains(ValidatorChannel.WEB_SERVICE)) {
                 EndpointImpl endpoint = new EndpointImpl(cxfBus, applicationContext.getBean(ValidationServiceImpl.class, domainConfig));
+                endpoint.setEndpointName(new QName("http://www.gitb.com/vs/v1/", "ValidationServicePort"));
                 endpoint.setServiceName(new QName("http://www.gitb.com/vs/v1/", "ValidationService"));
                 endpoint.publish("/"+domainConfig.getDomain()+"/validation");
             }

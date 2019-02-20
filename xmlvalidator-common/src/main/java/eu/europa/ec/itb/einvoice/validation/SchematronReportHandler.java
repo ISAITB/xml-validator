@@ -3,14 +3,12 @@ package eu.europa.ec.itb.einvoice.validation;
 import com.gitb.core.AnyContent;
 import com.gitb.core.ValueEmbeddingEnumeration;
 import com.gitb.tr.*;
-import com.gitb.types.ObjectType;
-import com.gitb.types.SchemaType;
-import com.gitb.validation.common.AbstractReportHandler;
 import com.helger.commons.error.level.EErrorLevel;
 import com.helger.schematron.svrl.AbstractSVRLMessage;
 import com.helger.schematron.svrl.SVRLFailedAssert;
 import com.helger.schematron.svrl.SVRLHelper;
 import com.helger.schematron.svrl.SVRLSuccessfulReport;
+import eu.europa.ec.itb.einvoice.util.Utils;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +18,7 @@ import org.w3c.dom.Node;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBElement;
+import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -31,7 +30,8 @@ import java.util.regex.Pattern;
 /**
  * Created by simatosc on 26/02/2016.
  */
-public class SchematronReportHandler extends AbstractReportHandler {
+public class SchematronReportHandler {
+
     private static Pattern ARRAY_PATTERN = Pattern.compile("\\[\\d+\\]");
     private static Pattern DEFAULTNS_PATTERN = Pattern.compile("\\/[\\w]+:?");
     private static final Logger logger = LoggerFactory.getLogger(SchematronReportHandler.class);
@@ -42,10 +42,19 @@ public class SchematronReportHandler extends AbstractReportHandler {
     private boolean convertXPathExpressions;
     private boolean includeTest;
     private boolean reportsOrdered;
+    private TAR report;
+    private ObjectFactory objectFactory = new ObjectFactory();
 
-    public SchematronReportHandler(ObjectType xml, SchemaType sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered) {
+    public SchematronReportHandler(Node xml, Node sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered) {
         this.node = node;
         this.svrlReport = svrl;
+        report = new TAR();
+        report.setResult(TestResultType.SUCCESS);
+        try {
+            report.setDate(Utils.getXMLGregorianCalendarDateTime());
+        } catch (DatatypeConfigurationException e) {
+            throw new IllegalStateException("Exception while creating XMLGregorianCalendar", e);
+        }
         this.report.setName("Schematron Validation");
         this.report.setReports(new TestAssertionGroupReportsType());
         AnyContent attachment = new AnyContent();
@@ -54,13 +63,13 @@ public class SchematronReportHandler extends AbstractReportHandler {
         xmlAttachment.setName("XML");
         xmlAttachment.setType("object");
         xmlAttachment.setEmbeddingMethod(ValueEmbeddingEnumeration.STRING);
-        xmlAttachment.setValue(new String(xml.serializeByDefaultEncoding()));
+        xmlAttachment.setValue(new String(Utils.serialize(xml)));
         attachment.getItem().add(xmlAttachment);
         AnyContent schemaAttachment = new AnyContent();
         schemaAttachment.setName("SCH");
         schemaAttachment.setType("schema");
         schemaAttachment.setEmbeddingMethod(ValueEmbeddingEnumeration.STRING);
-        schemaAttachment.setValue(new String(sch.serializeByDefaultEncoding()));
+        schemaAttachment.setValue(new String(Utils.serialize(sch)));
         attachment.getItem().add(schemaAttachment);
         this.report.setContext(attachment);
         this.convertXPathExpressions = convertXPathExpressions;

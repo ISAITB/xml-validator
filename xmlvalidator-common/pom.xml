@@ -37,10 +37,6 @@
             <artifactId>gitb-types</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.gitb</groupId>
-            <artifactId>gitb-validators</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
         </dependency>

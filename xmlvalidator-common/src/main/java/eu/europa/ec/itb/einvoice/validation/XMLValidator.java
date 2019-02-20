@@ -3,14 +3,11 @@ package eu.europa.ec.itb.einvoice.validation;
 import com.gitb.core.AnyContent;
 import com.gitb.core.ValueEmbeddingEnumeration;
 import com.gitb.tr.*;
-import com.gitb.types.ObjectType;
-import com.gitb.types.SchemaType;
-import com.gitb.utils.XMLDateTimeUtils;
-import com.gitb.utils.XMLUtils;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
+import eu.europa.ec.itb.einvoice.util.Utils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
@@ -181,7 +178,7 @@ public class XMLValidator implements ApplicationContextAware {
         if (report != null) {
             if (report.getDate() == null) {
                 try {
-                    report.setDate(XMLDateTimeUtils.getXMLGregorianCalendarDateTime());
+                    report.setDate(Utils.getXMLGregorianCalendarDateTime());
                 } catch (DatatypeConfigurationException e) {
                     logger.error("Exception while creating XMLGregorianCalendar", e);
                 }
@@ -361,7 +358,7 @@ public class XMLValidator implements ApplicationContextAware {
         if (schematronFileName.endsWith("xslt") || schematronFileName.endsWith("xsl")) {
             // Validate as XSLT.
             try {
-                schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);
+                schematronInput = Utils.readXMLWithLineNumbers(inputSource);
                 TransformerFactory factory = TransformerFactory.newInstance();
                 factory.setURIResolver(getURIResolver(schematronFile));
                 Transformer transformer = factory.newTransformer(new StreamSource(new FileInputStream(schematronFile)));
@@ -381,7 +378,7 @@ public class XMLValidator implements ApplicationContextAware {
             ISchematronResource schematron = SchematronResourcePure.fromFile(schematronFile);
             if(schematron.isValidSchematron()) {
                 try {
-                    schematronInput = XMLUtils.readXMLWithLineNumbers(inputSource);
+                    schematronInput = Utils.readXMLWithLineNumbers(inputSource);
                     svrlOutput = schematron.applySchematronValidationToSVRL(new DOMSource(schematronInput));
                 } catch (Exception e) {
                     throw new IllegalStateException(e);
@@ -391,7 +388,7 @@ public class XMLValidator implements ApplicationContextAware {
             }
         }
         //handle invoice report
-        SchematronReportHandler handler = new SchematronReportHandler(new ObjectType(schematronInput), new SchemaType(), schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered());
+        SchematronReportHandler handler = new SchematronReportHandler(schematronInput, Utils.emptyDocument(), schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered());
         return handler.createReport();
     }
 

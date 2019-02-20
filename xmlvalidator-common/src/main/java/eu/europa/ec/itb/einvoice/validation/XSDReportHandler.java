@@ -1,7 +1,7 @@
 package eu.europa.ec.itb.einvoice.validation;
 
 import com.gitb.tr.*;
-import com.gitb.utils.XMLDateTimeUtils;
+import eu.europa.ec.itb.einvoice.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.ErrorHandler;
@@ -28,7 +28,7 @@ public class XSDReportHandler implements ErrorHandler {
         report.setReports(new TestAssertionGroupReportsType());
         report.setResult(TestResultType.SUCCESS);
         try {
-            report.setDate(XMLDateTimeUtils.getXMLGregorianCalendarDateTime());
+            report.setDate(Utils.getXMLGregorianCalendarDateTime());
         } catch (DatatypeConfigurationException e) {
             throw new IllegalStateException(e);
         }

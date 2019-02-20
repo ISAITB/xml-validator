@@ -2,7 +2,6 @@ package eu.europa.ec.itb.einvoice.ws;
 
 import com.gitb.core.*;
 import com.gitb.tr.TAR;
-import com.gitb.types.DataType;
 import com.gitb.vs.GetModuleDefinitionResponse;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
@@ -19,14 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.support.SpringBeanAutowiringSupport;
-import org.springframework.web.context.support.WebApplicationContextUtils;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import javax.jws.WebParam;
-import javax.jws.WebService;
-import javax.servlet.ServletContext;
 import java.io.*;
 import java.net.Proxy;
 import java.net.ProxySelector;
@@ -68,7 +61,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         if (domainConfig.hasMultipleValidationTypes()) {
             TypedParameter xmlInput =  new TypedParameter();
             xmlInput.setName(ValidationConstants.INPUT_TYPE);
-            xmlInput.setType(DataType.STRING_DATA_TYPE);
+            xmlInput.setType("string");
             xmlInput.setUse(UsageEnumeration.R);
             xmlInput.setKind(ConfigurationType.SIMPLE);
             xmlInput.setDesc(domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_TYPE));
@@ -76,7 +69,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         }
         TypedParameter xmlInput =  new TypedParameter();
         xmlInput.setName(ValidationConstants.INPUT_XML);
-        xmlInput.setType(DataType.OBJECT_DATA_TYPE);
+        xmlInput.setType("object");
         xmlInput.setUse(UsageEnumeration.R);
         xmlInput.setKind(ConfigurationType.SIMPLE);
         xmlInput.setDesc(domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_XML));

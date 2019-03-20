@@ -49,7 +49,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
 
     @Override
     public GetModuleDefinitionResponse getModuleDefinition(@WebParam(name = "GetModuleDefinitionRequest", targetNamespace = "http://www.gitb.com/vs/v1/", partName = "parameters") Void parameters) {
-        MDC.put("domain", domainConfig.getDomain());
+        MDC.put("domain", domainConfig.getDomainName());
         GetModuleDefinitionResponse response = new GetModuleDefinitionResponse();
         response.setModule(new ValidationModule());
         response.getModule().setId(domainConfig.getWebServiceId());
@@ -79,7 +79,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
 
     @Override
     public ValidationResponse validate(@WebParam(name = "ValidateRequest", targetNamespace = "http://www.gitb.com/vs/v1/", partName = "parameters") ValidateRequest validateRequest) {
-        MDC.put("domain", domainConfig.getDomain());
+        MDC.put("domain", domainConfig.getDomainName());
         List<AnyContent> fileInputs = getXMLInput(validateRequest);
         String validationType = null;
         if (fileInputs.isEmpty()) {
@@ -101,7 +101,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
                 throw new IllegalArgumentException("Invalid invoice type provided ["+validationType+"]");
             }
         }
-        String invoiceToValidate = null;
+        String invoiceToValidate;
         try {
             invoiceToValidate = extractContent(fileInputs.get(0)).trim();
         } catch (IOException e) {

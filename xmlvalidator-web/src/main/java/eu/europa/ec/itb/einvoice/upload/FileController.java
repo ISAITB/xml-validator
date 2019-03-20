@@ -34,7 +34,7 @@ public class FileController {
     @RequestMapping(value = "/{domain}/xml/{id}", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody
     public FileSystemResource getXML(@PathVariable String domain, @PathVariable String id) {
-        DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
+        DomainConfig domainConfig = domainConfigCache.getConfigForDomainName(domain);
         if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
@@ -50,7 +50,7 @@ public class FileController {
     @RequestMapping(value = "/{domain}/report/{id}/xml", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody
     public FileSystemResource getReportXml(@PathVariable String domain, @PathVariable String id, HttpServletResponse response) {
-        DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
+        DomainConfig domainConfig = domainConfigCache.getConfigForDomainName(domain);
         if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
@@ -69,7 +69,7 @@ public class FileController {
     @RequestMapping(value = "/{domain}/report/{id}/pdf", method = RequestMethod.GET, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ResponseBody
     public FileSystemResource getReportPdf(@PathVariable String domain, @PathVariable String id, HttpServletResponse response) {
-        DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
+        DomainConfig domainConfig = domainConfigCache.getConfigForDomainName(domain);
         if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
@@ -101,7 +101,7 @@ public class FileController {
     @RequestMapping(value = "/{domain}/report/{id}", method = RequestMethod.DELETE)
     @ResponseBody
     public void deleteReport(@PathVariable String domain, @PathVariable String id) {
-        DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
+        DomainConfig domainConfig = domainConfigCache.getConfigForDomainName(domain);
         if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
@@ -119,7 +119,7 @@ public class FileController {
     @RequestMapping(value = "/{domain}/xml/{id}", method = RequestMethod.DELETE)
     @ResponseBody
     public void deleteXML(@PathVariable String domain, @PathVariable String id) {
-        DomainConfig domainConfig = domainConfigCache.getConfigForDomain(domain);
+        DomainConfig domainConfig = domainConfigCache.getConfigForDomainName(domain);
         if (domainConfig == null || !domainConfig.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }

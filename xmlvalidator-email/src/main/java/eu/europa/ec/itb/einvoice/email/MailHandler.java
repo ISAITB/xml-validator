@@ -59,7 +59,7 @@ public class MailHandler {
         for (DomainConfig domainConfig: domainConfigCache.getAllDomainConfigurations()) {
             if (domainConfig.getChannels().contains(ValidatorChannel.EMAIL)) {
                 mailSenders.put(domainConfig.getDomain(), createJavaMailSender(domainConfig));
-                logger.info("Configured mail service for ["+domainConfig.getDomain()+"]");
+                logger.info("Configured mail service for ["+domainConfig.getDomainName()+"]");
             }
         }
         if (mailSenders.isEmpty()) {
@@ -90,8 +90,8 @@ public class MailHandler {
         for (DomainConfig config: domainConfigCache.getAllDomainConfigurations()) {
             if (config.getChannels().contains(ValidatorChannel.EMAIL)) {
                 try {
-                    MDC.put("domain", config.getDomain());
-                    logger.info("Checking emails for ["+config.getDomain()+"]...");
+                    MDC.put("domain", config.getDomainName());
+                    logger.info("Checking emails for ["+config.getDomainName()+"]...");
                     Properties props = new Properties();
                     String storeName = "imap";
                     if (config.isMailInboundSSLEnable()) {
@@ -193,7 +193,7 @@ public class MailHandler {
                             }
                         }
                     }
-                    logger.info("Checking emails completed for ["+config.getDomain()+"].");
+                    logger.info("Checking emails completed for ["+config.getDomainName()+"].");
                 } finally {
                     MDC.clear();
                 }
@@ -239,8 +239,8 @@ public class MailHandler {
             for (FileReport report: reports) {
                 String fileID = UUID.randomUUID().toString();
                 fileManager.saveReport(report.getReport(), fileID);
-                helper.addAttachment(report.getReportXmlFileName(), fileController.getReportXml(domainConfig.getDomain(), fileID));
-                helper.addAttachment(report.getReportPdfFileName(), fileController.getReportPdf(domainConfig.getDomain(), fileID));
+                helper.addAttachment(report.getReportXmlFileName(), fileController.getReportXml(domainConfig.getDomainName(), fileID));
+                helper.addAttachment(report.getReportPdfFileName(), fileController.getReportPdf(domainConfig.getDomainName(), fileID));
                 sb.append(report.toString()).append("\n\n");
             }
             helper.setText(sb.toString());
@@ -250,7 +250,7 @@ public class MailHandler {
             logger.error("Failed to send email message", e);
             throw e;
         }
-        idsToDelete.parallelStream().forEach(id -> fileController.deleteReport(domainConfig.getDomain(), id));
+        idsToDelete.parallelStream().forEach(id -> fileController.deleteReport(domainConfig.getDomainName(), id));
     }
 
     boolean checkFileType(InputStream is) throws IOException {

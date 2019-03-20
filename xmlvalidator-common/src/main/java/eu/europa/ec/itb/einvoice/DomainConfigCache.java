@@ -30,6 +30,7 @@ public class DomainConfigCache {
     private ConcurrentHashMap<String, DomainConfig> domainConfigs = new ConcurrentHashMap<>();
 
     private ExtensionFilter propertyFilter = new ExtensionFilter(".properties");
+    private DomainConfig undefinedDomainConfig = new DomainConfig(false);
 
     @PostConstruct
     public void init() {
@@ -47,17 +48,20 @@ public class DomainConfigCache {
         return configs.toArray(new DomainConfig[0]);
     }
 
-    public boolean isValidDomain(String domain) {
-        return domain != null && domainConfigs.containsKey(domain);
+    public DomainConfig getConfigForDomainName(String domainName) {
+        DomainConfig config = getConfigForDomain(appConfig.getDomainNameToDomainId().getOrDefault(domainName, ""));
+        if (config == null) {
+            logger.warn("Invalid domain name ["+domainName+"].");
+        }
+        return config;
     }
 
-    public DomainConfig getConfigForDomain(String domain) {
+    private DomainConfig getConfigForDomain(String domain) {
         DomainConfig domainConfig = domainConfigs.get(domain);
         if (domainConfig == null) {
             String[] files = Paths.get(appConfig.getResourceRoot(), domain).toFile().list(propertyFilter);
             if (files == null || files.length == 0) {
-                logger.warn("Invalid domain ["+domain+"].");
-                return null;
+                domainConfig = undefinedDomainConfig;
             } else {
                 CompositeConfiguration config = new CompositeConfiguration();
                 for (String file: files) {
@@ -73,6 +77,7 @@ public class DomainConfigCache {
                 }
                 domainConfig = new DomainConfig();
                 domainConfig.setDomain(domain);
+                domainConfig.setDomainName(appConfig.getDomainIdToDomainName().get(domain));
                 domainConfig.setUploadTitle(config.getString("validator.uploadTitle", "Validator"));
                 domainConfig.setType(Arrays.stream(StringUtils.split(config.getString("validator.type"), ',')).map(String::trim).collect(Collectors.toList()));
                 domainConfig.setChannels(Arrays.stream(StringUtils.split(config.getString("validator.channels", ValidatorChannel.FORM.getName()+","+ValidatorChannel.WEB_SERVICE.getName()), ',')).map(String::trim).map(ValidatorChannel::byName).collect(Collectors.toSet()));
@@ -97,11 +102,15 @@ public class DomainConfigCache {
                 domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
                 domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
                 setLabels(domainConfig, config);
-                domainConfigs.put(domain, domainConfig);
                 logger.info("Loaded configuration for domain ["+domain+"]");
             }
+            domainConfigs.put(domain, domainConfig);
         }
-        return domainConfig;
+        if (domainConfig.isDefined()) {
+            return domainConfig;
+        } else {
+            return null;
+        }
     }
 
     private void setLabels(DomainConfig domainConfig, CompositeConfiguration config) {

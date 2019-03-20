@@ -9,7 +9,9 @@ import java.util.Set;
  */
 public class DomainConfig {
 
+    private boolean isDefined;
     private String domain;
+    private String domainName;
     private String uploadTitle = "Validator";
     private String webServiceId = "UBLValidationService";
     private String reportTitle = "Validation report";
@@ -38,12 +40,28 @@ public class DomainConfig {
 
     private Label label = new Label();
 
+    public DomainConfig() {
+        this(true);
+    }
+
+    public DomainConfig(boolean isDefined) {
+        this.isDefined = isDefined;
+    }
+
+    public boolean isDefined() {
+        return isDefined;
+    }
+
     public String getDomain() {
         return domain;
     }
 
     public void setDomain(String domain) {
         this.domain = domain;
+    }
+
+    public String getDomainName() {
+        return domainName;
     }
 
     public boolean isIncludeTestDefinition() {
@@ -242,6 +260,10 @@ public class DomainConfig {
         this.label = label;
     }
 
+    public void setDomainName(String domainName) {
+        this.domainName = domainName;
+    }
+
     public static class Label {
 
         private String inputSectionTitle;
@@ -434,4 +456,5 @@ public class DomainConfig {
             this.resultValidationTypeLabel = resultValidationTypeLabel;
         }
     }
+
 }

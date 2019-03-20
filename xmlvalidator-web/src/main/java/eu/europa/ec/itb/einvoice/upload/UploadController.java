@@ -52,7 +52,7 @@ public class UploadController {
 
     @RequestMapping(method = RequestMethod.GET, value = "/{domain}/upload")
     public ModelAndView upload(@PathVariable("domain") String domain, Model model) {
-        DomainConfig config = domainConfigs.getConfigForDomain(domain);
+        DomainConfig config = domainConfigs.getConfigForDomainName(domain);
         if (config == null || !config.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
@@ -66,13 +66,13 @@ public class UploadController {
 
     @RequestMapping(method = RequestMethod.POST, value = "/{domain}/upload")
     public ModelAndView handleUpload(@PathVariable("domain") String domain, @RequestParam("file") MultipartFile file, @RequestParam(value = "validationType", defaultValue = "") String validationType, RedirectAttributes redirectAttributes) {
-        DomainConfig config = domainConfigs.getConfigForDomain(domain);
+        DomainConfig config = domainConfigs.getConfigForDomainName(domain);
         if (config == null || !config.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
         MDC.put("domain", domain);
         InputStream stream = null;
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("config", config);
         if (StringUtils.isNotBlank(validationType)) {
@@ -105,7 +105,7 @@ public class UploadController {
                 attributes.put("fileName", file.getOriginalFilename());
                 // Cache detailed report.
                 try {
-                    String xmlID = fileManager.writeXML(config.getDomain(), report.getContext().getItem().get(0).getValue());
+                    String xmlID = fileManager.writeXML(config.getDomainName(), report.getContext().getItem().get(0).getValue());
                     attributes.put("xmlID", xmlID);
                     fileManager.saveReport(report, xmlID);
                 } catch (IOException e) {

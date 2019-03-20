@@ -136,6 +136,7 @@ defined.
 | --- | --- | --- | --- |
 | `validator.resourceRoot` | The root folder under which domain sub-folders will be loaded. | String | - |
 | `validator.domain` | The names of the domain sub-folders to consider. | Comma-separated Strings | - |  
+| `validator.domainName.XYZ` | The name to display for a given domain folder. | String | The folder name is used |  
 | `logging.path` | Logging path. | String | `/validator/logs` |
 | `validator.reportFolder` | Report path. | String | `/validator/reports` |
 | `validator.cleanupPollingRate` | The rate at which the temp reports folder is polled for cleanup (in ms). | Integer | `60000` |

@@ -126,6 +126,7 @@ public class DomainConfigCache {
         domainConfig.getLabel().setResultTestLabel(config.getString("validator.label.resultTestLabel", "Test:"));
         domainConfig.getLabel().setPopupTitle(config.getString("validator.label.popupTitle", "XML content"));
         domainConfig.getLabel().setPopupCloseButton(config.getString("validator.label.popupCloseButton", "Close"));
+        domainConfig.getLabel().setResultValidationTypeLabel(config.getString("validator.label.resultValidationTypeLabel", "Validation type:"));
     }
 
     private Map<String, String> parseMap(String key, CompositeConfiguration config, List<String> types) {

@@ -37,27 +37,31 @@
             <div class="panel-body">
                 <div class="row">
                     <label class="col-xs-2 control-label" th:text="${config.label.resultDateLabel}">Date:</label>
-                    <div class="col-xs-4" th:text="${report.date}">17/12/2016</div>
+                    <div class="col-xs-10" th:text="${report.date}">17/12/2016</div>
                 </div>
                 <div class="row">
                     <label class="col-xs-2 control-label" th:text="${config.label.resultFileNameLabel}">File name:</label>
-                    <div class="col-xs-4" th:text="${fileName}">file.xml</div>
+                    <div class="col-xs-10" th:text="${fileName}">file.xml</div>
+                </div>
+                <div class="row" th:if="${validationTypeLabel}">
+                    <label class="col-xs-2 control-label" th:text="${config.label.resultValidationTypeLabel}">Validation type:</label>
+                    <div class="col-xs-10" th:text="${validationTypeLabel}">Type</div>
                 </div>
                 <div class="row">
                     <label class="col-xs-2 control-label" th:text="${config.label.resultResultLabel}">Result:</label>
-                    <div class="col-xs-4" th:text="${report.result}">Success</div>
+                    <div class="col-xs-10" th:text="${report.result}">Success</div>
                 </div>
                 <div class="row">
                     <label class="col-xs-2 control-label" th:text="${config.label.resultErrorsLabel}">Errors:</label>
-                    <div class="col-xs-4" th:text="${report.counters.nrOfErrors}">0</div>
+                    <div class="col-xs-10" th:text="${report.counters.nrOfErrors}">0</div>
                 </div>
                 <div class="row">
                     <label class="col-xs-2 control-label" th:text="${config.label.resultWarningsLabel}">Warnings:</label>
-                    <div class="col-xs-4" th:text="${report.counters.nrOfWarnings}">0</div>
+                    <div class="col-xs-10" th:text="${report.counters.nrOfWarnings}">0</div>
                 </div>
                 <div class="row">
                     <label class="col-xs-2 control-label" th:text="${config.label.resultMessagesLabel}">Messages:</label>
-                    <div class="col-xs-4" th:text="${report.counters.nrOfAssertions}">0</div>
+                    <div class="col-xs-10" th:text="${report.counters.nrOfAssertions}">0</div>
                 </div>
                 <div class="row overview-button-row">
                     <div class="col-xs-12">

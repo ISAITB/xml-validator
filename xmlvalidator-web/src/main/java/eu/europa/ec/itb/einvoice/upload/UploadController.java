@@ -75,6 +75,9 @@ public class UploadController {
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("config", config);
+        if (StringUtils.isNotBlank(validationType)) {
+            attributes.put("validationTypeLabel", config.getTypeLabel().get(validationType));
+        }
         attributes.put("appConfig", appConfig);
         try {
             if (fileManager.checkFileType(file.getInputStream())) {

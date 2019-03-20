@@ -264,6 +264,7 @@ public class DomainConfig {
         private String resultTestLabel;
         private String popupTitle;
         private String popupCloseButton;
+        private String resultValidationTypeLabel;
 
         public String getInputSectionTitle() {
             return inputSectionTitle;
@@ -425,5 +426,12 @@ public class DomainConfig {
             this.popupCloseButton = popupCloseButton;
         }
 
+        public String getResultValidationTypeLabel() {
+            return resultValidationTypeLabel;
+        }
+
+        public void setResultValidationTypeLabel(String resultValidationTypeLabel) {
+            this.resultValidationTypeLabel = resultValidationTypeLabel;
+        }
     }
 }

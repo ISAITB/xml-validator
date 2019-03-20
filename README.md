@@ -207,3 +207,4 @@ To override labels on the web UI you can use the following properties:
 | `validator.label.resultTestLabel` | Label | String | `Test:`
 | `validator.label.popupTitle` | Label | String | `XML content`
 | `validator.label.popupCloseButton` | Label | String | `Close`
+| `validator.label.resultValidationTypeLabel` | Label | String | `Validation type:`

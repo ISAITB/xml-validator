@@ -1,4 +1,4 @@
-FROM openjdk:8u181-jre
+FROM openjdk:11.0.2-jre
 
 RUN mkdir /validator
 COPY validator.war /validator

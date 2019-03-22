@@ -24,7 +24,7 @@
 <body>
 <div class="container view-section">
     <div class="view-section-input">
-        <h2 class="view-section-title" th:text="${config.label.inputSectionTitle}">Validation input</h2>
+        <h1 class="overall-title" onclick="window.location.href='upload'" th:text="${config.uploadTitle}">Validator</h1>
         <div class="alert alert-danger" th:if="${message}" th:text="${message}">A message</div>
         <div th:replace="${!validationTypes.isEmpty()}? 'fragments/multipleTypes':'fragments/singleType' :: form">Upload form</div>
     </div>

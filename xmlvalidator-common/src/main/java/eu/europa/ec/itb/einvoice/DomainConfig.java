@@ -266,7 +266,6 @@ public class DomainConfig {
 
     public static class Label {
 
-        private String inputSectionTitle;
         private String resultSectionTitle;
         private String fileInputLabel;
         private String fileInputPlaceholder;
@@ -287,14 +286,6 @@ public class DomainConfig {
         private String popupTitle;
         private String popupCloseButton;
         private String resultValidationTypeLabel;
-
-        public String getInputSectionTitle() {
-            return inputSectionTitle;
-        }
-
-        public void setInputSectionTitle(String inputSectionTitle) {
-            this.inputSectionTitle = inputSectionTitle;
-        }
 
         public String getResultSectionTitle() {
             return resultSectionTitle;

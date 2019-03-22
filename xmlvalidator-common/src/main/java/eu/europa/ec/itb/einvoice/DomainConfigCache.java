@@ -115,7 +115,6 @@ public class DomainConfigCache {
 
     private void setLabels(DomainConfig domainConfig, CompositeConfiguration config) {
         // If the required labels ever increase the following code should be transformed into proper resource management.
-        domainConfig.getLabel().setInputSectionTitle(config.getString("validator.label.inputSectionTitle", "Validation input"));
         domainConfig.getLabel().setResultSectionTitle(config.getString("validator.label.resultSectionTitle", "Validation result"));
         domainConfig.getLabel().setFileInputLabel(config.getString("validator.label.fileInputLabel", "File to validate"));
         domainConfig.getLabel().setFileInputPlaceholder(config.getString("validator.label.fileInputPlaceholder", "Select file..."));

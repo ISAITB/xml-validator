@@ -188,7 +188,6 @@ To override labels on the web UI you can use the following properties:
 | --- | --- | --- | --- |
 | `validator.uploadTitle` | Title for the validator web form. | String | `Validator` |
 | `validator.reportTitle` | The title for the produced validation report. | String | `Validation report` |
-| `validator.label.inputSectionTitle` | Label | String | `Validation input`
 | `validator.label.resultSectionTitle` | Label | String | `Validation result`
 | `validator.label.fileInputLabel` | Label | String | `File to validate`
 | `validator.label.fileInputPlaceholder` | Label | String | `Select file...`

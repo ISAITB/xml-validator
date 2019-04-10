@@ -25,6 +25,7 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,14 +92,14 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         if (domainConfig.hasMultipleValidationTypes()) {
             List<AnyContent> validationTypeInputs = getTypeInput(validateRequest);
             if (validationTypeInputs.isEmpty()) {
-                throw new IllegalArgumentException("You must provide the type of invoice to perform");
+                throw new IllegalArgumentException("You must provide the type of validation to perform");
             }
             if (validationTypeInputs.size() > 1) {
-                throw new IllegalArgumentException("A single invoice type is expected");
+                throw new IllegalArgumentException("A single validation type is expected");
             }
             validationType = validationTypeInputs.get(0).getValue();
             if (!domainConfig.getType().contains(validationType)) {
-                throw new IllegalArgumentException("Invalid invoice type provided ["+validationType+"]");
+                throw new IllegalArgumentException("Invalid validation type provided ["+validationType+"]");
             }
         }
         String invoiceToValidate;
@@ -108,12 +109,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
             throw new IllegalArgumentException("Could not read provided input", e);
         }
         XMLValidator validator;
-        try {
-            validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes("UTF-8")), validationType, domainConfig);
-        } catch (UnsupportedEncodingException e) {
-            logger.warn("Unable to decode inout as UTF-8 - using default [{}]", e.getMessage());
-            validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes()), validationType, domainConfig);
-        }
+        validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes(StandardCharsets.UTF_8)), validationType, domainConfig);
         TAR report = validator.validateAll();
         ValidationResponse result = new ValidationResponse();
         result.setReport(report);
@@ -129,7 +125,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
     }
 
     private List<AnyContent> getInputFor(ValidateRequest validateRequest, String name) {
-        List<AnyContent> inputs = new ArrayList<AnyContent>();
+        List<AnyContent> inputs = new ArrayList<>();
         if (validateRequest != null) {
             if (validateRequest.getInput() != null) {
                 for (AnyContent anInput: validateRequest.getInput()) {

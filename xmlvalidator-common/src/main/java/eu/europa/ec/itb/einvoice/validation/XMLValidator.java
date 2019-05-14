@@ -103,29 +103,36 @@ public class XMLValidator implements ApplicationContextAware {
 
     public TAR validateAgainstSchema() {
         File schemaFile = getSchemaFile();
-        List<TAR> reports = new ArrayList<TAR>();
+        List<TAR> reports = new ArrayList<>();
         List<File> schemaFiles = new ArrayList<>();
-        if (schemaFile.isFile()) {
-            // We are pointing to a single master schema file.
-            schemaFiles.add(schemaFile);
-        } else {
-            // All schemas are to be processed.
-            for (File aSchemaFile: schemaFile.listFiles()) {
-                if (aSchemaFile.isFile()) {
-                    schemaFiles.add(aSchemaFile);
+        if (schemaFile != null && schemaFile.exists()) {
+            if (schemaFile.isFile()) {
+                // We are pointing to a single master schema file.
+                schemaFiles.add(schemaFile);
+            } else {
+                // All schemas are to be processed.
+                for (File aSchemaFile: schemaFile.listFiles()) {
+                    if (aSchemaFile.isFile()) {
+                        schemaFiles.add(aSchemaFile);
+                    }
                 }
             }
         }
-        for (File aSchemaFile: schemaFiles) {
-            logger.info("Validating against ["+aSchemaFile.getName()+"]");
-            TAR report = validateSchema(getInputStreamForValidation(), aSchemaFile);
-            logReport(report, aSchemaFile.getName());
-            reports.add(report);
-            logger.info("Validated against ["+aSchemaFile.getName()+"]");
+        if (schemaFiles.isEmpty()) {
+            logger.info("No schemas to validate against [" + schemaFile + "]");
+            return null;
+        } else {
+            for (File aSchemaFile: schemaFiles) {
+                logger.info("Validating against ["+aSchemaFile.getName()+"]");
+                TAR report = validateSchema(getInputStreamForValidation(), aSchemaFile);
+                logReport(report, aSchemaFile.getName());
+                reports.add(report);
+                logger.info("Validated against ["+aSchemaFile.getName()+"]");
+            }
+            TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
+            completeReport(report);
+            return report;
         }
-        TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
-        completeReport(report);
-        return report;
     }
 
     public TAR validateSchema(InputStream inputSource, File schemaFile) {
@@ -159,6 +166,13 @@ public class XMLValidator implements ApplicationContextAware {
             report = createFailureReport();
         }
         completeReport(report);
+        return report;
+    }
+
+    private TAR createEmptyReport() {
+        TAR report = new TAR();
+        report.setReports(new TestAssertionGroupReportsType());
+        report.setResult(TestResultType.SUCCESS);
         return report;
     }
 
@@ -221,7 +235,7 @@ public class XMLValidator implements ApplicationContextAware {
 
     public TAR validateAgainstSchematron() {
         File schematronFile = getSchematronFile();
-        List<TAR> reports = new ArrayList<TAR>();
+        List<TAR> reports = new ArrayList<>();
         List<File> schematronFiles = new ArrayList<>();
         if (schematronFile != null && schematronFile.exists()) {
             if (schematronFile.isFile()) {
@@ -257,11 +271,19 @@ public class XMLValidator implements ApplicationContextAware {
     }
 
     private File getSchematronFile() {
-        return Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronFile().get(validationType)).toFile();
+        File file = null;
+        if (domainConfig.getSchematronFile() != null && domainConfig.getSchematronFile().containsKey(validationType)) {
+            file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronFile().get(validationType)).toFile();
+        }
+        return file;
     }
 
     private File getSchemaFile() {
-        return Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile();
+        File file = null;
+        if (domainConfig.getSchemaFile() != null && domainConfig.getSchemaFile().containsKey(validationType)) {
+            file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile();
+        }
+        return file;
     }
 
     private void logReport(TAR report, String name) {
@@ -288,6 +310,10 @@ public class XMLValidator implements ApplicationContextAware {
     public TAR validateAll() {
         TAR overallResult;
         TAR schemaResult = validateAgainstSchema();
+        if (schemaResult == null) {
+            // No schema.
+            schemaResult = createEmptyReport();
+        }
         if (schemaResult.getResult() != TestResultType.SUCCESS) {
             overallResult = schemaResult;
         } else {

@@ -24,7 +24,11 @@
 <body>
 <div class="container view-section">
     <div class="view-section-input">
-        <h1 class="overall-title" onclick="window.location.href='upload'" th:text="${config.uploadTitle}">Validator</h1>
+        <h1 class="overall-title" onclick="window.location.href='upload'" th:text="${config.uploadTitle}" th:if="${config.htmlBanner==''}">Validator</h1>
+		<div th:if="${config.htmlBanner!=''}">
+			<div onclick="window.location.href='upload'" th:utext="${config.htmlBanner}">Validator</div>
+		</div>
+
         <div class="alert alert-danger" th:if="${message}" th:text="${message}">A message</div>
         <div th:replace="${!validationTypes.isEmpty()}? 'fragments/multipleTypes':'fragments/singleType' :: form">Upload form</div>
     </div>

@@ -21,6 +21,7 @@ public class DomainConfig {
     private Map<String, String> typeLabel;
     private Map<String,String> schematronFile;
     private Map<String,String> schemaFile;
+    private String htmlBanner;
 
     private String mailFrom;
     private boolean mailAuthEnable = true;
@@ -264,7 +265,15 @@ public class DomainConfig {
         this.domainName = domainName;
     }
 
-    public static class Label {
+    public String getHtmlBanner() {
+		return htmlBanner;
+	}
+
+	public void setHtmlBanner(String htmlBanner) {
+		this.htmlBanner = htmlBanner;
+	}
+
+	public static class Label {
 
         private String resultSectionTitle;
         private String fileInputLabel;

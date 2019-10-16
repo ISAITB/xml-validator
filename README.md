@@ -165,6 +165,7 @@ The properties here define how a specific validation domain is configured. They 
 | `validator.includeTestDefinition` | Whether tests should be included in the resulting reports. | Boolean | `true` |
 | `validator.reportsOrdered` | Whether the reports are ordered. | Boolean | `false` |
 | `validator.showAbout` | Whether or not to show the about panel on the web UI. | Boolean | `true` | 
+| `validator.supportMinimalUserInterface` | A minimal UI is available if this is enabled. | Boolean | `false` |
 | `validator.bannerHtml` | Configurable HTML banner replacing the text title. | String | - |
 
 In case the email channel is enabled the following properties need to be provided:

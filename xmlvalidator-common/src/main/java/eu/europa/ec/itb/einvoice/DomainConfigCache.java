@@ -101,6 +101,7 @@ public class DomainConfigCache {
                 domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
                 domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
                 domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
+                domainConfig.setSupportMinimalUserInterface(config.getBoolean("validator.supportMinimalUserInterface", false));
                 domainConfig.setHtmlBanner(config.getString("validator.bannerHtml", ""));
                 setLabels(domainConfig, config);
                 logger.info("Loaded configuration for domain ["+domain+"]");

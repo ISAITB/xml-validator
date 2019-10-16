@@ -1,6 +1,15 @@
 body {
     font-family: "Open Sans", Arial, sans-serif;
+}
+.body-ui {
 	background-color: #234E73;
+}
+.panel-heading-ui{
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+.panel-title-ui {
+	font-weight: bold;
 }
 .view-section {
 	background-color: white;
@@ -8,6 +17,8 @@ body {
 	padding-bottom: 15px;
 	margin-top: 15px;
 	margin-bottom: 15px;
+}
+.view-section-ui{	
 	box-shadow: 5px 5px 5px #0E0E0E;
 }
 .report-item-icon.error-icon {
@@ -111,4 +122,19 @@ body {
     margin-top: 30px;
     margin-bottom: 15px;
     box-shadow: 5px 5px 5px #0E0E0E;
+}
+.remove {
+	display: none;
+}
+.busy-modal {
+    padding-top:15%
+}
+.busy-modal-minimal {
+   position: absolute;
+   top: 40px;
+   bottom: 0;
+   left: 0;
+   z-index: 10040;
+   overflow: auto;
+   overflow-y: auto;
 }

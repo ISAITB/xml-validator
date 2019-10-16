@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * Created by simatosc on 07/03/2016.
  */
@@ -38,6 +40,8 @@ public class UploadController {
 
     private static Logger logger = LoggerFactory.getLogger(UploadController.class);
 
+    public static final String IS_MINIMAL = "isMinimal";
+    
     @Autowired
     FileManager fileManager;
 
@@ -51,8 +55,9 @@ public class UploadController {
     ApplicationConfig appConfig;
 
     @RequestMapping(method = RequestMethod.GET, value = "/{domain}/upload")
-    public ModelAndView upload(@PathVariable("domain") String domain, Model model) {
-        DomainConfig config = domainConfigs.getConfigForDomainName(domain);
+    public ModelAndView upload(@PathVariable("domain") String domain, Model model, HttpServletRequest request) {
+    	setMinimalUIFlag(request, false);
+    	DomainConfig config = domainConfigs.getConfigForDomainName(domain);
         if (config == null || !config.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
         }
@@ -61,11 +66,14 @@ public class UploadController {
         attributes.put("config", config);
         attributes.put("appConfig", appConfig);
         attributes.put("validationTypes", getValidationTypes(config));
+        attributes.put("minimalUI", false);
         return new ModelAndView("uploadForm", attributes);
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/{domain}/upload")
-    public ModelAndView handleUpload(@PathVariable("domain") String domain, @RequestParam("file") MultipartFile file, @RequestParam(value = "validationType", defaultValue = "") String validationType, RedirectAttributes redirectAttributes) {
+    public ModelAndView handleUpload(@PathVariable("domain") String domain, @RequestParam("file") MultipartFile file, @RequestParam(value = "validationType", defaultValue = "") String validationType, RedirectAttributes redirectAttributes,
+    		HttpServletRequest request) {
+		setMinimalUIFlag(request, false);
         DomainConfig config = domainConfigs.getConfigForDomainName(domain);
         if (config == null || !config.getChannels().contains(ValidatorChannel.FORM)) {
             throw new NotFoundException();
@@ -75,6 +83,7 @@ public class UploadController {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("config", config);
+        attributes.put("minimalUI", false);
         if (StringUtils.isNotBlank(validationType)) {
             attributes.put("validationTypeLabel", config.getTypeLabel().get(validationType));
         }
@@ -120,7 +129,44 @@ public class UploadController {
         return new ModelAndView("uploadForm", attributes);
     }
 
-    public List<ValidationType> getValidationTypes(DomainConfig config) {
+    @RequestMapping(method = RequestMethod.GET, value = "/{domain}/uploadm")
+    public ModelAndView uploadm(@PathVariable("domain") String domain, Model model, HttpServletRequest request) {
+		setMinimalUIFlag(request, true);
+
+		DomainConfig config = domainConfigs.getConfigForDomainName(domain);
+        if (config == null || !config.getChannels().contains(ValidatorChannel.FORM)) {
+            throw new NotFoundException();
+        }
+        
+		if(!config.isSupportMinimalUserInterface()) {
+			logger.error("Minimal user interface is not supported in this domain [" + domain + "].");
+			throw new NotFoundException();
+		}
+        
+        MDC.put("domain", domain);
+        Map<String, Object> attributes = new HashMap<String, Object>();
+        attributes.put("config", config);
+        attributes.put("appConfig", appConfig);
+        attributes.put("validationTypes", getValidationTypes(config));
+        attributes.put("minimalUI", true);
+        return new ModelAndView("uploadForm", attributes);
+    }
+    
+
+    @RequestMapping(method = RequestMethod.POST, value = "/{domain}/uploadm")
+    public ModelAndView handleUploadM(@PathVariable("domain") String domain, @RequestParam("file") MultipartFile file, @RequestParam(value = "validationType", defaultValue = "") String validationType, RedirectAttributes redirectAttributes,
+    		HttpServletRequest request) {
+    	
+		setMinimalUIFlag(request, true);
+		ModelAndView mv = handleUpload(domain, file, validationType, redirectAttributes, request);
+				
+		Map<String, Object> attributes = mv.getModel();
+        attributes.put("minimalUI", true);
+
+        return new ModelAndView("uploadForm", attributes);	
+	}
+    
+    private List<ValidationType> getValidationTypes(DomainConfig config) {
         List<ValidationType> types = new ArrayList<>();
         if (config.hasMultipleValidationTypes()) {
             for (String type: config.getType()) {
@@ -129,4 +175,10 @@ public class UploadController {
         }
         return types;
     }
+
+	private void setMinimalUIFlag(HttpServletRequest request, boolean isMinimal) {
+		if (request.getAttribute(IS_MINIMAL) == null) {
+			request.setAttribute(IS_MINIMAL, isMinimal);
+		}
+	}
 }

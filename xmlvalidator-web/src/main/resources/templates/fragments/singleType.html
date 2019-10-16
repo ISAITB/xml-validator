@@ -14,17 +14,27 @@
 <body>
 <div class="container view-section">
     <div class="view-section-input">
-        <form method="POST" enctype="multipart/form-data" th:action="@{upload}" th:fragment="form">
-            <div class="input-group input-group-lg">
-                <div class="input-group-btn">
-                    <button class="btn btn-default" type="button" onclick="triggerFileUpload()"><i class="fa fa-folder-open-o"></i></button>
-                </div>
-                <input type="text" id="inputFileName" class="form-control" th:placeholder="${config.label.fileInputPlaceholder}" onclick="triggerFileUpload()" readonly="readonly"/>
-                <div class="input-group-btn">
-                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()" th:text="${config.label.uploadButton}">Upload</button>
-                </div>
-            </div>
-            <input type="file" id="inputFile" name="file" onchange="fileInputChanged()"/>
+        <form method="POST" enctype="multipart/form-data" th:action="@{${not minimalUI ? 'upload' : 'uploadm'}}" th:fragment="form">
+        	<div th:class="${minimalUI} ? panel-default : ''" th:classappend="${minimalUI} ? panel : ''">	
+        		<div class="panel-heading panel-heading-ui"  th:if="${minimalUI}">
+			        <h1 class="panel-title col-xs-5 report-item panel-title-ui">Validation input</h1>
+	                <div th:align="right">
+	                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()" th:text="${config.label.uploadButton}">Upload</button>
+	                </div>
+			    </div>
+			    <div th:class="${minimalUI} ? panel-body : ''">	  
+		        	<div class="input-group input-group-lg">
+		                <div class="input-group-btn">
+		                    <button class="btn btn-default" type="button" onclick="triggerFileUpload()"><i class="fa fa-folder-open-o"></i></button>
+		                </div>
+		                <input type="text" id="inputFileName" class="form-control" th:placeholder="${config.label.fileInputPlaceholder}" onclick="triggerFileUpload()" readonly="readonly"/>
+		                <div class="input-group-btn" th:if="${not minimalUI}">
+		                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()" th:text="${config.label.uploadButton}">Upload</button>
+		                </div>
+		            </div>
+		            <input type="file" id="inputFile" name="file" onchange="fileInputChanged()"/>
+	    		</div>
+	    	</div>
         </form>
     </div>
 </div>

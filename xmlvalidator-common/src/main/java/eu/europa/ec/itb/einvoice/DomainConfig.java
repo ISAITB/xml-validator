@@ -22,6 +22,7 @@ public class DomainConfig {
     private Map<String,String> schematronFile;
     private Map<String,String> schemaFile;
     private String htmlBanner;
+    private boolean supportMinimalUserInterface;
 
     private String mailFrom;
     private boolean mailAuthEnable = true;
@@ -271,6 +272,14 @@ public class DomainConfig {
 
 	public void setHtmlBanner(String htmlBanner) {
 		this.htmlBanner = htmlBanner;
+	}
+
+	public boolean isSupportMinimalUserInterface() {
+		return supportMinimalUserInterface;
+	}
+
+	public void setSupportMinimalUserInterface(boolean supportMinimalUserInterface) {
+		this.supportMinimalUserInterface = supportMinimalUserInterface;
 	}
 
 	public static class Label {

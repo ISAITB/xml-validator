@@ -304,6 +304,9 @@ public class DomainConfig {
         private String popupTitle;
         private String popupCloseButton;
         private String resultValidationTypeLabel;
+        private String optionContentFile;
+        private String optionContentURI;
+        private String optionContentDirectInput;
 
         public String getResultSectionTitle() {
             return resultSectionTitle;
@@ -463,6 +466,30 @@ public class DomainConfig {
 
         public void setResultValidationTypeLabel(String resultValidationTypeLabel) {
             this.resultValidationTypeLabel = resultValidationTypeLabel;
+        }
+        
+        public String getOptionContentFile() {
+            return optionContentFile;
+        }
+
+        public void setOptionContentFile(String optionContentFile) {
+            this.optionContentFile = optionContentFile;
+        }
+
+        public String getOptionContentURI() {
+            return optionContentURI;
+        }
+
+        public void setOptionContentURI(String optionContentURI) {
+            this.optionContentURI = optionContentURI;
+        }
+
+        public String getOptionContentDirectInput() {
+            return optionContentDirectInput;
+        }
+
+        public void setOptionContentDirectInput(String optionContentDirectInput) {
+            this.optionContentDirectInput = optionContentDirectInput;
         }
     }
 

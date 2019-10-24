@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -41,6 +42,10 @@ public class UploadController {
     private static Logger logger = LoggerFactory.getLogger(UploadController.class);
 
     public static final String IS_MINIMAL = "isMinimal";
+
+    public static final String contentType_file     	= "fileType" ;
+    public static final String contentType_uri     		= "uriType" ;
+    public static final String contentType_string     	= "stringType" ;
     
     @Autowired
     FileManager fileManager;
@@ -67,11 +72,18 @@ public class UploadController {
         attributes.put("appConfig", appConfig);
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("minimalUI", false);
+        attributes.put("contentType", getContentType(config));
         return new ModelAndView("uploadForm", attributes);
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/{domain}/upload")
-    public ModelAndView handleUpload(@PathVariable("domain") String domain, @RequestParam("file") MultipartFile file, @RequestParam(value = "validationType", defaultValue = "") String validationType, RedirectAttributes redirectAttributes,
+    public ModelAndView handleUpload(@PathVariable("domain") String domain, 
+    		@RequestParam("file") MultipartFile file, 
+    		@RequestParam(value = "uri", defaultValue = "") String uri,  
+    		@RequestParam(value = "text-editor", defaultValue = "") String string, 
+    		@RequestParam(value = "validationType", defaultValue = "") String validationType,
+    		@RequestParam(value = "contentType", defaultValue = "") String contentType, 
+    		RedirectAttributes redirectAttributes,
     		HttpServletRequest request) {
 		setMinimalUIFlag(request, false);
         DomainConfig config = domainConfigs.getConfigForDomainName(domain);
@@ -84,13 +96,15 @@ public class UploadController {
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("config", config);
         attributes.put("minimalUI", false);
+        attributes.put("contentType", getContentType(config));
         if (StringUtils.isNotBlank(validationType)) {
             attributes.put("validationTypeLabel", config.getTypeLabel().get(validationType));
         }
         attributes.put("appConfig", appConfig);
         try {
-            if (fileManager.checkFileType(file.getInputStream())) {
-                stream = file.getInputStream();
+        	InputStream fis = getInputFile(contentType, file.getInputStream(), uri, string);
+            if (fileManager.checkFileType(fis)) {
+                stream = fis;
             } else {
                 attributes.put("message", "Provided input is not an XML document");
             }
@@ -111,7 +125,15 @@ public class UploadController {
                 TAR report = validator.validateAll();
                 attributes.put("report", report);
                 attributes.put("date", report.getDate().toString());
-                attributes.put("fileName", file.getOriginalFilename());
+                
+                if(contentType.equals(contentType_file)) {
+					attributes.put("fileName", file.getOriginalFilename());
+				} else if(contentType.equals(contentType_uri)) {
+					attributes.put("fileName", uri);
+				} else {
+					attributes.put("fileName", "-");
+				}
+                
                 // Cache detailed report.
                 try {
                     String xmlID = fileManager.writeXML(config.getDomainName(), report.getContext().getItem().get(0).getValue());
@@ -149,16 +171,23 @@ public class UploadController {
         attributes.put("appConfig", appConfig);
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("minimalUI", true);
+        attributes.put("contentType", getContentType(config));
         return new ModelAndView("uploadForm", attributes);
     }
     
 
     @RequestMapping(method = RequestMethod.POST, value = "/{domain}/uploadm")
-    public ModelAndView handleUploadM(@PathVariable("domain") String domain, @RequestParam("file") MultipartFile file, @RequestParam(value = "validationType", defaultValue = "") String validationType, RedirectAttributes redirectAttributes,
+    public ModelAndView handleUploadM(@PathVariable("domain") String domain, 
+    		@RequestParam("file") MultipartFile file, 
+    		@RequestParam(value = "uri", defaultValue = "") String uri,  
+    		@RequestParam(value = "text-editor", defaultValue = "") String string, 
+    		@RequestParam(value = "validationType", defaultValue = "") String validationType, 
+    		@RequestParam(value = "contentType", defaultValue = "") String contentType, 
+    		RedirectAttributes redirectAttributes,
     		HttpServletRequest request) {
     	
 		setMinimalUIFlag(request, true);
-		ModelAndView mv = handleUpload(domain, file, validationType, redirectAttributes, request);
+		ModelAndView mv = handleUpload(domain, file, uri, string, validationType, contentType, redirectAttributes, request);
 				
 		Map<String, Object> attributes = mv.getModel();
         attributes.put("minimalUI", true);
@@ -180,5 +209,35 @@ public class UploadController {
 		if (request.getAttribute(IS_MINIMAL) == null) {
 			request.setAttribute(IS_MINIMAL, isMinimal);
 		}
+	}
+    
+    private List<ValidationType> getContentType(DomainConfig config){
+        List<ValidationType> types = new ArrayList<>();
+
+		types.add(new ValidationType(contentType_file, config.getLabel().getOptionContentFile()));
+		types.add(new ValidationType(contentType_uri, config.getLabel().getOptionContentURI()));
+		types.add(new ValidationType(contentType_string, config.getLabel().getOptionContentDirectInput()));
+		
+		return types;        
+    }
+    
+	private InputStream getInputFile(String contentType, InputStream inputStream, String uri, String string) {
+		InputStream is = null;
+		
+		switch(contentType) {
+			case contentType_file:
+		    	is = inputStream;
+				break;
+			
+			case contentType_uri:
+				is = this.fileManager.getURIInputStream(uri);
+				break;
+				
+			case contentType_string:
+				is = new ByteArrayInputStream(string.getBytes());
+				break;
+		}
+
+		return is;
 	}
 }

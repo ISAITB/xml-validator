@@ -21,6 +21,11 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URI;
+import java.net.URLConnection;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -102,4 +107,27 @@ public class FileManager {
         return config.getAcceptedMimeTypes().contains(type);
     }
 
+    public InputStream getURIInputStream(String URLConvert) {
+        // Read the string from the provided URI.
+        URI uri = URI.create(URLConvert);
+        Proxy proxy = null;
+        List<Proxy> proxies = ProxySelector.getDefault().select(uri);
+        if (proxies != null && !proxies.isEmpty()) {
+            proxy = proxies.get(0);
+        }
+        
+        try {
+	        URLConnection connection;
+	        if (proxy == null) {
+	            connection = uri.toURL().openConnection();
+	        } else {
+	            connection = uri.toURL().openConnection(proxy);
+	        }
+	        
+	        return connection.getInputStream();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Unable to read provided URI", e);
+        }
+        
+	}
 }

@@ -136,6 +136,9 @@ public class DomainConfigCache {
         domainConfig.getLabel().setResultTestLabel(config.getString("validator.label.resultTestLabel", "Test:"));
         domainConfig.getLabel().setPopupTitle(config.getString("validator.label.popupTitle", "XML content"));
         domainConfig.getLabel().setPopupCloseButton(config.getString("validator.label.popupCloseButton", "Close"));
+        domainConfig.getLabel().setOptionContentFile(config.getString("validator.label.optionContentFile", "File"));
+        domainConfig.getLabel().setOptionContentURI(config.getString("validator.label.optionContentURI", "URI"));
+        domainConfig.getLabel().setOptionContentDirectInput(config.getString("validator.label.optionContentDirectInput", "Direct input"));
         domainConfig.getLabel().setResultValidationTypeLabel(config.getString("validator.label.resultValidationTypeLabel", "Validation type:"));
     }
 

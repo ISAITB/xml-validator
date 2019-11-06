@@ -104,7 +104,7 @@ public class UploadController {
         try {
         	InputStream fis = getInputFile(contentType, file.getInputStream(), uri, string);
             if (fileManager.checkFileType(fis)) {
-                stream = fis;
+                stream = getInputFile(contentType, file.getInputStream(), uri, string);
             } else {
                 attributes.put("message", "Provided input is not an XML document");
             }

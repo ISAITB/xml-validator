@@ -128,6 +128,11 @@
             </div>
         </div>
     </div>
+    <div th:if="${not minimalUI}">
+	    <div th:if="${not minimalUI and config.htmlFooter!=''}">
+	    	<div th:utext="${config.htmlFooter}">Footer</div>
+		</div>
+	</div>
 </div>
 <div class="container about-section" th:if="${config.showAbout} and ${not minimalUI}">
     This service is powered by the ISA&sup2; Interoperability Test Bed, a conformance testing service offered by the European Commission's DG DIGIT for projects

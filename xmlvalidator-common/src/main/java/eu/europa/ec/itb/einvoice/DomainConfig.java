@@ -22,6 +22,7 @@ public class DomainConfig {
     private Map<String,String> schematronFile;
     private Map<String,String> schemaFile;
     private String htmlBanner;
+    private String htmlFooter;
     private boolean supportMinimalUserInterface;
 
     private String mailFrom;
@@ -274,6 +275,14 @@ public class DomainConfig {
 		this.htmlBanner = htmlBanner;
 	}
 
+    public String getHtmlFooter() {
+		return htmlFooter;
+	}
+
+	public void setHtmlFooter(String htmlFooter) {
+		this.htmlFooter = htmlFooter;
+	}
+	
 	public boolean isSupportMinimalUserInterface() {
 		return supportMinimalUserInterface;
 	}

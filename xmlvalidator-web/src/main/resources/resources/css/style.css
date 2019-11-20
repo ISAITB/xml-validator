@@ -14,6 +14,7 @@ body {
 .view-section {
 	background-color: white;
 	border-radius: 5px;
+	padding-top: 15px;
 	padding-bottom: 15px;
 	margin-top: 15px;
 	margin-bottom: 15px;

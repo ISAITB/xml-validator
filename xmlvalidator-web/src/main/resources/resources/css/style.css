@@ -46,6 +46,8 @@ body {
     margin-bottom: 10px;
     padding-top: 5px;
     padding-bottom: 5px;
+    cursor: pointer;
+    cursor: hand;
 }
 .report-item-error {
     background-color: #f2dede;
@@ -145,4 +147,10 @@ body {
 .CodeMirror {
     border-radius: 5px;
     height: 400px;
+}
+.minimal-title {
+   margin-top: 5px;
+   margin-bottom: 10px;
+   padding-top: 5px;
+   padding-bottom: 5px;
 }

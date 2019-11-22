@@ -17,7 +17,7 @@
         <form method="POST" enctype="multipart/form-data" th:action="@{${not minimalUI ? 'upload' : 'uploadm'}}" class="form-horizontal" th:fragment="form">
         	<div th:class="${minimalUI} ? panel-default : ''" th:classappend="${minimalUI} ? panel : ''">	
         		<div class="panel-heading panel-heading-ui"  th:if="${minimalUI}">
-			        <h1 class="panel-title col-xs-5 report-item panel-title-ui">Validation input</h1>
+			        <h1 class="panel-title col-xs-5 minimal-title panel-title-ui">Validation input</h1>
 	                <div th:align="right">
 	                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()" th:text="${config.label.uploadButton}">Upload</button>
 	                </div>

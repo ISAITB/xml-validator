@@ -21,6 +21,8 @@ public class DomainConfig {
     private Map<String, String> typeLabel;
     private Map<String,String> schematronFile;
     private Map<String,String> schemaFile;
+    private Map<String,Boolean> externalSchemaFile;
+    private Map<String,Boolean> externalSchematronFile;
     private String htmlBanner;
     private String htmlFooter;
     private boolean supportMinimalUserInterface;
@@ -101,6 +103,22 @@ public class DomainConfig {
 
     public void setSchemaFile(Map<String, String> schemaFile) {
         this.schemaFile = schemaFile;
+    }
+
+    public Map<String, Boolean> getExternalSchemaFile() {
+        return externalSchemaFile;
+    }
+
+    public void setExternalSchemaFile(Map<String, Boolean> externalSchemaFile) {
+        this.externalSchemaFile = externalSchemaFile;
+    }
+
+    public Map<String, Boolean> getExternalSchematronFile() {
+        return externalSchematronFile;
+    }
+
+    public void setExternalSchematronFile(Map<String, Boolean> externalSchematronFile) {
+        this.externalSchematronFile = externalSchematronFile;
     }
 
     public String getMailFrom() {
@@ -316,6 +334,8 @@ public class DomainConfig {
         private String optionContentFile;
         private String optionContentURI;
         private String optionContentDirectInput;
+        private String includeExternalArtefacts;
+        private String externalArtefactsTooltip;
 
         public String getResultSectionTitle() {
             return resultSectionTitle;
@@ -500,6 +520,22 @@ public class DomainConfig {
         public void setOptionContentDirectInput(String optionContentDirectInput) {
             this.optionContentDirectInput = optionContentDirectInput;
         }
+
+		public String getIncludeExternalArtefacts() {
+			return includeExternalArtefacts;
+		}
+
+		public void setIncludeExternalArtefacts(String includeExternalArtefacts) {
+			this.includeExternalArtefacts = includeExternalArtefacts;
+		}
+
+		public String getExternalArtefactsTooltip() {
+			return externalArtefactsTooltip;
+		}
+
+		public void setExternalArtefactsTooltip(String externalArtefactsTooltip) {
+			this.externalArtefactsTooltip = externalArtefactsTooltip;
+		}
     }
 
 }

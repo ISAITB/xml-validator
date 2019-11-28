@@ -98,6 +98,8 @@ public class DomainConfigCache {
                 domainConfig.setWebServiceDescription(parseMap("validator.webServiceDescription", config, Arrays.asList("xml", "type")));
                 domainConfig.setSchemaFile(parseMap("validator.schemaFile", config, domainConfig.getType()));
                 domainConfig.setSchematronFile(parseMap("validator.schematronFile", config, domainConfig.getType()));
+                domainConfig.setExternalSchemaFile(parseBooleanMap("validator.externalSchemaFile", config, domainConfig.getType(), "validator.schemaFile"));
+                domainConfig.setExternalSchematronFile(parseBooleanMap("validator.externalSchematronFile", config, domainConfig.getType(), null));
                 domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
                 domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
                 domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
@@ -141,6 +143,8 @@ public class DomainConfigCache {
         domainConfig.getLabel().setOptionContentURI(config.getString("validator.label.optionContentURI", "URI"));
         domainConfig.getLabel().setOptionContentDirectInput(config.getString("validator.label.optionContentDirectInput", "Direct input"));
         domainConfig.getLabel().setResultValidationTypeLabel(config.getString("validator.label.resultValidationTypeLabel", "Validation type:"));
+        domainConfig.getLabel().setIncludeExternalArtefacts(config.getString("validator.label.includeExternalArtefacts", "Include external artefacts"));
+        domainConfig.getLabel().setExternalArtefactsTooltip(config.getString("validator.label.externalArtefactsTooltip", "Additional artefacts that will be considered for the validation"));
     }
 
     private Map<String, String> parseMap(String key, CompositeConfiguration config, List<String> types) {
@@ -149,6 +153,31 @@ public class DomainConfigCache {
             String val = config.getString(key+"."+type, null);
             if (val != null) {
                 map.put(type, config.getString(key+"."+type).trim());
+            }
+        }
+        return map;
+    }
+
+    private Map<String, Boolean> parseBooleanMap(String key, CompositeConfiguration config, List<String> types, String booleanProperty) {
+        Map<String, Boolean> map = new HashMap<>();
+        for (String type: types) {
+            boolean value = false;
+            
+            try {
+            	value = config.getBoolean(key+"."+type);
+            	
+            	if(value && booleanProperty!=null) {
+                    String val = config.getString(booleanProperty+"."+type, null);
+                    
+                    if(val!=null) {
+                    	value = false;
+                    }
+            	}
+            }catch(Exception e){
+            	value = false;
+            }
+            finally {
+                map.put(type, value);
             }
         }
         return map;

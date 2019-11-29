@@ -101,6 +101,9 @@ public class DomainConfigCache {
                 domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
                 domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
                 domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
+                domainConfig.setSupportMinimalUserInterface(config.getBoolean("validator.supportMinimalUserInterface", false));
+                domainConfig.setHtmlBanner(config.getString("validator.bannerHtml", ""));
+                domainConfig.setHtmlFooter(config.getString("validator.footerHtml", ""));
                 setLabels(domainConfig, config);
                 logger.info("Loaded configuration for domain ["+domain+"]");
             }
@@ -116,10 +119,10 @@ public class DomainConfigCache {
     private void setLabels(DomainConfig domainConfig, CompositeConfiguration config) {
         // If the required labels ever increase the following code should be transformed into proper resource management.
         domainConfig.getLabel().setResultSectionTitle(config.getString("validator.label.resultSectionTitle", "Validation result"));
-        domainConfig.getLabel().setFileInputLabel(config.getString("validator.label.fileInputLabel", "File to validate"));
+        domainConfig.getLabel().setFileInputLabel(config.getString("validator.label.fileInputLabel", "Content to validate"));
         domainConfig.getLabel().setFileInputPlaceholder(config.getString("validator.label.fileInputPlaceholder", "Select file..."));
         domainConfig.getLabel().setTypeLabel(config.getString("validator.label.typeLabel", "Validate as"));
-        domainConfig.getLabel().setUploadButton(config.getString("validator.label.uploadButton", "Upload"));
+        domainConfig.getLabel().setUploadButton(config.getString("validator.label.uploadButton", "Validate"));
         domainConfig.getLabel().setResultSubSectionOverviewTitle(config.getString("validator.label.resultSubSectionOverviewTitle", "Overview"));
         domainConfig.getLabel().setResultDateLabel(config.getString("validator.label.resultDateLabel", "Date:"));
         domainConfig.getLabel().setResultFileNameLabel(config.getString("validator.label.resultFileNameLabel", "File name:"));
@@ -134,6 +137,9 @@ public class DomainConfigCache {
         domainConfig.getLabel().setResultTestLabel(config.getString("validator.label.resultTestLabel", "Test:"));
         domainConfig.getLabel().setPopupTitle(config.getString("validator.label.popupTitle", "XML content"));
         domainConfig.getLabel().setPopupCloseButton(config.getString("validator.label.popupCloseButton", "Close"));
+        domainConfig.getLabel().setOptionContentFile(config.getString("validator.label.optionContentFile", "File"));
+        domainConfig.getLabel().setOptionContentURI(config.getString("validator.label.optionContentURI", "URI"));
+        domainConfig.getLabel().setOptionContentDirectInput(config.getString("validator.label.optionContentDirectInput", "Direct input"));
         domainConfig.getLabel().setResultValidationTypeLabel(config.getString("validator.label.resultValidationTypeLabel", "Validation type:"));
     }
 

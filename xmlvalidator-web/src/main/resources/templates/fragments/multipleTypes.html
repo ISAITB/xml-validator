@@ -14,33 +14,59 @@
 <body>
 <div class="container view-section">
     <div class="view-section-input">
-        <form method="POST" enctype="multipart/form-data" th:action="@{upload}" class="form-horizontal" th:fragment="form">
-            <div class="form-group">
-                <label for="fileToValidate" class="col-sm-2 control-label" th:text="${config.label.fileInputLabel}">File to validate</label>
-                <div class="col-sm-10">
-                    <div class="input-group" id="fileToValidate">
-                        <div class="input-group-btn">
-                            <button class="btn btn-default" type="button" onclick="triggerFileUpload()"><i class="fa fa-folder-open-o"></i></button>
-                        </div>
-                        <input type="text" id="inputFileName" class="form-control" th:placeholder="${config.label.fileInputPlaceholder}" onclick="triggerFileUpload()" readonly="readonly"/>
-                    </div>
-                    <input type="file" id="inputFile" name="file" onchange="fileInputChanged()"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="validationType" class="col-sm-2 control-label" th:text="${config.label.typeLabel}">Validate as</label>
-                <div class="col-sm-10">
-                    <select class="form-control" id="validationType" onchange="validationTypeChanged()" name="validationType">
-                        <option value="" selected="true" disabled="true"></option>
-                        <option th:each="type : ${validationTypes}" th:text="${type.label}" th:attr="value=${type.key}">Type</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-offset-2 col-sm-10">
-                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()" th:text="${config.label.uploadButton}">Upload</button>
-                </div>
-            </div>
+        <form method="POST" enctype="multipart/form-data" th:action="@{${not minimalUI ? 'upload' : 'uploadm'}}" class="form-horizontal" th:fragment="form">
+        	<div th:class="${minimalUI} ? panel-default : ''" th:classappend="${minimalUI} ? panel : ''">	
+        		<div class="panel-heading panel-heading-ui"  th:if="${minimalUI}">
+			        <h1 class="panel-title col-xs-5 minimal-title panel-title-ui">Validation input</h1>
+	                <div th:align="right">
+	                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()" th:text="${config.label.uploadButton}">Upload</button>
+	                </div>
+			    </div>
+			    <div th:class="${minimalUI} ? panel-body : ''">	    
+		            <div class="form-group">
+		                <label for="fileToValidate" class="col-sm-2 control-label" th:text="${config.label.fileInputLabel}">File to validate</label>
+		                <div class="col-sm-2">
+		                	<select class="form-control" id="contentType" name="contentType" onchange="contentTypeChanged()">
+		                		<option th:each="type : ${contentType}" th:text="${type.label}" th:attr="value=${type.key}">Type</option>
+			                </select>
+		                </div>    
+		                <div class="col-sm-8">
+		                    <div class="row">
+		                        <div class="col-sm-12" id="fileToValidate">
+		                            <div class='input-group'>
+		                                <div class="input-group-btn">
+		                                    <button class="btn btn-default" type="button" onclick="triggerFileUpload()"><i class="fa fa-folder-open-o"></i></button>
+		                                </div>
+		                                <input type="text" id="inputFileName" class="form-control" th:placeholder="${config.label.fileInputPlaceholder}" onclick="triggerFileUpload()" readonly="readonly"/>
+		                            </div>
+		                        </div>
+		                        
+		                        <input type="file" class="inputFile" id="inputFile" name="file" onchange="fileInputChanged()"/>
+		                        <div class="col-sm-12 hidden" id="uriToValidate">
+		                            <input type="url" class="form-control" id="uri" name="uri" onchange="fileInputChanged()">
+		                        </div>
+		                        <div class="col-sm-12 hidden" id="stringToValidate">
+		                            <textarea id="text-editor" name="text-editor" class="form-control" onchange="fileInputChanged()"></textarea>
+		                        </div>
+		                    </div>
+		                </div>
+		            </div>
+		            <div class="form-group">
+		                <label for="validationType" class="col-sm-2 control-label" th:text="${config.label.typeLabel}">Validate as</label>
+		                <div class="col-sm-10">
+		                    <select class="form-control" id="validationType" onchange="validationTypeChanged()" name="validationType">
+		                        <option value="" selected="true" disabled="true"></option>
+		                        <option th:each="type : ${validationTypes}" th:text="${type.label}" th:attr="value=${type.key}">Type</option>
+		                    </select>
+		                </div>
+		            </div>
+		            <div class="form-group" th:if="${not minimalUI}">
+		                <div class="col-sm-offset-2 col-sm-10">
+		                    <button type="submit" id="inputFileSubmit" class="btn btn-primary" disabled="true" onclick="uploadFile()" th:text="${config.label.uploadButton}">Upload</button>
+		                </div>
+		            </div>
+	            </div>
+	    	</div>
         </form>
     </div>
 </div>

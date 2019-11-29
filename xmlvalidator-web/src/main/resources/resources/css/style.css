@@ -1,13 +1,25 @@
 body {
     font-family: "Open Sans", Arial, sans-serif;
+}
+.body-ui {
 	background-color: #234E73;
+}
+.panel-heading-ui{
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+.panel-title-ui {
+	font-weight: bold;
 }
 .view-section {
 	background-color: white;
 	border-radius: 5px;
+	padding-top: 15px;
 	padding-bottom: 15px;
 	margin-top: 15px;
 	margin-bottom: 15px;
+}
+.view-section-ui{	
 	box-shadow: 5px 5px 5px #0E0E0E;
 }
 .report-item-icon.error-icon {
@@ -52,7 +64,8 @@ body {
     float: right;
 }
 .CodeMirror {
-    height: 80vh;
+    height: 50vh;
+    border: 1px solid rgb(237, 237, 237);
 }
 .indicator-editor-widget {
     font-size: 12px;
@@ -95,6 +108,10 @@ body {
     margin-bottom: 30px;
     cursor: pointer;
 }
+.clickable {
+    cursor: pointer;
+    cursor: hand;
+}
 .overview-button-row {
     padding-top: 10px;
 }
@@ -111,4 +128,29 @@ body {
     margin-top: 30px;
     margin-bottom: 15px;
     box-shadow: 5px 5px 5px #0E0E0E;
+}
+.remove {
+	display: none;
+}
+.busy-modal {
+    padding-top:15%
+}
+.busy-modal-minimal {
+   position: absolute;
+   top: 40px;
+   bottom: 0;
+   left: 0;
+   z-index: 10040;
+   overflow: auto;
+   overflow-y: auto;
+}
+.CodeMirror {
+    border-radius: 5px;
+    height: 400px;
+}
+.minimal-title {
+   margin-top: 5px;
+   margin-bottom: 10px;
+   padding-top: 5px;
+   padding-bottom: 5px;
 }

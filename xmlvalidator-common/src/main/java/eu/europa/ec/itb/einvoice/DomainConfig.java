@@ -21,6 +21,9 @@ public class DomainConfig {
     private Map<String, String> typeLabel;
     private Map<String,String> schematronFile;
     private Map<String,String> schemaFile;
+    private String htmlBanner;
+    private String htmlFooter;
+    private boolean supportMinimalUserInterface;
 
     private String mailFrom;
     private boolean mailAuthEnable = true;
@@ -264,7 +267,31 @@ public class DomainConfig {
         this.domainName = domainName;
     }
 
-    public static class Label {
+    public String getHtmlBanner() {
+		return htmlBanner;
+	}
+
+	public void setHtmlBanner(String htmlBanner) {
+		this.htmlBanner = htmlBanner;
+	}
+
+    public String getHtmlFooter() {
+		return htmlFooter;
+	}
+
+	public void setHtmlFooter(String htmlFooter) {
+		this.htmlFooter = htmlFooter;
+	}
+	
+	public boolean isSupportMinimalUserInterface() {
+		return supportMinimalUserInterface;
+	}
+
+	public void setSupportMinimalUserInterface(boolean supportMinimalUserInterface) {
+		this.supportMinimalUserInterface = supportMinimalUserInterface;
+	}
+
+	public static class Label {
 
         private String resultSectionTitle;
         private String fileInputLabel;
@@ -286,6 +313,9 @@ public class DomainConfig {
         private String popupTitle;
         private String popupCloseButton;
         private String resultValidationTypeLabel;
+        private String optionContentFile;
+        private String optionContentURI;
+        private String optionContentDirectInput;
 
         public String getResultSectionTitle() {
             return resultSectionTitle;
@@ -445,6 +475,30 @@ public class DomainConfig {
 
         public void setResultValidationTypeLabel(String resultValidationTypeLabel) {
             this.resultValidationTypeLabel = resultValidationTypeLabel;
+        }
+        
+        public String getOptionContentFile() {
+            return optionContentFile;
+        }
+
+        public void setOptionContentFile(String optionContentFile) {
+            this.optionContentFile = optionContentFile;
+        }
+
+        public String getOptionContentURI() {
+            return optionContentURI;
+        }
+
+        public void setOptionContentURI(String optionContentURI) {
+            this.optionContentURI = optionContentURI;
+        }
+
+        public String getOptionContentDirectInput() {
+            return optionContentDirectInput;
+        }
+
+        public void setOptionContentDirectInput(String optionContentDirectInput) {
+            this.optionContentDirectInput = optionContentDirectInput;
         }
     }
 

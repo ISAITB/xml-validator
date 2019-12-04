@@ -2,7 +2,8 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.5.0/css/font-awesome.min.css}"/>
+    <!-- link rel="stylesheet" th:href="@{/webjars/font-awesome/4.5.0/css/font-awesome.min.css}"/-->
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/5.7.2/css/all.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/3.3.6/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
     <script th:src="@{/webjars/jquery/2.0.3/jquery.min.js}"></script>
@@ -35,7 +36,7 @@
 		                        <div class="col-sm-12" id="fileToValidate">
 		                            <div class='input-group'>
 		                                <div class="input-group-btn">
-		                                    <button class="btn btn-default" type="button" onclick="triggerFileUpload()"><i class="fa fa-folder-open-o"></i></button>
+		                                    <button class="btn btn-default" type="button" onclick="triggerFileUpload()"><i class="far fa-folder-open"></i></button>
 		                                </div>
 		                                <input type="text" id="inputFileName" class="form-control" th:placeholder="${config.label.fileInputPlaceholder}" onclick="triggerFileUpload()" readonly="readonly"/>
 		                            </div>
@@ -57,20 +58,20 @@
 							    <label>
 		                            <input type="checkbox" id="externalArtefactsCheck" name="addExternalArtefacts" onclick="toggleExternalArtefactsClassCheck()"> <span th:text="${config.label.includeExternalArtefacts}">Include external artefacts</span>
 							    </label>
-								<span data-toggle="tooltip" data-container="body" data-placement="right" th:attr="title=${config.label.externalArtefactsTooltip}"><i class="fa fa-question-circle"></i></span>
+								<span data-toggle="tooltip" data-container="body" data-placement="right" th:attr="title=${config.label.externalArtefactsTooltip}"><i class="far fa-question-circle"></i></span>
 		                    </div>
 						</div>
 		            </div>
 		            <div class="form-group externalSchemaClass">
 		                <label for="externalSchemaAddButton" class="col-sm-2 control-label" th:text="${config.label.externalSchemaLabel}">XML Schema</label>
 		                <div class="col-sm-10" id="externalSchemaDiv">
-		                    <button id="externalSchemaAddButton" class="btn btn-default" type="button" onclick="addExternalSchema()"><i class="fa fa-plus"></i></button>
+		                    <button id="externalSchemaAddButton" class="btn btn-default" type="button" onclick="addExternalSchema()"><i class="fas fa-plus"></i></button>
 		                </div>
 		            </div>
 		            <div class="form-group externalSchClass">
 		                <label for="externalSchAddButton" class="col-sm-2 control-label" th:text="${config.label.externalSchematronLabel}">Schematron</label>
 		                <div class="col-sm-10" id="externalSchemaDiv">
-		                    <button id="externalSchAddButton" class="btn btn-default" type="button" onclick="addExternalSch()"><i class="fa fa-plus"></i></button>
+		                    <button id="externalSchAddButton" class="btn btn-default" type="button" onclick="addExternalSchematron()"><i class="fas fa-plus"></i></button>
 		                </div>
 		            </div>
 		            <div class="form-group" th:if="${not minimalUI}">

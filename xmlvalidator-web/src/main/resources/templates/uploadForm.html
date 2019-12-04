@@ -3,7 +3,8 @@
 <head>
     <title th:text="${config.uploadTitle}">Validator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.5.0/css/font-awesome.min.css}"/>
+    <!-- link rel="stylesheet" th:href="@{/webjars/font-awesome/4.5.0/css/font-awesome.min.css}"/-->
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/5.7.2/css/all.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/3.3.6/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/codemirror/5.11/lib/codemirror.css}"/>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
@@ -22,6 +23,8 @@
     </script>
     <script>
     /*<![CDATA[*/
+        var labelFile = "[[${config.label.optionContentFile}]]";
+        var labelURI = "[[${config.label.optionContentURI}]]";
         var isMinimal = [[${minimalUI}]];
     /*]]>*/
     </script>

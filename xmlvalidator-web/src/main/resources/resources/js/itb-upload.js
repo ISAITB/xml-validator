@@ -1,6 +1,40 @@
 function validationTypeChanged() {
 	checkForSubmit();
+	externalArtefactsEnabled();
 }
+
+function externalArtefactsEnabled(){
+	var type = $('#validationType').val();
+	var ext = document.getElementById("externalSchema");
+	var extSch = document.getElementById("externalSchematron");
+	$(".includeExternalArtefacts").addClass('hidden');
+	
+	if(ext !== null){
+		for (var i=0; i<ext.length; i++){
+			if (ext[i].text == type || ext.length == 1){
+				if(ext[i].value == "true"){
+					$(".includeExternalArtefacts").removeClass('hidden');
+				}
+				if(ext[i].value == "false"){
+					$(".includeExternalArtefacts").addClass('hidden');
+				}
+			 }
+		}
+	} 
+	if(extSch !== null){
+		for (var i=0; i<extSch.length; i++){
+			if (extSch[i].text == type || extSch.length == 1){
+				if(extSch[i].value == "true"){
+					$(".includeExternalArtefacts").removeClass('hidden');
+				}
+			 }
+		}
+	}
+	if(ext !== null || extSch !== null){
+		checkForSubmit();		
+	}
+}
+
 function checkForSubmit() {
 	var type = $('#contentType').val();
 	var inputType = $('#validationType');
@@ -79,8 +113,15 @@ function fileInputChanged() {
 	}
 	checkForSubmit();
 }
+
+function toggleExternalArtefactsClassCheck() {
+    $(".externalSchemaClass").toggle();
+    $(".externalSchClass").toggle();
+}
+
 $(document).ready(function() {
 	validationTypeChanged();
+	toggleExternalArtefactsClassCheck();
 
 	if(document.getElementById('text-editor') !== null){
 		var editableCodeMirror = CodeMirror.fromTextArea(document.getElementById('text-editor'), {

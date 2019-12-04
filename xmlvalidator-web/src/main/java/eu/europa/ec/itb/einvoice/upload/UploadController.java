@@ -73,6 +73,8 @@ public class UploadController {
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("minimalUI", false);
         attributes.put("contentType", getContentType(config));
+        attributes.put("externalSchema", includeExternalArtefacts(config.getExternalSchemaFile()));
+        attributes.put("externalSchematron", includeExternalArtefacts(config.getExternalSchematronFile()));
         return new ModelAndView("uploadForm", attributes);
     }
 
@@ -97,6 +99,8 @@ public class UploadController {
         attributes.put("config", config);
         attributes.put("minimalUI", false);
         attributes.put("contentType", getContentType(config));
+        attributes.put("externalSchema", includeExternalArtefacts(config.getExternalSchemaFile()));
+        attributes.put("externalSchematron", includeExternalArtefacts(config.getExternalSchematronFile()));
         if (StringUtils.isNotBlank(validationType)) {
             attributes.put("validationTypeLabel", config.getTypeLabel().get(validationType));
         }
@@ -172,6 +176,8 @@ public class UploadController {
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("minimalUI", true);
         attributes.put("contentType", getContentType(config));
+        attributes.put("externalSchema", includeExternalArtefacts(config.getExternalSchemaFile()));
+        attributes.put("externalSchematron", includeExternalArtefacts(config.getExternalSchematronFile()));
         return new ModelAndView("uploadForm", attributes);
     }
     
@@ -203,6 +209,16 @@ public class UploadController {
             }
         }
         return types;
+    }
+    
+	private List<ValidationType> includeExternalArtefacts(Map<String, Boolean> externalArtefact){
+        List<ValidationType> types = new ArrayList<>();
+    	
+    	for(Map.Entry<String, Boolean> entry : externalArtefact.entrySet()) {
+    		types.add(new ValidationType(entry.getKey(), entry.getValue().toString()));
+    	}
+    	
+    	return types;
     }
 
 	private void setMinimalUIFlag(HttpServletRequest request, boolean isMinimal) {

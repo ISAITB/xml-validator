@@ -133,6 +133,14 @@
 	    	<div th:utext="${config.htmlFooter}">Footer</div>
 		</div>
 	</div>
+    <div style="display: none;">
+        <select class="form-control" id="externalSchema" name="externalSchema">
+       		<option th:each="type : ${externalSchema}" th:text="${type.key}" th:attr="value=${type.label}">Type</option>
+      	</select>
+        <select class="form-control" id="externalSchematron" name="externalSchematron">
+       		<option th:each="type : ${externalSchematron}" th:text="${type.key}" th:attr="value=${type.label}">Type</option>
+      	</select>        
+    </div>
 </div>
 <div class="container about-section" th:if="${config.showAbout} and ${not minimalUI}">
     This service is powered by the ISA&sup2; Interoperability Test Bed, a conformance testing service offered by the European Commission's DG DIGIT for projects

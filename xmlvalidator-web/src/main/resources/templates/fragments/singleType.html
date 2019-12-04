@@ -57,9 +57,21 @@
 							    <label>
 		                            <input type="checkbox" id="externalArtefactsCheck" name="addExternalArtefacts" onclick="toggleExternalArtefactsClassCheck()"> <span th:text="${config.label.includeExternalArtefacts}">Include external artefacts</span>
 							    </label>
-								<span data-toggle="tooltip" data-container="body" data-placement="right" th:attr="title=${config.label.externalArtefactsTooltip}"><i class="far fa-question-circle"></i></span>
+								<span data-toggle="tooltip" data-container="body" data-placement="right" th:attr="title=${config.label.externalArtefactsTooltip}"><i class="fa fa-question-circle"></i></span>
 		                    </div>
 						</div>
+		            </div>
+		            <div class="form-group externalSchemaClass">
+		                <label for="externalSchemaAddButton" class="col-sm-2 control-label" th:text="${config.label.externalSchemaLabel}">XML Schema</label>
+		                <div class="col-sm-10" id="externalSchemaDiv">
+		                    <button id="externalSchemaAddButton" class="btn btn-default" type="button" onclick="addExternalSchema()"><i class="fa fa-plus"></i></button>
+		                </div>
+		            </div>
+		            <div class="form-group externalSchClass">
+		                <label for="externalSchAddButton" class="col-sm-2 control-label" th:text="${config.label.externalSchematronLabel}">Schematron</label>
+		                <div class="col-sm-10" id="externalSchemaDiv">
+		                    <button id="externalSchAddButton" class="btn btn-default" type="button" onclick="addExternalSch()"><i class="fa fa-plus"></i></button>
+		                </div>
 		            </div>
 		            <div class="form-group" th:if="${not minimalUI}">
 		                <div class="col-sm-offset-2 col-sm-10" th:if="${not minimalUI}">

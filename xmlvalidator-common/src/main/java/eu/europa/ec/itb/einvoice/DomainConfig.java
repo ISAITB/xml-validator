@@ -336,6 +336,8 @@ public class DomainConfig {
         private String optionContentDirectInput;
         private String includeExternalArtefacts;
         private String externalArtefactsTooltip;
+        private String externalSchemaLabel;
+        private String externalSchematronLabel;
 
         public String getResultSectionTitle() {
             return resultSectionTitle;
@@ -535,6 +537,22 @@ public class DomainConfig {
 
 		public void setExternalArtefactsTooltip(String externalArtefactsTooltip) {
 			this.externalArtefactsTooltip = externalArtefactsTooltip;
+		}
+
+		public String getExternalSchemaLabel() {
+			return externalSchemaLabel;
+		}
+
+		public void setExternalSchemaLabel(String externalSchemaLabel) {
+			this.externalSchemaLabel = externalSchemaLabel;
+		}
+
+		public String getExternalSchematronLabel() {
+			return externalSchematronLabel;
+		}
+
+		public void setExternalSchematronLabel(String externalSchematronLabel) {
+			this.externalSchematronLabel = externalSchematronLabel;
 		}
     }
 

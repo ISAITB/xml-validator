@@ -145,6 +145,8 @@ public class DomainConfigCache {
         domainConfig.getLabel().setResultValidationTypeLabel(config.getString("validator.label.resultValidationTypeLabel", "Validation type:"));
         domainConfig.getLabel().setIncludeExternalArtefacts(config.getString("validator.label.includeExternalArtefacts", "Include external artefacts"));
         domainConfig.getLabel().setExternalArtefactsTooltip(config.getString("validator.label.externalArtefactsTooltip", "Additional artefacts that will be considered for the validation"));
+        domainConfig.getLabel().setExternalSchemaLabel(config.getString("validator.label.externalSchemaLabel", "XML Schema"));
+        domainConfig.getLabel().setExternalSchematronLabel(config.getString("validator.label.externalSchematronLabel", "Schematron"));
     }
 
     private Map<String, String> parseMap(String key, CompositeConfiguration config, List<String> types) {

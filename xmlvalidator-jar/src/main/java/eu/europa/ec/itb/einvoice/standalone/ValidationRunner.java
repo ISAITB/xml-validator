@@ -1,7 +1,6 @@
 package eu.europa.ec.itb.einvoice.standalone;
 
 import com.gitb.tr.TAR;
-import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
 import eu.europa.ec.itb.einvoice.DomainConfigCache;
 import eu.europa.ec.itb.einvoice.util.FileManager;
@@ -9,20 +8,14 @@ import eu.europa.ec.itb.einvoice.validation.FileReport;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -86,7 +79,7 @@ public class ValidationRunner {
                         }
                     }
                     if (!domainConfig.getType().contains(type)) {
-                        throw new IllegalArgumentException("Unknown invoice type ["+type+"]");
+                        throw new IllegalArgumentException("Unknown validation type ["+type+"]");
                     }
                     File inputFile = new File(filePath);
                     if (!inputFile.exists() || !inputFile.isFile() || !inputFile.canRead()) {
@@ -113,7 +106,7 @@ public class ValidationRunner {
                 try (FileInputStream stream = new FileInputStream(input.getInputFile())) {
                     XMLValidator validator = applicationContext.getBean(XMLValidator.class, stream, input.getValidationType(), domainConfig);
                     TAR report = validator.validateAll();
-                    FileReport reporter = new FileReport(input.getInputFile().getAbsolutePath(), report, !noReports);
+                    FileReport reporter = new FileReport(input.getInputFile().getAbsolutePath(), report, !noReports, false);
                     if (!noReports) {
                         // Serialize report.
                         fileManager.saveReport(report, new File(reporter.getReportXmlFileName()));
@@ -149,7 +142,7 @@ public class ValidationRunner {
             msg.append("\nExpected usage: java -jar validator.jar [-noreports] -file FILE_1 [-file FILE_2] ... [-file FILE_N]");
         }
         msg.append("\n\tWhere FILE_X is the full path to a file to validate");
-        msg.append("\n\nThe invoice summary of each file will be printed and the detailed invoice report will produced at the location of the input file (with a \".report.xml\" postfix). Providing \"-noreports\" as the first flag skips the detailed report generation.");
+        msg.append("\n\nThe validation summary of each file will be printed and the detailed validation report will be produced at the location of the input file (with a \".report.xml\" postfix). Providing \"-noreports\" as the first flag skips the detailed report generation.");
         System.out.println(msg.toString());
     }
 

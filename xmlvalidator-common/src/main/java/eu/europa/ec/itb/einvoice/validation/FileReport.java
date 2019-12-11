@@ -9,16 +9,18 @@ public class FileReport {
 
     private final String fileName;
     private final TAR report;
-    private final boolean reportSaved;
+    private final boolean xmlReportSaved;
+    private final boolean pdfReportSaved;
 
     public FileReport(String fileName, TAR report) {
-        this(fileName, report, true);
+        this(fileName, report, true, true);
     }
 
-    public FileReport(String fileName, TAR report, boolean reportSaved) {
+    public FileReport(String fileName, TAR report, boolean xmlReportSaved, boolean pdfReportSaved) {
         this.fileName = fileName;
         this.report = report;
-        this.reportSaved = reportSaved;
+        this.xmlReportSaved = xmlReportSaved;
+        this.pdfReportSaved = pdfReportSaved;
     }
 
     public String getFileName() {
@@ -46,8 +48,17 @@ public class FileReport {
         sb.append("\n- Errors: ").append(report.getCounters().getNrOfErrors());
         sb.append("\n- Warnings: ").append(report.getCounters().getNrOfWarnings());
         sb.append("\n- Messages: ").append(report.getCounters().getNrOfAssertions());
-        if (reportSaved) {
-            sb.append("\n- Detailed report in: XML [").append(getReportXmlFileName()).append("] and PDF [").append(getReportPdfFileName()).append("]");
+        if (xmlReportSaved || pdfReportSaved) {
+            sb.append("\n- Detailed report in: ");
+            if (xmlReportSaved) {
+                sb.append("XML [").append(getReportXmlFileName()).append("]");
+            }
+            if (pdfReportSaved) {
+                if (xmlReportSaved) {
+                    sb.append(" and ");
+                }
+                sb.append("PDF [").append(getReportPdfFileName()).append("]");
+            }
         }
         return sb.toString();
     }

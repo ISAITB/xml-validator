@@ -98,8 +98,8 @@ public class DomainConfigCache {
                 domainConfig.setWebServiceDescription(parseMap("validator.webServiceDescription", config, Arrays.asList("xml", "type")));
                 domainConfig.setSchemaFile(parseMap("validator.schemaFile", config, domainConfig.getType()));
                 domainConfig.setSchematronFile(parseMap("validator.schematronFile", config, domainConfig.getType()));
-                domainConfig.setExternalSchemaFile(parseBooleanMap("validator.externalSchemaFile", config, domainConfig.getType(), "validator.schemaFile"));
-                domainConfig.setExternalSchematronFile(parseBooleanMap("validator.externalSchematronFile", config, domainConfig.getType(), null));
+                domainConfig.setExternalSchemaFile(parseStringMap("validator.externalSchemaFile", config, domainConfig.getType(), "validator.schemaFile"));
+                domainConfig.setExternalSchematronFile(parseStringMap("validator.externalSchematronFile", config, domainConfig.getType(), null));
                 domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
                 domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
                 domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
@@ -160,23 +160,23 @@ public class DomainConfigCache {
         return map;
     }
 
-    private Map<String, Boolean> parseBooleanMap(String key, CompositeConfiguration config, List<String> types, String booleanProperty) {
-        Map<String, Boolean> map = new HashMap<>();
+    private Map<String, String> parseStringMap(String key, CompositeConfiguration config, List<String> types, String booleanProperty) {
+        Map<String, String> map = new HashMap<>();
         for (String type: types) {
-            boolean value = false;
+            String value = "none";
             
             try {
-            	value = config.getBoolean(key+"."+type);
+            	value = config.getString(key+"."+type).toLowerCase();
             	
-            	if(value && booleanProperty!=null) {
+            	if(!value.equals("none") && booleanProperty!=null) {
                     String val = config.getString(booleanProperty+"."+type, null);
                     
                     if(val!=null) {
-                    	value = false;
+                    	value = "none";
                     }
             	}
             }catch(Exception e){
-            	value = false;
+            	value = "none";
             }
             finally {
                 map.put(type, value);

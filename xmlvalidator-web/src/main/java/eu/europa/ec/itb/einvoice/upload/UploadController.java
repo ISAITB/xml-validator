@@ -211,11 +211,11 @@ public class UploadController {
         return types;
     }
     
-	private List<ValidationType> includeExternalArtefacts(Map<String, Boolean> externalArtefact){
+	private List<ValidationType> includeExternalArtefacts(Map<String, String> externalArtefact){
         List<ValidationType> types = new ArrayList<>();
     	
-    	for(Map.Entry<String, Boolean> entry : externalArtefact.entrySet()) {
-    		types.add(new ValidationType(entry.getKey(), entry.getValue().toString()));
+    	for(Map.Entry<String, String> entry : externalArtefact.entrySet()) {
+    		types.add(new ValidationType(entry.getKey(), entry.getValue()));
     	}
     	
     	return types;

@@ -12,10 +12,10 @@ function externalArtefactsEnabled(){
 	if(ext !== null){
 		for (var i=0; i<ext.length; i++){
 			if (ext[i].text == type || ext.length == 1){
-				if(ext[i].value == "true"){
+				if(ext[i].value != "none"){
 					$(".includeExternalArtefacts").removeClass('hidden');
 				}
-				if(ext[i].value == "false"){
+				if(ext[i].value == "none"){
 					$(".includeExternalArtefacts").addClass('hidden');
 				}
 			 }
@@ -24,7 +24,7 @@ function externalArtefactsEnabled(){
 	if(extSch !== null){
 		for (var i=0; i<extSch.length; i++){
 			if (extSch[i].text == type || extSch.length == 1){
-				if(extSch[i].value == "true"){
+				if(extSch[i].value != "none"){
 					$(".includeExternalArtefacts").removeClass('hidden');
 				}
 			 }
@@ -33,6 +33,76 @@ function externalArtefactsEnabled(){
 	if(ext !== null || extSch !== null){
 		checkForSubmit();		
 	}
+}
+
+function addExternalSchema(){
+	addElement("externalSchema");
+	$('#externalSchemaAddButton').addClass('hidden');
+}
+
+function addExternalSchematron(){
+	addElement("externalSch");	
+}
+
+function removeElement(elementId, type) {
+	document.getElementById(elementId).remove();
+	
+	if(type == "externalSchema"){
+		$('#externalSchemaAddButton').removeClass('hidden');
+	}
+}
+
+function triggerFileUploadShapes(elementId) {
+    $("#"+elementId).click();
+}
+function fileInputChangedShapes(type){
+	$("#inputFileName-"+type+"").val($("#inputFile-"+type+"")[0].files[0].name);
+}
+function contentTypeChangedShapes(elementId){
+	var type = $('#contentType-'+elementId).val();
+	
+	if(type == "uriType"){
+		$("#uriToValidate-"+elementId).removeClass('hidden');
+		$("#fileToValidate-"+elementId).addClass('hidden');
+	}
+	if(type == "fileType"){
+		$("#fileToValidate-"+elementId).removeClass('hidden');
+		$("#uriToValidate-"+elementId).addClass('hidden');
+	}
+}
+
+function addElement(type) {
+    var elements = $("."+type+"Div").length;
+    var elementId = type+"-"+elements;
+
+    $("<div class='row form-group "+type+"Div' id='"+elementId+"'>" +
+    	"<div class='col-sm-2'>"+
+			"<select class='form-control' id='contentType-"+elementId+"' name='contentType-"+type+"' onchange='contentTypeChangedShapes(\""+elementId+"\")'>"+
+				"<option value='fileType' selected='true'>"+labelFile+"</option>"+
+				"<option value='uriType'>"+labelURI+"</option>"+
+		    "</select>"+
+		"</div>"+
+		"<div class='col-sm-8'>" +
+		    "<div class='row'>" +
+                "<div class='col-md-10 col-sm-7'>" +
+                    "<div class='input-group' id='fileToValidate-"+elementId+"'>" +
+                        "<div class='input-group-btn'>" +
+                            "<button class='btn btn-default' type='button' onclick='triggerFileUploadShapes(\"inputFile-"+elementId+"\")'><i class='far fa-folder-open'></i></button>" +
+                        "</div>" +
+                        "<input type='text' id='inputFileName-"+elementId+"' class='form-control clickable' onclick='triggerFileUploadShapes(\"inputFile-"+elementId+"\")' readonly='readonly'/>" +
+                    "</div>" +
+                "</div>" +
+                "<div class='col-md-10 col-sm-7 hidden' id='uriToValidate-"+elementId+"'>"+
+                    "<input type='url' class='form-control' id='uri-"+elementId+"' name='uri-"+type+"'>"+
+                "</div>"+
+                "<input type='file' class='inputFile' id='inputFile-"+elementId+"' name='inputFile-"+type+"' onchange='fileInputChangedShapes(\""+elementId+"\")'/>" +
+                "<div class='col-md-1 col-sm-2'>" +
+                    "<button class='btn btn-default' type='button' onclick='removeElement(\""+elementId+"\", \""+type+"\")'><i class='far fa-trash-alt'></i></button>" +
+                "</div>" +
+    		"</div>"+
+		"</div>"+
+    "</div>").insertBefore("#"+type+"AddButton");
+    $("#"+elementId+" input").focus();
 }
 
 function checkForSubmit() {
@@ -114,9 +184,34 @@ function fileInputChanged() {
 	checkForSubmit();
 }
 
+function toggleExternalArtefacts(){
+	var type = $('#validationType').val();
+	var ext = document.getElementById("externalSchema");
+	var extSch = document.getElementById("externalSchematron");
+	
+	if(ext !== null){
+		for (var i=0; i<ext.length; i++){
+			if (ext[i].text == type || ext.length == 1){
+				if(ext[i].value != "none"){
+					$(".externalSchemaClass").toggle();
+				}
+			 }
+		}
+	} 
+	if(extSch !== null){
+		for (var i=0; i<extSch.length; i++){
+			if (extSch[i].text == type || extSch.length == 1){
+				if(extSch[i].value != "none"){
+					$(".externalSchClass").toggle();
+				}
+			 }
+		}
+	} 
+}
+
 function toggleExternalArtefactsClassCheck() {
-    $(".externalSchemaClass").toggle();
-    $(".externalSchClass").toggle();
+	$(".externalSchemaClass").toggle();
+	$(".externalSchClass").toggle();
 }
 
 $(document).ready(function() {

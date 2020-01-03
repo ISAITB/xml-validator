@@ -21,8 +21,8 @@ public class DomainConfig {
     private Map<String, String> typeLabel;
     private Map<String,String> schematronFile;
     private Map<String,String> schemaFile;
-    private Map<String,Boolean> externalSchemaFile;
-    private Map<String,Boolean> externalSchematronFile;
+    private Map<String,String> externalSchemaFile;
+    private Map<String,String> externalSchematronFile;
     private String htmlBanner;
     private String htmlFooter;
     private boolean supportMinimalUserInterface;
@@ -105,19 +105,19 @@ public class DomainConfig {
         this.schemaFile = schemaFile;
     }
 
-    public Map<String, Boolean> getExternalSchemaFile() {
+    public Map<String, String> getExternalSchemaFile() {
         return externalSchemaFile;
     }
 
-    public void setExternalSchemaFile(Map<String, Boolean> externalSchemaFile) {
+    public void setExternalSchemaFile(Map<String, String> externalSchemaFile) {
         this.externalSchemaFile = externalSchemaFile;
     }
 
-    public Map<String, Boolean> getExternalSchematronFile() {
+    public Map<String, String> getExternalSchematronFile() {
         return externalSchematronFile;
     }
 
-    public void setExternalSchematronFile(Map<String, Boolean> externalSchematronFile) {
+    public void setExternalSchematronFile(Map<String, String> externalSchematronFile) {
         this.externalSchematronFile = externalSchematronFile;
     }
 

@@ -42,6 +42,10 @@ public class DomainConfig {
 
     private boolean includeTestDefinition;
     private boolean reportsOrdered;
+    
+    public static final String externalFile_req     	= "required" ;
+    public static final String externalFile_opt     	= "optional" ;
+    public static final String externalFile_none     	= "none" ;
 
     private Label label = new Label();
 

@@ -85,6 +85,12 @@ public class UploadController {
     		@RequestParam(value = "text-editor", defaultValue = "") String string, 
     		@RequestParam(value = "validationType", defaultValue = "") String validationType,
     		@RequestParam(value = "contentType", defaultValue = "") String contentType, 
+    		@RequestParam(value = "contentType-externalSchema", required = false) String[] externalSchema,
+    		@RequestParam(value = "inputFile-externalSchema", required= false) MultipartFile[] externalSchemaFiles,
+    		@RequestParam(value = "uriToValidate-externalSchema", required = false) String[] externalSchemaUri,
+    		@RequestParam(value = "contentType-externalSch", required = false) String[] externalSch,
+    		@RequestParam(value = "inputFile-externalSch", required= false) MultipartFile[] externalSchFiles,
+    		@RequestParam(value = "uriToValidate-externalSch", required = false) String[] externalSchUri,
     		RedirectAttributes redirectAttributes,
     		HttpServletRequest request) {
 		setMinimalUIFlag(request, false);
@@ -101,6 +107,7 @@ public class UploadController {
         attributes.put("contentType", getContentType(config));
         attributes.put("externalSchema", includeExternalArtefacts(config.getExternalSchemaFile()));
         attributes.put("externalSchematron", includeExternalArtefacts(config.getExternalSchematronFile()));
+        
         if (StringUtils.isNotBlank(validationType)) {
             attributes.put("validationTypeLabel", config.getTypeLabel().get(validationType));
         }
@@ -189,11 +196,17 @@ public class UploadController {
     		@RequestParam(value = "text-editor", defaultValue = "") String string, 
     		@RequestParam(value = "validationType", defaultValue = "") String validationType, 
     		@RequestParam(value = "contentType", defaultValue = "") String contentType, 
+    		@RequestParam(value = "contentType-externalSchema", required = false) String[] externalSchema,
+    		@RequestParam(value = "inputFile-externalSchema", required= false) MultipartFile[] externalSchemaFiles,
+    		@RequestParam(value = "uriToValidate-externalSchema", required = false) String[] externalSchemaUri,
+    		@RequestParam(value = "contentType-externalSch", required = false) String[] externalSch,
+    		@RequestParam(value = "inputFile-externalSch", required= false) MultipartFile[] externalSchFiles,
+    		@RequestParam(value = "uriToValidate-externalSch", required = false) String[] externalSchUri,
     		RedirectAttributes redirectAttributes,
     		HttpServletRequest request) {
     	
 		setMinimalUIFlag(request, true);
-		ModelAndView mv = handleUpload(domain, file, uri, string, validationType, contentType, redirectAttributes, request);
+		ModelAndView mv = handleUpload(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, redirectAttributes, request);
 				
 		Map<String, Object> attributes = mv.getModel();
         attributes.put("minimalUI", true);

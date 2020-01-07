@@ -163,20 +163,20 @@ public class DomainConfigCache {
     private Map<String, String> parseStringMap(String key, CompositeConfiguration config, List<String> types, String booleanProperty) {
         Map<String, String> map = new HashMap<>();
         for (String type: types) {
-            String value = "none";
+            String value = DomainConfig.externalFile_none;
             
             try {
             	value = config.getString(key+"."+type).toLowerCase();
             	
-            	if(!value.equals("none") && booleanProperty!=null) {
+            	if((value.equals(DomainConfig.externalFile_req) || value.equals(DomainConfig.externalFile_opt)) && booleanProperty!=null) {
                     String val = config.getString(booleanProperty+"."+type, null);
                     
                     if(val!=null) {
-                    	value = "none";
+                    	value = DomainConfig.externalFile_none;
                     }
             	}
             }catch(Exception e){
-            	value = "none";
+            	value = DomainConfig.externalFile_none;
             }
             finally {
                 map.put(type, value);

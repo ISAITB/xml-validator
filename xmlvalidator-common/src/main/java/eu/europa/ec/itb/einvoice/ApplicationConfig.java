@@ -40,6 +40,7 @@ public class ApplicationConfig {
     private String reportFilePrefix = "TAR-";
     private Set<String> acceptedMimeTypes;
     private Set<String> acceptedSchematronExtensions;
+    private Set<String> acceptedSchemaExtensions;
     private Set<String> domain;
     private Map<String, String> domainIdToDomainName = new HashMap<>();
     private Map<String, String> domainNameToDomainId = new HashMap<>();
@@ -116,6 +117,14 @@ public class ApplicationConfig {
 
     public void setAcceptedSchematronExtensions(Set<String> acceptedSchematronExtensions) {
         this.acceptedSchematronExtensions = acceptedSchematronExtensions;
+    }
+
+    public Set<String> getAcceptedSchemaExtensions() {
+        return acceptedSchemaExtensions;
+    }
+
+    public void setAcceptedSchemaExtensions(Set<String> acceptedSchemaExtensions) {
+        this.acceptedSchemaExtensions = acceptedSchemaExtensions;
     }
 
     public Set<String> getDomain() {

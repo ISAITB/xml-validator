@@ -85,10 +85,10 @@ public class UploadController {
     		@RequestParam(value = "text-editor", defaultValue = "") String string, 
     		@RequestParam(value = "validationType", defaultValue = "") String validationType,
     		@RequestParam(value = "contentType", defaultValue = "") String contentType, 
-    		@RequestParam(value = "contentType-externalSchema", required = false) String[] externalSchema,
+    		@RequestParam(value = "contentType-externalSchema", required = false) String[] externalSchemaContentType,
     		@RequestParam(value = "inputFile-externalSchema", required= false) MultipartFile[] externalSchemaFiles,
     		@RequestParam(value = "uriToValidate-externalSchema", required = false) String[] externalSchemaUri,
-    		@RequestParam(value = "contentType-externalSch", required = false) String[] externalSch,
+    		@RequestParam(value = "contentType-externalSch", required = false) String[] externalSchContentType,
     		@RequestParam(value = "inputFile-externalSch", required= false) MultipartFile[] externalSchFiles,
     		@RequestParam(value = "uriToValidate-externalSch", required = false) String[] externalSchUri,
     		RedirectAttributes redirectAttributes,
@@ -132,7 +132,18 @@ public class UploadController {
         }
         try {
             if (stream != null) {
-                XMLValidator validator = beans.getBean(XMLValidator.class, stream, validationType, config);
+            	List<InputStream> externalSchIS = new ArrayList<>();
+            	List<InputStream> externalSchemaIS = new ArrayList<>();
+            	
+            	try {
+            		externalSchemaIS = getExternalSchemaFiles(externalSchemaContentType, externalSchemaFiles, externalSchemaUri);
+            		externalSchIS = getExternalSchFiles(externalSchContentType, externalSchFiles, externalSchUri);
+            	} catch (IOException e) {
+                    logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
+                    attributes.put("message", "Error in upload [" + e.getMessage() + "]");
+                }
+            	
+                XMLValidator validator = beans.getBean(XMLValidator.class, stream, validationType, externalSchemaIS, externalSchIS, config);
                 TAR report = validator.validateAll();
                 attributes.put("report", report);
                 attributes.put("date", report.getDate().toString());
@@ -248,6 +259,50 @@ public class UploadController {
 		types.add(new ValidationType(contentType_string, config.getLabel().getOptionContentDirectInput()));
 		
 		return types;        
+    }
+    
+    private List<InputStream> getExternalSchemaFiles(String[] externalContentType, MultipartFile[] externalFiles, String[] externalUri) throws Exception {
+    	List<InputStream> lis = new ArrayList<>();
+    	
+    	if(externalContentType != null) {
+	    	for(int i=0; i<externalContentType.length; i++) {
+	    		String file = "";
+	    		InputStream isFile = null;
+	    		if(externalFiles!=null && externalFiles.length>=i) {
+	    			isFile = externalFiles[i].getInputStream();
+	    		}
+	    		if(externalUri!=null && externalUri.length<i) {
+	    			file = externalUri[i];
+	    		}
+	    		InputStream is = getInputFile(externalContentType[i], isFile, file, null);
+	    		
+	    		lis.add(is);
+	    	}
+    	}
+    	
+    	return lis;
+    }
+    
+    private List<InputStream> getExternalSchFiles(String[] externalContentType, MultipartFile[] externalFiles, String[] externalUri) throws Exception {
+    	List<InputStream> lis = new ArrayList<>();
+
+    	if(externalContentType != null) {
+	    	for(int i=0; i<externalContentType.length; i++) {
+	    		String file = "";
+	    		InputStream isFile = null;
+	    		if(externalFiles!=null && externalFiles.length>=i) {
+	    			isFile = externalFiles[i].getInputStream();
+	    		}
+	    		if(externalUri!=null && externalUri.length<i) {
+	    			file = externalUri[i];
+	    		}
+	    		InputStream is = getInputFile(externalContentType[i], isFile, file, null);
+	    		
+	    		lis.add(is);
+	    	}
+    	}
+    	
+    	return lis;
     }
     
 	private InputStream getInputFile(String contentType, InputStream inputStream, String uri, String string) {

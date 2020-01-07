@@ -64,6 +64,8 @@ public class XMLValidator implements ApplicationContextAware {
     private final DomainConfig domainConfig;
     private String validationType;
     private ObjectFactory gitbTRObjectFactory = new ObjectFactory();
+    List<InputStream> externalSchema;
+    List<InputStream> externalSch;
 
     static {
         try {
@@ -73,10 +75,12 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
-    public XMLValidator(InputStream inputToValidate, String validationType, DomainConfig domainConfig) {
+    public XMLValidator(InputStream inputToValidate, String validationType, List<InputStream> externalSchema, List<InputStream> externalSch, DomainConfig domainConfig) {
         this.inputToValidate = inputToValidate;
         this.validationType = validationType;
         this.domainConfig = domainConfig;
+        this.externalSchema = externalSchema;
+        this.externalSch = externalSch;
         if (validationType == null) {
             this.validationType = domainConfig.getType().get(0);
         }

@@ -8,6 +8,8 @@ import com.helger.schematron.pure.SchematronResourcePure;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
 import eu.europa.ec.itb.einvoice.util.Utils;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
@@ -64,8 +66,8 @@ public class XMLValidator implements ApplicationContextAware {
     private final DomainConfig domainConfig;
     private String validationType;
     private ObjectFactory gitbTRObjectFactory = new ObjectFactory();
-    List<InputStream> externalSchema;
-    List<InputStream> externalSch;
+    List<FileInfo> externalSchema;
+    List<FileInfo> externalSch;
 
     static {
         try {
@@ -75,7 +77,7 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
-    public XMLValidator(InputStream inputToValidate, String validationType, List<InputStream> externalSchema, List<InputStream> externalSch, DomainConfig domainConfig) {
+    public XMLValidator(InputStream inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig) {
         this.inputToValidate = inputToValidate;
         this.validationType = validationType;
         this.domainConfig = domainConfig;
@@ -240,7 +242,7 @@ public class XMLValidator implements ApplicationContextAware {
     public TAR validateAgainstSchematron() {
         File schematronFile = getSchematronFile();
         List<TAR> reports = new ArrayList<>();
-        List<File> schematronFiles = new ArrayList<>();
+        List<File> schematronFiles = getExternalSchematronFiles();
         if (schematronFile != null && schematronFile.exists()) {
             if (schematronFile.isFile()) {
                 // We are pointing to a single master schematron file.
@@ -282,10 +284,25 @@ public class XMLValidator implements ApplicationContextAware {
         return file;
     }
 
+    private List<File> getExternalSchematronFiles() {
+        List<File> files = new ArrayList<>();
+
+    	if(!domainConfig.getExternalSchematronFile().get(validationType).equals(DomainConfig.externalFile_none) && externalSch != null && !externalSch.isEmpty()) {
+    		for(FileInfo fi: externalSch) {
+    			files.add(fi.getFile());
+    		}
+    	}
+        return files;
+    }
+
     private File getSchemaFile() {
         File file = null;
         if (domainConfig.getSchemaFile() != null && domainConfig.getSchemaFile().containsKey(validationType)) {
             file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile();
+        }else {
+        	if(!domainConfig.getExternalSchemaFile().get(validationType).equals(DomainConfig.externalFile_none) && externalSchema != null && !externalSchema.isEmpty()) {
+        		file = externalSchema.get(0).getFile();
+        	}
         }
         return file;
     }

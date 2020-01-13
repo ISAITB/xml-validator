@@ -4,6 +4,7 @@ import com.gitb.tr.ObjectFactory;
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +25,17 @@ import java.io.*;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
+import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * Created by simatosc on 12/08/2016.
@@ -129,5 +138,87 @@ public class FileManager {
             throw new IllegalArgumentException("Unable to read provided URI", e);
         }
         
+	}
+    
+    public File getInputStreamFile(InputStream stream, String filename) throws IOException {
+    	return getInputStreamFile(config.getTmpFolder(), stream, filename);
+    }
+    
+    public File getURLFile(String url) throws IOException {
+    	return getURLFile(config.getTmpFolder(), url);
+    }
+	public File getURLFile(String targetFolder, String URLConvert) throws IOException {
+		URL url = new URL(URLConvert);
+		
+		String extension = FilenameUtils.getExtension(url.getFile());
+		
+		
+		return getURLFile(targetFolder, URLConvert, extension);
+	}
+	public File getURLFile(String targetFolder, String URLConvert, String contentSyntax) throws IOException {
+		Path tmpPath;
+
+		if(contentSyntax!=null) {
+			contentSyntax = "." + contentSyntax;
+		}
+		
+		tmpPath = getFilePath(targetFolder, contentSyntax);
+
+		try(InputStream in = getURIInputStream(URLConvert)){
+			Files.copy(in, tmpPath, StandardCopyOption.REPLACE_EXISTING);
+		}
+
+		return tmpPath.toFile();
+	}
+
+	private Path getFilePath(String folder, String extension) {
+		Path tmpPath = Paths.get(folder, UUID.randomUUID().toString() + extension);
+		tmpPath.toFile().getParentFile().mkdirs();
+
+		return tmpPath;
+	}
+
+	private Path getFilePathFilename(String folder, String fileName) {
+		Path tmpPath = Paths.get(folder, fileName);
+		tmpPath.toFile().getParentFile().mkdirs();
+
+		return tmpPath;
+	}
+	
+	public File getInputStreamFile(String targetFolder, InputStream stream, String fileName) throws IOException {
+		Path tmpPath = getFilePathFilename(targetFolder, fileName);
+		
+		Files.copy(stream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
+
+		return tmpPath.toFile();
+	}
+	
+	public List<File> unzipFile(File zipFile){
+		List<File> unzipFiles = new ArrayList<>();		
+		byte[] buffer = new byte[1024];
+		
+		try {
+	        ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));
+	        ZipEntry zipEntry = zis.getNextEntry();
+	        while (zipEntry != null) {
+	            Path tmpPath = getFilePathFilename(config.getTmpFolder(), zipEntry.getName());
+	            File f = tmpPath.toFile();
+	            FileOutputStream fos = new FileOutputStream(f);
+	            int len;
+	            while ((len = zis.read(buffer)) > 0) {
+	                fos.write(buffer, 0, len);
+	            }
+	            fos.close();
+	            
+	            unzipFiles.add(f);
+	            zipEntry = zis.getNextEntry();
+	        }
+	        zis.closeEntry();
+	        zis.close();
+		}catch(Exception e) {
+			return new ArrayList<>();
+		}
+        
+        return unzipFiles;
 	}
 }

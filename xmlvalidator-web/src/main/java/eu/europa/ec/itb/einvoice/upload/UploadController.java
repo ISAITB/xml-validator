@@ -6,7 +6,10 @@ import eu.europa.ec.itb.einvoice.DomainConfig;
 import eu.europa.ec.itb.einvoice.DomainConfigCache;
 import eu.europa.ec.itb.einvoice.ValidatorChannel;
 import eu.europa.ec.itb.einvoice.util.FileManager;
+import eu.europa.ec.itb.einvoice.validation.FileInfo;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
+
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +27,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -124,7 +128,7 @@ public class UploadController {
             attributes.put("message", "Error in upload [" + e.getMessage() + "]");
         }
         if (StringUtils.isBlank(validationType)) {
-            validationType = null;
+            validationType = config.getType().get(0);
         }
         if (config.hasMultipleValidationTypes() && (validationType == null || !config.getType().contains(validationType))) {
             // A invoice type is required.
@@ -132,13 +136,13 @@ public class UploadController {
         }
         try {
             if (stream != null) {
-            	List<InputStream> externalSchIS = new ArrayList<>();
-            	List<InputStream> externalSchemaIS = new ArrayList<>();
+            	List<FileInfo> externalSchIS = new ArrayList<>();
+            	List<FileInfo> externalSchemaIS = new ArrayList<>();
             	
             	try {
-            		externalSchemaIS = getExternalSchemaFiles(externalSchemaContentType, externalSchemaFiles, externalSchemaUri);
-            		externalSchIS = getExternalSchFiles(externalSchContentType, externalSchFiles, externalSchUri);
-            	} catch (IOException e) {
+            		externalSchemaIS = getExternalFiles(externalSchemaContentType, externalSchemaFiles, externalSchemaUri, config.getExternalSchemaFile(), validationType, true);
+            		externalSchIS = getExternalFiles(externalSchContentType, externalSchFiles, externalSchUri, config.getExternalSchematronFile(), validationType, false);
+            	} catch (Exception e) {
                     logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
                     attributes.put("message", "Error in upload [" + e.getMessage() + "]");
                 }
@@ -261,49 +265,74 @@ public class UploadController {
 		return types;        
     }
     
-    private List<InputStream> getExternalSchemaFiles(String[] externalContentType, MultipartFile[] externalFiles, String[] externalUri) throws Exception {
-    	List<InputStream> lis = new ArrayList<>();
+    private List<FileInfo> getExternalFiles(String[] externalContentType, MultipartFile[] externalFiles, String[] externalUri, 
+    		Map<String, String> externalProperties, String validationType, boolean isSchema) throws Exception {
+    	List<FileInfo> lis = new ArrayList<>();
     	
     	if(externalContentType != null) {
 	    	for(int i=0; i<externalContentType.length; i++) {
-	    		String file = "";
-	    		InputStream isFile = null;
-	    		if(externalFiles!=null && externalFiles.length>=i) {
-	    			isFile = externalFiles[i].getInputStream();
-	    		}
-	    		if(externalUri!=null && externalUri.length<i) {
-	    			file = externalUri[i];
-	    		}
-	    		InputStream is = getInputFile(externalContentType[i], isFile, file, null);
+				File inputFile = null;
 	    		
-	    		lis.add(is);
+				switch(externalContentType[i]) {
+					case contentType_file:
+						if(!externalFiles[i].isEmpty()) {							
+				        	inputFile = this.fileManager.getInputStreamFile(externalFiles[i].getInputStream(), externalFiles[i].getOriginalFilename());				
+						}
+						break;
+					case contentType_uri:					
+						if(externalUri.length>i && !externalUri[i].isEmpty()) {
+							inputFile = this.fileManager.getURLFile(externalUri[i]);
+						}
+						break;
+				}
+				
+				if(inputFile != null) {		
+					List<File> zipFiles = this.fileManager.unzipFile(inputFile);
+					if(zipFiles.isEmpty()) {
+						FileInfo fi = new FileInfo(inputFile, FilenameUtils.getExtension(inputFile.getName()));		    		
+			    		lis.add(fi);
+					}else {
+						for(File f: zipFiles) {
+							FileInfo fi = new FileInfo(f, FilenameUtils.getExtension(f.getName()));		    		
+				    		lis.add(fi);							
+						}
+					}
+				}
 	    	}
     	}
     	
-    	return lis;
+    	if (validateExternalFiles(lis, externalProperties, validationType) && ((isSchema && lis.size() <= 1) || !isSchema)) {
+        	return lis;
+    	}else { 
+            logger.error("An error occurred during the validation of the external Schema.");
+    		throw new Exception("An error occurred during the validation of the external Schema.");
+    	}
+    	
     }
     
-    private List<InputStream> getExternalSchFiles(String[] externalContentType, MultipartFile[] externalFiles, String[] externalUri) throws Exception {
-    	List<InputStream> lis = new ArrayList<>();
-
-    	if(externalContentType != null) {
-	    	for(int i=0; i<externalContentType.length; i++) {
-	    		String file = "";
-	    		InputStream isFile = null;
-	    		if(externalFiles!=null && externalFiles.length>=i) {
-	    			isFile = externalFiles[i].getInputStream();
-	    		}
-	    		if(externalUri!=null && externalUri.length<i) {
-	    			file = externalUri[i];
-	    		}
-	    		InputStream is = getInputFile(externalContentType[i], isFile, file, null);
-	    		
-	    		lis.add(is);
-	    	}
+    private boolean validateExternalFiles(List<FileInfo> lis, Map<String, String> externalArtefacts, String validationType) {
+    	String externalArtefactProperty = externalArtefacts.get(validationType);
+		
+    	boolean validated = false;
+    	
+    	switch(externalArtefactProperty) {
+    		case DomainConfig.externalFile_req:
+    			if(lis!=null && !lis.isEmpty()) {
+    				validated = true;
+    			}
+    			break;
+    		case DomainConfig.externalFile_opt:
+    			validated = true;
+    			break;
+    		case DomainConfig.externalFile_none:
+    			if(lis==null || lis.isEmpty()) {
+    				validated = true;
+    			}
+    			break;
     	}
     	
-    	return lis;
-    }
+		return validated;
+	}
     
 	private InputStream getInputFile(String contentType, InputStream inputStream, String uri, String string) {
 		InputStream is = null;
@@ -324,4 +353,5 @@ public class UploadController {
 
 		return is;
 	}
+    
 }

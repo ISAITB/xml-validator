@@ -238,12 +238,11 @@ public class XMLValidator implements ApplicationContextAware {
             }
         }
     }
-
-    public TAR validateAgainstSchematron() {
-        File schematronFile = getSchematronFile();
-        List<TAR> reports = new ArrayList<>();
-        List<File> schematronFiles = getExternalSchematronFiles();
-        if (schematronFile != null && schematronFile.exists()) {
+    
+    private List<File> getAllSchematron(File schematronFile) {
+    	List<File> schematronFiles = new ArrayList<>();
+    	
+    	if (schematronFile != null && schematronFile.exists()) {
             if (schematronFile.isFile()) {
                 // We are pointing to a single master schematron file.
                 schematronFiles.add(schematronFile);
@@ -259,6 +258,22 @@ public class XMLValidator implements ApplicationContextAware {
                 }
             }
         }
+    	
+    	return schematronFiles;
+    }
+
+    public TAR validateAgainstSchematron() {
+        File schematronFile = getSchematronFile();
+        List<TAR> reports = new ArrayList<>();
+        List<File> externalFiles = getExternalSchematronFiles();
+        
+        List<File> schematronFiles = getAllSchematron(schematronFile);
+        
+        for(File aSchematronFile: externalFiles) {
+        	schematronFiles.addAll(getAllSchematron(aSchematronFile));
+        }
+        
+        
         if (schematronFiles.isEmpty()) {
             logger.info("No schematrons to validate against ["+schematronFile+"]");
             return null;
@@ -301,7 +316,17 @@ public class XMLValidator implements ApplicationContextAware {
             file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile();
         }else {
         	if(!domainConfig.getExternalSchemaFile().get(validationType).equals(DomainConfig.externalFile_none) && externalSchema != null && !externalSchema.isEmpty()) {
-        		file = externalSchema.get(0).getFile();
+        		File rootFolder = externalSchema.get(0).getFile();
+        		
+        		if(rootFolder.isFile()) {
+        			file = rootFolder;
+        		}else {
+        			for(File f: rootFolder.listFiles()) {
+        				if(f.isFile()) {
+        					file = f;
+        				}
+        			}
+        		}
         	}
         }
         return file;

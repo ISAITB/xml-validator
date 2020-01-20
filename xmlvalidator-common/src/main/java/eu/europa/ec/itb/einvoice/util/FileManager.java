@@ -193,30 +193,48 @@ public class FileManager {
 		return tmpPath.toFile();
 	}
 	
-	public List<File> unzipFile(File zipFile){
-		List<File> unzipFiles = new ArrayList<>();		
+	private void getZipFiles(ZipInputStream zis, String tmpFolder) throws IOException{
 		byte[] buffer = new byte[1024];
+        ZipEntry zipEntry = zis.getNextEntry();
 		
-		try {
-	        ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));
-	        ZipEntry zipEntry = zis.getNextEntry();
-	        while (zipEntry != null) {
-	            Path tmpPath = getFilePathFilename(config.getTmpFolder(), zipEntry.getName());
+        while (zipEntry != null) {
+            Path tmpPath = getFilePathFilename(tmpFolder, zipEntry.getName());
+            
+            if(zipEntry.isDirectory()) {
+            	tmpPath.toFile().mkdirs();
+            }else {
 	            File f = tmpPath.toFile();
 	            FileOutputStream fos = new FileOutputStream(f);
 	            int len;
+	            
 	            while ((len = zis.read(buffer)) > 0) {
 	                fos.write(buffer, 0, len);
 	            }
 	            fos.close();
-	            
-	            unzipFiles.add(f);
-	            zipEntry = zis.getNextEntry();
-	        }
+            }
+            
+            zipEntry = zis.getNextEntry();
+        }
+	}
+	
+	public File unzipFile(File zipFile){
+		File unzipFiles = null;		
+        UUID folderUUID = UUID.randomUUID();
+		String tmpFolder = config.getTmpFolder() + "/" + folderUUID.toString();
+		
+		try {
+	        ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));	        
+	        File rootFolder = Paths.get(tmpFolder).toFile();
+	        rootFolder.mkdirs();
+	        
+	        getZipFiles(zis, tmpFolder);
+	        
+	        unzipFiles = rootFolder;
+        	
 	        zis.closeEntry();
 	        zis.close();
 		}catch(Exception e) {
-			return new ArrayList<>();
+			return null;
 		}
         
         return unzipFiles;

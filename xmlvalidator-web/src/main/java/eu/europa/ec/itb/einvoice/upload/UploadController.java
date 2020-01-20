@@ -117,9 +117,9 @@ public class UploadController {
         }
         attributes.put("appConfig", appConfig);
         try {
-        	InputStream fis = getInputFile(contentType, file.getInputStream(), uri, string);
+        	InputStream fis = getInputStream(contentType, file.getInputStream(), uri, string);
             if (fileManager.checkFileType(fis)) {
-                stream = getInputFile(contentType, file.getInputStream(), uri, string);
+                stream = getInputStream(contentType, file.getInputStream(), uri, string);
             } else {
                 attributes.put("message", "Provided input is not an XML document");
             }
@@ -272,29 +272,35 @@ public class UploadController {
     	if(externalContentType != null) {
 	    	for(int i=0; i<externalContentType.length; i++) {
 				File inputFile = null;
-	    		
-				switch(externalContentType[i]) {
-					case contentType_file:
-						if(!externalFiles[i].isEmpty()) {							
-				        	inputFile = this.fileManager.getInputStreamFile(externalFiles[i].getInputStream(), externalFiles[i].getOriginalFilename());				
-						}
-						break;
-					case contentType_uri:					
-						if(externalUri.length>i && !externalUri[i].isEmpty()) {
-							inputFile = this.fileManager.getURLFile(externalUri[i]);
-						}
-						break;
-				}
+				MultipartFile currentExtFile = null;
+				String currentExtUri = "";
 				
+				if(externalFiles!=null && externalFiles.length>i) {
+					currentExtFile = externalFiles[i];
+				}
+				if(externalUri!=null && externalUri.length>i) {
+					currentExtUri = externalUri[i];
+				}
+				inputFile = getInputFile(externalContentType[i], currentExtFile, currentExtUri);
+	    						
 				if(inputFile != null) {		
-					List<File> zipFiles = this.fileManager.unzipFile(inputFile);
-					if(zipFiles.isEmpty()) {
+					File rootFile = this.fileManager.unzipFile(inputFile);
+					if(rootFile == null) {
 						FileInfo fi = new FileInfo(inputFile, FilenameUtils.getExtension(inputFile.getName()));		    		
 			    		lis.add(fi);
 					}else {
-						for(File f: zipFiles) {
-							FileInfo fi = new FileInfo(f, FilenameUtils.getExtension(f.getName()));		    		
-				    		lis.add(fi);							
+						//ZIP File
+						boolean isValid = false;
+						if(isSchema) {
+							isValid = validateSchemaZip(rootFile);
+						}
+						
+						if(!isSchema || (isSchema && isValid)) {
+							FileInfo fi = new FileInfo(rootFile, FilenameUtils.getExtension(rootFile.getName()));		    		
+				    		lis.add(fi);
+						}else {
+				            logger.error("An error occurred during the validation of the external XSD ZIP File: XSD configuration needs to include a single XSD at its root (and any folders with sub-folders and other imported XSDs).");
+				    		throw new Exception("An error occurred during the validation of the external XSD ZIP File: XSD configuration needs to include a single XSD at its root (and any folders with sub-folders and other imported XSDs).");							
 						}
 					}
 				}
@@ -308,6 +314,27 @@ public class UploadController {
     		throw new Exception("An error occurred during the validation of the external Schema.");
     	}
     	
+    }
+    
+    private boolean validateSchemaZip(File rootFolder) {
+    	int iRootFiles = 0;
+    	
+    	//1 file as root, other files in a folder.
+		if (rootFolder.isFile()) {
+		     iRootFiles++;
+		} else {
+		     // List all files.
+		     File[] files = rootFolder.listFiles();
+		     if (files != null) {
+		         for (File aSchemaFile: files) {
+		             if (aSchemaFile.isFile()) {
+		                 iRootFiles++;
+		             }
+		         }
+		     }
+		}
+    	
+    	return (iRootFiles>1)? false : true;
     }
     
     private boolean validateExternalFiles(List<FileInfo> lis, Map<String, String> externalArtefacts, String validationType) {
@@ -334,7 +361,26 @@ public class UploadController {
 		return validated;
 	}
     
-	private InputStream getInputFile(String contentType, InputStream inputStream, String uri, String string) {
+    private File getInputFile(String contentType, MultipartFile inputFile, String inputUri) throws IOException {
+    	File f = null;
+    	
+    	switch(contentType) {
+			case contentType_file:
+				if(inputFile!=null && !inputFile.isEmpty()) {							
+		        	f = this.fileManager.getInputStreamFile(inputFile.getInputStream(), inputFile.getOriginalFilename());				
+				}
+				break;
+			case contentType_uri:					
+				if(!inputUri.isEmpty()) {
+					f = this.fileManager.getURLFile(inputUri);
+				}
+				break;
+		}
+    	
+    	return f;
+    }
+    
+	private InputStream getInputStream(String contentType, InputStream inputStream, String uri, String string) {
 		InputStream is = null;
 		
 		switch(contentType) {

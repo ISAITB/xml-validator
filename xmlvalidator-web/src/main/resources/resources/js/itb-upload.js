@@ -43,13 +43,13 @@ function triggerFileUploadShapes(elementId) {
     $("#"+elementId).click();
 }
 function fileInputChangedShapes(type){
-	if($('#contentType-'+type).val()=="fileType"){
+	if($('#contentType-'+type).val()=="fileType" && $("#inputFile-"+type+"")[0].files[0]!=null){
 		$("#inputFileName-"+type+"").val($("#inputFile-"+type+"")[0].files[0].name);
 	}
 	fileInputChanged();
 }
 function fileInputChanged() {
-	if($('#contentType').val()=="fileType"){
+	if($('#contentType').val()=="fileType" && $('#inputFile')[0].files[0]!=null){
 		$('#inputFileName').val($('#inputFile')[0].files[0].name);
 	}
 	checkForSubmit();
@@ -80,9 +80,9 @@ function addElement(type) {
 				"<option value='uriType'>"+labelURI+"</option>"+
 		    "</select>"+
 		"</div>"+
-		"<div class='col-sm-8'>" +
+		"<div class='col-sm-10'>" +
 		    "<div class='row'>" +
-                "<div class='col-md-10 col-sm-7'>" +
+                "<div class='col-md-11 col-sm-10'>" +
                     "<div class='input-group' id='fileToValidate-"+elementId+"'>" +
                         "<div class='input-group-btn'>" +
                             "<button class='btn btn-default' type='button' onclick='triggerFileUploadShapes(\"inputFile-"+elementId+"\")'><i class='far fa-folder-open'></i></button>" +
@@ -90,7 +90,7 @@ function addElement(type) {
                         "<input type='text' id='inputFileName-"+elementId+"' class='form-control clickable' onclick='triggerFileUploadShapes(\"inputFile-"+elementId+"\")' readonly='readonly'/>" +
                     "</div>" +
                 "</div>" +
-                "<div class='col-md-10 col-sm-7 hidden' id='uriToValidate-"+elementId+"'>"+
+                "<div class='col-md-11 col-sm-10 hidden' id='uriToValidate-"+elementId+"'>"+
                     "<input type='url' class='form-control' id='uri-"+elementId+"' name='uri-"+type+"' onchange='fileInputChangedShapes(\""+elementId+"\")'>"+
                 "</div>"+
                 "<input type='file' class='inputFile' id='inputFile-"+elementId+"' name='inputFile-"+type+"' onchange='fileInputChangedShapes(\""+elementId+"\")'/>" +

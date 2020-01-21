@@ -1,25 +1,42 @@
 function validationTypeChanged() {
+	cleanExternalArtefacts("externalSch");
+	cleanExternalArtefacts("externalSchema");
+	
 	checkForSubmit();
 	externalArtefactsEnabled();
 }
 
+function cleanExternalArtefacts(type){
+    var externalArtefact = $("."+type+"Div").length;
+
+    for (var i=0; i<externalArtefact; i++){
+        removeElement(type+"-"+i, type);    
+    }
+    
+    if($("."+type+"Class").is(":hidden")){
+    	$("."+type+"Class").toggle();
+    }
+	
+}
+
 function externalArtefactsEnabled(){
-	var ext = document.getElementById("externalSchema");
-	var extSch = document.getElementById("externalSchematron");
-	$(".includeExternalArtefacts").addClass('hidden');
+	$(".includeExternalArtefacts").addClass('hidden');	
+	$("#externalArtefactsCheck").prop('checked', false);
 	
 	var includeExternalArtefactsSch = getExternalType("externalSchematron");
 	var includeExternalArtefacts = getExternalType("externalSchema");
-	
-	if((includeExternalArtefacts=="required" || includeExternalArtefactsSch=="required") || (includeExternalArtefacts=="none" && includeExternalArtefactsSch=="none")){
+
+	if(includeExternalArtefacts=="none" && includeExternalArtefactsSch=="none"){
 		$(".includeExternalArtefacts").addClass('hidden');
 	}else{
-		$(".includeExternalArtefacts").removeClass('hidden');
+		if(includeExternalArtefacts=="required" || includeExternalArtefactsSch=="required"){
+			$(".includeExternalArtefacts").addClass('hidden');
+		}else{
+			$(".includeExternalArtefacts").removeClass('hidden');
+		}
 	}
 	
-	if(ext !== null || extSch !== null){
-		checkForSubmit();		
-	}
+	toggleExternalArtefactsClassCheck();
 }
 
 function addExternalSchema(){
@@ -254,7 +271,6 @@ function getExternalType(extElementId){
 function toggleExternalArtefactsClassCheck() {
 	var toggleExtSch = getExternalType("externalSchematron");
 	var toggleExt = getExternalType("externalSchema");
-
 	
 	if(toggleExtSch == "required" || toggleExt == "required"){
 		
@@ -278,14 +294,23 @@ function toggleExternalArtefactsClassCheck() {
 		}		
 		
 	}else{
-		$(".externalSchClass").toggle();
-		$(".externalSchemaClass").toggle();		
+		if(toggleExtSch == "none" && toggleExt == "none"){
+		    if($(".externalSchClass").is(":visible")){
+		    	$(".externalSchClass").toggle();
+		    }
+		    if($(".externalSchemaClass").is(":visible")){
+		    	$(".externalSchemaClass").toggle();
+		    }
+		}else{
+			$(".externalSchClass").toggle();
+			$(".externalSchemaClass").toggle();
+		}
 	}
 }
 
 $(document).ready(function() {
-	validationTypeChanged();
-	toggleExternalArtefactsClassCheck();
+	checkForSubmit();
+	externalArtefactsEnabled();
 
 	if(document.getElementById('text-editor') !== null){
 		var editableCodeMirror = CodeMirror.fromTextArea(document.getElementById('text-editor'), {

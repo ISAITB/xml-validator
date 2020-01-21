@@ -100,6 +100,8 @@ public class DomainConfigCache {
                 domainConfig.setSchematronFile(parseMap("validator.schematronFile", config, domainConfig.getType()));
                 domainConfig.setExternalSchemaFile(parseStringMap("validator.externalSchemaFile", config, domainConfig.getType(), "validator.schemaFile"));
                 domainConfig.setExternalSchematronFile(parseStringMap("validator.externalSchematronFile", config, domainConfig.getType(), null));
+                domainConfig.setRemoteSchemaFile(parseRemoteMap("validator.schemaFile", config, domainConfig.getType()));
+                domainConfig.setRemoteSchematronFile(parseRemoteMap("validator.schematronFile", config, domainConfig.getType()));
                 domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
                 domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
                 domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
@@ -158,6 +160,29 @@ public class DomainConfigCache {
             }
         }
         return map;
+    }
+    
+    private Map<String, List<String>> parseRemoteMap(String key, CompositeConfiguration config, List<String> types){
+        Map<String, List<String>> map = new HashMap<>();
+        for (String type: types) {
+            List<String> remoteFiles = new ArrayList<>();
+            Set<String> processedRemote = new HashSet<>();
+            //validator.schematronFile.ubl.remote.0.url
+            Iterator<String> it = config.getKeys(key + "." + type + ".remote");
+            while(it.hasNext()) {
+            	String remoteKeys = it.next(); 
+            	String remoteInt = remoteKeys.replaceAll("("+key+"." + type + ".remote.)([0-9]{1,})(.[a-zA-Z]*)(.url)", "$2");
+
+            	if(!processedRemote.contains(remoteInt)) {
+            		remoteFiles.add(config.getString(remoteInt));
+            		processedRemote.add(remoteInt);
+            	}
+            }
+            
+            map.put(type, remoteFiles);
+        }
+    	
+    	return map;
     }
 
     private Map<String, String> parseStringMap(String key, CompositeConfiguration config, List<String> types, String booleanProperty) {

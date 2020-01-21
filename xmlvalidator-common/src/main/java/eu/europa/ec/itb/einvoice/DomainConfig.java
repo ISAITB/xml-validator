@@ -23,6 +23,8 @@ public class DomainConfig {
     private Map<String,String> schemaFile;
     private Map<String,String> externalSchemaFile;
     private Map<String,String> externalSchematronFile;
+    private Map<String, List<String>> remoteSchemaFile;
+    private Map<String, List<String>> remoteSchematronFile;
     private String htmlBanner;
     private String htmlFooter;
     private boolean supportMinimalUserInterface;
@@ -123,6 +125,22 @@ public class DomainConfig {
 
     public void setExternalSchematronFile(Map<String, String> externalSchematronFile) {
         this.externalSchematronFile = externalSchematronFile;
+    }
+
+    public Map<String, List<String>> getRemoteSchemaFile() {
+        return remoteSchemaFile;
+    }
+
+    public void setRemoteSchemaFile(Map<String, List<String>> remoteSchemaFile) {
+        this.remoteSchemaFile = remoteSchemaFile;
+    }
+
+    public Map<String, List<String>> getRemoteSchematronFile() {
+        return remoteSchematronFile;
+    }
+
+    public void setRemoteSchematronFile(Map<String, List<String>> remoteSchematronFile) {
+        this.remoteSchematronFile = remoteSchematronFile;
     }
 
     public String getMailFrom() {

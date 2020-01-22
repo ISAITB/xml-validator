@@ -7,9 +7,9 @@ import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
+import eu.europa.ec.itb.einvoice.util.FileManager;
 import eu.europa.ec.itb.einvoice.util.Utils;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
@@ -60,6 +60,9 @@ public class XMLValidator implements ApplicationContextAware {
     @Autowired
     private ApplicationConfig config;
 
+    @Autowired
+    private FileManager fileManager;
+    
     private InputStream inputToValidate;
     private byte[] inputBytes;
     private ApplicationContext ctx;
@@ -268,11 +271,13 @@ public class XMLValidator implements ApplicationContextAware {
         List<File> externalFiles = getExternalSchematronFiles();
         
         List<File> schematronFiles = getAllSchematron(schematronFile);
+        List<File> remoteFiles = getAllSchematron(getRemoteSchematronFiles());
+        
+        schematronFiles.addAll(remoteFiles);
         
         for(File aSchematronFile: externalFiles) {
         	schematronFiles.addAll(getAllSchematron(aSchematronFile));
         }
-        
         
         if (schematronFiles.isEmpty()) {
             logger.info("No schematrons to validate against ["+schematronFile+"]");
@@ -310,23 +315,56 @@ public class XMLValidator implements ApplicationContextAware {
         return files;
     }
 
+	private File getRemoteSchematronFiles() {
+		File remoteConfigFolder = new File(new File(new File(fileManager.getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType), "sch");
+		
+		
+		if (remoteConfigFolder.exists()) {
+			return remoteConfigFolder;
+		} else {
+			return null;
+		}
+	}
+
+	private File getRemoteSchemaFiles() {
+		File remoteConfigFolder = new File(new File(new File(fileManager.getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType), "xsd");
+		
+		
+		if (remoteConfigFolder.exists()) {
+			return remoteConfigFolder;
+		} else {
+			return null;
+		}
+	}
+
     private File getSchemaFile() {
         File file = null;
         if (domainConfig.getSchemaFile() != null && domainConfig.getSchemaFile().containsKey(validationType)) {
             file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile();
         }else {
-        	if(!domainConfig.getExternalSchemaFile().get(validationType).equals(DomainConfig.externalFile_none) && externalSchema != null && !externalSchema.isEmpty()) {
-        		File rootFolder = externalSchema.get(0).getFile();
-        		
-        		if(rootFolder.isFile()) {
-        			file = rootFolder;
-        		}else {
-        			for(File f: rootFolder.listFiles()) {
-        				if(f.isFile()) {
-        					file = f;
-        				}
-        			}
-        		}
+        	//Remote Schema file
+        	File remotFile = getRemoteSchemaFiles();
+    		if(remotFile!= null) {
+    			for(File f: remotFile.listFiles()) {
+    				if(f.isFile()) {
+    					file = f;
+    				}
+    			}
+    		}else {
+        		//External Schema file
+        		if(!domainConfig.getExternalSchemaFile().get(validationType).equals(DomainConfig.externalFile_none) && externalSchema != null && !externalSchema.isEmpty()) {
+            		File rootFolder = externalSchema.get(0).getFile();
+            		
+            		if(rootFolder.isFile()) {
+            			file = rootFolder;
+            		}else {
+            			for(File f: rootFolder.listFiles()) {
+            				if(f.isFile()) {
+            					file = f;
+            				}
+            			}
+            		}
+            	}
         	}
         }
         return file;

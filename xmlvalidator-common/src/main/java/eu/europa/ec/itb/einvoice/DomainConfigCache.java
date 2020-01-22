@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import eu.europa.ec.itb.einvoice.DomainConfig.RemoteFileInfo;
+
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -98,10 +100,10 @@ public class DomainConfigCache {
                 domainConfig.setWebServiceDescription(parseMap("validator.webServiceDescription", config, Arrays.asList("xml", "type")));
                 domainConfig.setSchemaFile(parseMap("validator.schemaFile", config, domainConfig.getType()));
                 domainConfig.setSchematronFile(parseMap("validator.schematronFile", config, domainConfig.getType()));
-                domainConfig.setExternalSchemaFile(parseStringMap("validator.externalSchemaFile", config, domainConfig.getType(), "validator.schemaFile"));
-                domainConfig.setExternalSchematronFile(parseStringMap("validator.externalSchematronFile", config, domainConfig.getType(), null));
                 domainConfig.setRemoteSchemaFile(parseRemoteMap("validator.schemaFile", config, domainConfig.getType()));
                 domainConfig.setRemoteSchematronFile(parseRemoteMap("validator.schematronFile", config, domainConfig.getType()));
+                domainConfig.setExternalSchemaFile(parseStringMap("validator.externalSchemaFile", config, domainConfig.getType(), "validator.schemaFile"));
+                domainConfig.setExternalSchematronFile(parseStringMap("validator.externalSchematronFile", config, domainConfig.getType(), null));
                 domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
                 domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
                 domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
@@ -162,24 +164,26 @@ public class DomainConfigCache {
         return map;
     }
     
-    private Map<String, List<String>> parseRemoteMap(String key, CompositeConfiguration config, List<String> types){
-        Map<String, List<String>> map = new HashMap<>();
+    private Map<String, RemoteFileInfo> parseRemoteMap(String key, CompositeConfiguration config, List<String> types){
+        Map<String, RemoteFileInfo> map = new HashMap<>();
         for (String type: types) {
-            List<String> remoteFiles = new ArrayList<>();
+        	DomainConfig.RemoteFileInfo remoteFileInfo = new RemoteFileInfo();
             Set<String> processedRemote = new HashSet<>();
-            //validator.schematronFile.ubl.remote.0.url
+            List<String> filesRemote = new ArrayList<>();
+            
             Iterator<String> it = config.getKeys(key + "." + type + ".remote");
             while(it.hasNext()) {
             	String remoteKeys = it.next(); 
             	String remoteInt = remoteKeys.replaceAll("("+key+"." + type + ".remote.)([0-9]{1,})(.[a-zA-Z]*)(.url)", "$2");
 
             	if(!processedRemote.contains(remoteInt)) {
-            		remoteFiles.add(config.getString(remoteInt));
             		processedRemote.add(remoteInt);
+            		filesRemote.add(config.getString(remoteInt));
             	}
             }
             
-            map.put(type, remoteFiles);
+            remoteFileInfo.setRemote(filesRemote);            
+            map.put(type, remoteFileInfo);
         }
     	
     	return map;
@@ -195,8 +199,9 @@ public class DomainConfigCache {
             	
             	if((value.equals(DomainConfig.externalFile_req) || value.equals(DomainConfig.externalFile_opt)) && booleanProperty!=null) {
                     String val = config.getString(booleanProperty+"."+type, null);
+                    Iterator<String> it = config.getKeys(booleanProperty + "." + type + ".remote");
                     
-                    if(val!=null) {
+                    if(val!=null || it.hasNext()) {
                     	value = DomainConfig.externalFile_none;
                     }
             	}

@@ -3,15 +3,21 @@ package eu.europa.ec.itb.einvoice.util;
 import com.gitb.tr.ObjectFactory;
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
+import eu.europa.ec.itb.einvoice.DomainConfig;
+import eu.europa.ec.itb.einvoice.DomainConfig.RemoteFileInfo;
+import eu.europa.ec.itb.einvoice.DomainConfigCache;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 
+import javax.annotation.PostConstruct;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -33,7 +39,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -57,6 +67,11 @@ public class FileManager {
 
     @Autowired
     ApplicationConfig config;
+    
+	@Autowired
+	private DomainConfigCache domainConfigCache;
+
+	private ConcurrentHashMap<String, ReadWriteLock> externalDomainFileCacheLocks = new ConcurrentHashMap<>();
 
     public String writeXML(String domain, String xml) throws IOException {
         UUID fileUUID = UUID.randomUUID();
@@ -238,5 +253,69 @@ public class FileManager {
 		}
         
         return unzipFiles;
+	}
+
+    public File getRemoteFileCacheFolder() {
+    	return new File(getTempFolder(), "remote_config");
+	}
+
+    private File getTempFolder() {
+    	return new File(config.getTmpFolder());
+	}
+
+	@PostConstruct
+	public void init() {
+		FileUtils.deleteQuietly(getTempFolder());
+		for (DomainConfig config: domainConfigCache.getAllDomainConfigurations()) {
+			externalDomainFileCacheLocks.put(config.getDomainName(), new ReentrantReadWriteLock());
+		}
+		FileUtils.deleteQuietly(getRemoteFileCacheFolder());
+		resetRemoteFileCache();
+	}
+	
+	@Scheduled(fixedDelayString = "${validator.cleanupRate}")
+	public void resetRemoteFileCache() {
+		logger.debug("Resetting remote SCHEMATRON and SCHEMA files cache");
+		for (DomainConfig domainConfig: domainConfigCache.getAllDomainConfigurations()) {
+			try {
+				// Get write lock for domain.
+				logger.debug("Waiting for lock to reset cache for ["+domainConfig.getDomainName()+"]");
+				externalDomainFileCacheLocks.get(domainConfig.getDomainName()).writeLock().lock();
+				logger.debug("Locked cache for ["+domainConfig.getDomainName()+"]");
+				for (String validationType: domainConfig.getType()) {
+					// Empty cache folder.
+					File remoteConfigFolder = new File(new File(getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType);
+					FileUtils.deleteQuietly(remoteConfigFolder);
+					
+					File remoteSchFolder = new File(remoteConfigFolder, "sch");
+					File remoteXsdFolder = new File(remoteConfigFolder, "xsd");
+					remoteSchFolder.mkdirs();
+					remoteXsdFolder.mkdirs();
+					
+					// Download remote SCH/XSD files (if needed).
+					try {
+						downloadRemoteFiles(domainConfig.getRemoteSchematronFile(), validationType, remoteSchFolder.getAbsolutePath());
+						downloadRemoteFiles(domainConfig.getRemoteSchemaFile(), validationType, remoteXsdFolder.getAbsolutePath());
+					} catch (IOException e) {
+						logger.error("Error to load the remote files", e);
+						throw new IllegalStateException("Error to load the remote files", e);
+					}
+				}
+			} finally {
+				// Unlock domain.
+				externalDomainFileCacheLocks.get(domainConfig.getDomainName()).writeLock().unlock();
+				logger.debug("Reset remote SCHEMATRON and SCHEMA files cache for ["+domainConfig.getDomainName()+"]");
+			}
+		}
+	}
+	
+	private void downloadRemoteFiles(Map<String, RemoteFileInfo> map, String validationType, String remoteConfigPath) throws IOException{
+		// Download remote SCH/XSD files (if needed).
+		List<String> ri = map.get(validationType).getRemote();
+		if (ri != null) {
+			for (String uri: ri) {
+				getURLFile(remoteConfigPath, uri);
+			}
+		}
 	}
 }

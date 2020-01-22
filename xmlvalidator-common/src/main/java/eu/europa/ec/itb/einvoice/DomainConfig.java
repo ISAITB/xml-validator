@@ -23,8 +23,8 @@ public class DomainConfig {
     private Map<String,String> schemaFile;
     private Map<String,String> externalSchemaFile;
     private Map<String,String> externalSchematronFile;
-    private Map<String, List<String>> remoteSchemaFile;
-    private Map<String, List<String>> remoteSchematronFile;
+    private Map<String, RemoteFileInfo> remoteSchemaFile;
+    private Map<String, RemoteFileInfo> remoteSchematronFile;
     private String htmlBanner;
     private String htmlFooter;
     private boolean supportMinimalUserInterface;
@@ -127,19 +127,19 @@ public class DomainConfig {
         this.externalSchematronFile = externalSchematronFile;
     }
 
-    public Map<String, List<String>> getRemoteSchemaFile() {
+    public Map<String, RemoteFileInfo> getRemoteSchemaFile() {
         return remoteSchemaFile;
     }
 
-    public void setRemoteSchemaFile(Map<String, List<String>> remoteSchemaFile) {
+    public void setRemoteSchemaFile(Map<String, RemoteFileInfo> remoteSchemaFile) {
         this.remoteSchemaFile = remoteSchemaFile;
     }
 
-    public Map<String, List<String>> getRemoteSchematronFile() {
+    public Map<String, RemoteFileInfo> getRemoteSchematronFile() {
         return remoteSchematronFile;
     }
 
-    public void setRemoteSchematronFile(Map<String, List<String>> remoteSchematronFile) {
+    public void setRemoteSchematronFile(Map<String, RemoteFileInfo> remoteSchematronFile) {
         this.remoteSchematronFile = remoteSchematronFile;
     }
 
@@ -330,6 +330,18 @@ public class DomainConfig {
 	public void setSupportMinimalUserInterface(boolean supportMinimalUserInterface) {
 		this.supportMinimalUserInterface = supportMinimalUserInterface;
 	}
+
+	public static class RemoteFileInfo {
+    	List<String> remote;
+    	
+    	public List<String> getRemote() { 
+    		return remote; 
+    	}
+    	
+    	public void setRemote(List<String> remote) { 
+    		this.remote = remote; 
+    	}
+    }
 
 	public static class Label {
 

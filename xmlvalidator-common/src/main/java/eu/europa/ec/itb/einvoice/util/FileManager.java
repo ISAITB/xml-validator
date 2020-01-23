@@ -179,7 +179,10 @@ public class FileManager {
 	}
     
     public File getURLFile(String url, boolean isSchema) throws IOException {
-    	return getURLFile(config.getTmpFolder(), url, isSchema);
+        UUID folderUUID = UUID.randomUUID();
+		Path tmpFolder = Paths.get(config.getTmpFolder(), folderUUID.toString());
+		
+    	return getURLFile(tmpFolder.toString(), url, isSchema);
     }
     /**
      * Returns a File in a specific folder from a URI. If the expected file is an XSD, it retrieves the imported/included schemas.

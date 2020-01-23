@@ -46,7 +46,8 @@ public class XSDFileResolver implements LSResourceResolver {
         			systemId = "/import/" + new File(baseURIFile, systemId).getName();
         		}else {
         			baseURIFile = Paths.get(xsdExternalPath).toFile();
-        		}
+        			systemId = "/import/" + new File(baseURIFile, systemId).getName();
+            	}
         	}
         } else {
             try {

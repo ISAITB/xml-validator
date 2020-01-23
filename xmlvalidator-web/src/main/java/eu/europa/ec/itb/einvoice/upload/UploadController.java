@@ -91,10 +91,10 @@ public class UploadController {
     		@RequestParam(value = "contentType", defaultValue = "") String contentType, 
     		@RequestParam(value = "contentType-externalSchema", required = false) String[] externalSchemaContentType,
     		@RequestParam(value = "inputFile-externalSchema", required= false) MultipartFile[] externalSchemaFiles,
-    		@RequestParam(value = "uriToValidate-externalSchema", required = false) String[] externalSchemaUri,
+    		@RequestParam(value = "uri-externalSchema", required = false) String[] externalSchemaUri,
     		@RequestParam(value = "contentType-externalSch", required = false) String[] externalSchContentType,
     		@RequestParam(value = "inputFile-externalSch", required= false) MultipartFile[] externalSchFiles,
-    		@RequestParam(value = "uriToValidate-externalSch", required = false) String[] externalSchUri,
+    		@RequestParam(value = "uri-externalSch", required = false) String[] externalSchUri,
     		RedirectAttributes redirectAttributes,
     		HttpServletRequest request) {
 		setMinimalUIFlag(request, false);

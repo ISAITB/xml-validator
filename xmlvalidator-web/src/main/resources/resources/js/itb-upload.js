@@ -41,7 +41,7 @@ function externalArtefactsEnabled(){
 
 function addExternalSchema(){
 	addElement("externalSchema");
-	$('#externalSchemaAddButton').addClass('hidden');
+	$('#externalSchemaAddButton').prop('disabled', true);
 }
 
 function addExternalSchematron(){
@@ -52,7 +52,7 @@ function removeElement(elementId, type) {
 	document.getElementById(elementId).remove();
 	
 	if(type == "externalSchema"){
-		$('#externalSchemaAddButton').removeClass('hidden');
+		$('#externalSchemaAddButton').prop('disabled', false);	
 	}
 }
 
@@ -284,13 +284,13 @@ function toggleExternalArtefactsClassCheck() {
 		
 		if(toggleExtSch == "required"){
 			addElement("externalSch");
-			$('#rmvButton-externalSch-0').addClass('hidden');			
+			$('#rmvButton-externalSch-0').prop('disabled', true);
 		}
 		
 		if(toggleExt == "required"){
 			addElement("externalSchema");
-			$('#externalSchemaAddButton').addClass('hidden');
-			$('#rmvButton-externalSchema-0').addClass('hidden');		
+			$('#externalSchemaAddButton').prop('disabled', true);	
+			$('#rmvButton-externalSchema-0').prop('disabled', true);	
 		}		
 		
 	}else{

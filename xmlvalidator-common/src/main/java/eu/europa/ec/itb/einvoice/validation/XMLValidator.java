@@ -102,8 +102,8 @@ public class XMLValidator implements ApplicationContextAware {
         return new ByteArrayInputStream(inputBytes);
     }
 
-    private LSResourceResolver getXSDResolver() {
-        return ctx.getBean(XSDFileResolver.class, validationType, domainConfig);
+    private LSResourceResolver getXSDResolver(String xsdExternalPath) {
+        return ctx.getBean(XSDFileResolver.class, validationType, domainConfig, xsdExternalPath);
     }
 
     private javax.xml.transform.URIResolver getURIResolver(File schematronFile) {
@@ -150,7 +150,7 @@ public class XMLValidator implements ApplicationContextAware {
         // Resolve schema.
         SchemaFactory schemaFactory = XMLSchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         schemaFactory.setErrorHandler(handler);
-        schemaFactory.setResourceResolver(getXSDResolver());
+        schemaFactory.setResourceResolver(getXSDResolver(schemaFile.getParent()));
         Schema schema;
         try {
             schemaFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, false);
@@ -329,8 +329,7 @@ public class XMLValidator implements ApplicationContextAware {
 	private File getRemoteSchemaFiles() {
 		File remoteConfigFolder = new File(new File(new File(fileManager.getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType), "xsd");
 		
-		
-		if (remoteConfigFolder.exists()) {
+		if (remoteConfigFolder.exists() && remoteConfigFolder.listFiles().length>0) {
 			return remoteConfigFolder;
 		} else {
 			return null;
@@ -345,11 +344,7 @@ public class XMLValidator implements ApplicationContextAware {
         	//Remote Schema file
         	File remotFile = getRemoteSchemaFiles();
     		if(remotFile!= null) {
-    			for(File f: remotFile.listFiles()) {
-    				if(f.isFile()) {
-    					file = f;
-    				}
-    			}
+    			file = getRootFile(remotFile.listFiles());
     		}else {
         		//External Schema file
         		if(!domainConfig.getExternalSchemaFile().get(validationType).equals(DomainConfig.externalFile_none) && externalSchema != null && !externalSchema.isEmpty()) {
@@ -358,16 +353,23 @@ public class XMLValidator implements ApplicationContextAware {
             		if(rootFolder.isFile()) {
             			file = rootFolder;
             		}else {
-            			for(File f: rootFolder.listFiles()) {
-            				if(f.isFile()) {
-            					file = f;
-            				}
-            			}
+            			file = getRootFile(rootFolder.listFiles());
             		}
             	}
         	}
         }
         return file;
+    }
+    
+    private File getRootFile(File[] listFiles) {
+    	File rootFile = null;
+		for(File f: listFiles) {
+			if(f.isFile()) {
+				rootFile = f;
+			}
+		}
+		
+		return rootFile;
     }
 
     private void logReport(TAR report, String name) {

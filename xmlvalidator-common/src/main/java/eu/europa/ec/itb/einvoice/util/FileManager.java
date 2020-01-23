@@ -10,6 +10,11 @@ import eu.europa.ec.itb.einvoice.DomainConfigCache;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
+import org.apache.xerces.impl.xs.XMLSchemaLoader;
+import org.apache.xerces.xs.StringList;
+import org.apache.xerces.xs.XSModel;
+import org.apache.xerces.xs.XSNamespaceItem;
+import org.apache.xerces.xs.XSNamespaceItemList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,9 +42,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -131,6 +137,11 @@ public class FileManager {
         return config.getAcceptedMimeTypes().contains(type);
     }
 
+    /**
+     * Get InputStream file from a URI.
+     * @param String URI to be downloaded.
+     * @return The InputStream of the URI.
+     */
     public InputStream getURIInputStream(String URLConvert) {
         // Read the string from the provided URI.
         URI uri = URI.create(URLConvert);
@@ -158,39 +169,50 @@ public class FileManager {
     public File getInputStreamFile(InputStream stream, String filename) throws IOException {
     	return getInputStreamFile(config.getTmpFolder(), stream, filename);
     }
+	
+	public File getInputStreamFile(String targetFolder, InputStream stream, String fileName) throws IOException {
+		Path tmpPath = getFilePathFilename(targetFolder, fileName);
+		
+		Files.copy(stream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
+
+		return tmpPath.toFile();
+	}
     
-    public File getURLFile(String url) throws IOException {
-    	return getURLFile(config.getTmpFolder(), url);
+    public File getURLFile(String url, boolean isSchema) throws IOException {
+    	return getURLFile(config.getTmpFolder(), url, isSchema);
     }
-	public File getURLFile(String targetFolder, String URLConvert) throws IOException {
+    /**
+     * Returns a File in a specific folder from a URI. If the expected file is an XSD, it retrieves the imported/included schemas.
+     * @param String targetFolder Folder to save the File.
+     * @param String URLConvert URI from where to retrieve the File.
+     * @param Boolean isSchema Whether the expected File is an XSD or Schematron.
+     * @return File URI as File in  the specific folder.
+     * @throws IOException
+     */
+	public File getURLFile(String targetFolder, String URLConvert, boolean isSchema) throws IOException {
 		URL url = new URL(URLConvert);
 		
-		String extension = FilenameUtils.getExtension(url.getFile());
+		String filename = FilenameUtils.getName(url.getFile());
 		
+		File rootFile = getURLFile(targetFolder, URLConvert, filename);
 		
-		return getURLFile(targetFolder, URLConvert, extension);
-	}
-	public File getURLFile(String targetFolder, String URLConvert, String contentSyntax) throws IOException {
-		Path tmpPath;
-
-		if(contentSyntax!=null) {
-			contentSyntax = "." + contentSyntax;
+		if(isSchema && rootFile!=null) {	        
+			retreiveImportSchema(URLConvert, rootFile.getParent()+"/import");
 		}
 		
-		tmpPath = getFilePath(targetFolder, contentSyntax);
+		return rootFile;
+	}
+	
+	public File getURLFile(String targetFolder, String URLConvert, String filename) throws IOException {
+		Path tmpPath;
+		
+		tmpPath = getFilePathFilename(targetFolder, filename);
 
 		try(InputStream in = getURIInputStream(URLConvert)){
 			Files.copy(in, tmpPath, StandardCopyOption.REPLACE_EXISTING);
 		}
 
 		return tmpPath.toFile();
-	}
-
-	private Path getFilePath(String folder, String extension) {
-		Path tmpPath = Paths.get(folder, UUID.randomUUID().toString() + extension);
-		tmpPath.toFile().getParentFile().mkdirs();
-
-		return tmpPath;
 	}
 
 	private Path getFilePathFilename(String folder, String fileName) {
@@ -200,17 +222,39 @@ public class FileManager {
 		return tmpPath;
 	}
 	
-	public File getInputStreamFile(String targetFolder, InputStream stream, String fileName) throws IOException {
-		Path tmpPath = getFilePathFilename(targetFolder, fileName);
-		
-		Files.copy(stream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
-
-		return tmpPath.toFile();
+	private void retreiveImportSchema(String rootURI, String rootFile) {
+		XMLSchemaLoader xsdLoader = new XMLSchemaLoader();
+		XSModel xsdModel = xsdLoader.loadURI(rootURI);
+		XSNamespaceItemList xsdNamespaceItemList = xsdModel.getNamespaceItems();
+		Set<String> documentLocations = new HashSet<>();
+				
+		for(int i=0; i<xsdNamespaceItemList.getLength(); i++) {
+			XSNamespaceItem xsdItem = (XSNamespaceItem) xsdNamespaceItemList.get(i);
+			StringList sl = xsdItem.getDocumentLocations();
+			for(int k=0; k<sl.getLength(); k++) {
+				if(!documentLocations.contains(sl.get(k))) {
+					String currentLocation = (String)sl.get(k);
+					
+					try {
+						getURLFile(rootFile, currentLocation, false);
+						
+						documentLocations.add(currentLocation);
+					} catch (IOException e) {
+						logger.error("Error to load the remote files", e);
+						throw new IllegalStateException("Error to load the remote files", e);
+					}
+				}
+			}
+		}
 	}
 	
-	private void getZipFiles(ZipInputStream zis, String tmpFolder) throws IOException{
+	private boolean getZipFiles(ZipInputStream zis, String tmpFolder) throws IOException{
 		byte[] buffer = new byte[1024];
         ZipEntry zipEntry = zis.getNextEntry();
+        
+        if(zipEntry == null) {
+        	return false;
+        }
 		
         while (zipEntry != null) {
             Path tmpPath = getFilePathFilename(tmpFolder, zipEntry.getName());
@@ -230,19 +274,22 @@ public class FileManager {
             
             zipEntry = zis.getNextEntry();
         }
+        
+        return true;
 	}
 	
 	public File unzipFile(File zipFile){
 		File unzipFiles = null;		
+		boolean isZip = false;
         UUID folderUUID = UUID.randomUUID();
-		String tmpFolder = config.getTmpFolder() + "/" + folderUUID.toString();
+		Path tmpFolder = Paths.get(config.getTmpFolder(), folderUUID.toString());
 		
 		try {
 	        ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));	        
-	        File rootFolder = Paths.get(tmpFolder).toFile();
+	        File rootFolder = tmpFolder.toFile();
 	        rootFolder.mkdirs();
 	        
-	        getZipFiles(zis, tmpFolder);
+	        isZip = getZipFiles(zis, tmpFolder.toString());
 	        
 	        unzipFiles = rootFolder;
         	
@@ -252,7 +299,11 @@ public class FileManager {
 			return null;
 		}
         
-        return unzipFiles;
+		if(isZip) {
+			return unzipFiles;
+		}else {
+			return null;
+		}
 	}
 
     public File getRemoteFileCacheFolder() {
@@ -294,8 +345,8 @@ public class FileManager {
 					
 					// Download remote SCH/XSD files (if needed).
 					try {
-						downloadRemoteFiles(domainConfig.getRemoteSchematronFile(), validationType, remoteSchFolder.getAbsolutePath());
-						downloadRemoteFiles(domainConfig.getRemoteSchemaFile(), validationType, remoteXsdFolder.getAbsolutePath());
+						downloadRemoteFiles(domainConfig.getRemoteSchematronFile(), validationType, remoteSchFolder.getAbsolutePath(), false);
+						downloadRemoteFiles(domainConfig.getRemoteSchemaFile(), validationType, remoteXsdFolder.getAbsolutePath(), true);
 					} catch (IOException e) {
 						logger.error("Error to load the remote files", e);
 						throw new IllegalStateException("Error to load the remote files", e);
@@ -309,12 +360,12 @@ public class FileManager {
 		}
 	}
 	
-	private void downloadRemoteFiles(Map<String, RemoteFileInfo> map, String validationType, String remoteConfigPath) throws IOException{
+	private void downloadRemoteFiles(Map<String, RemoteFileInfo> map, String validationType, String remoteConfigPath, boolean isSchema) throws IOException{
 		// Download remote SCH/XSD files (if needed).
 		List<String> ri = map.get(validationType).getRemote();
 		if (ri != null) {
 			for (String uri: ri) {
-				getURLFile(remoteConfigPath, uri);
+				getURLFile(remoteConfigPath, uri, isSchema);
 			}
 		}
 	}

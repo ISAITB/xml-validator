@@ -281,9 +281,10 @@ public class UploadController {
 				if(externalUri!=null && externalUri.length>i) {
 					currentExtUri = externalUri[i];
 				}
-				inputFile = getInputFile(externalContentType[i], currentExtFile, currentExtUri);
-	    						
-				if(inputFile != null) {		
+				
+				inputFile = getInputFile(externalContentType[i], currentExtFile, currentExtUri, isSchema);
+
+				if(inputFile != null) {
 					File rootFile = this.fileManager.unzipFile(inputFile);
 					if(rootFile == null) {
 						FileInfo fi = new FileInfo(inputFile, FilenameUtils.getExtension(inputFile.getName()));		    		
@@ -361,7 +362,7 @@ public class UploadController {
 		return validated;
 	}
     
-    private File getInputFile(String contentType, MultipartFile inputFile, String inputUri) throws IOException {
+    private File getInputFile(String contentType, MultipartFile inputFile, String inputUri, boolean isSchema) throws IOException {
     	File f = null;
     	
     	switch(contentType) {
@@ -372,7 +373,7 @@ public class UploadController {
 				break;
 			case contentType_uri:					
 				if(!inputUri.isEmpty()) {
-					f = this.fileManager.getURLFile(inputUri);
+					f = this.fileManager.getURLFile(inputUri, isSchema);
 				}
 				break;
 		}

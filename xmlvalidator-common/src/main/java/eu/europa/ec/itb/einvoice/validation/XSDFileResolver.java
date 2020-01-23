@@ -2,6 +2,7 @@ package eu.europa.ec.itb.einvoice.validation;
 
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -22,10 +23,12 @@ public class XSDFileResolver implements LSResourceResolver {
 
     private final DomainConfig domainConfig;
     private final String validationType;
+    private final String xsdExternalPath;
 
-    public XSDFileResolver(String validationType, DomainConfig domainConfig) {
+    public XSDFileResolver(String validationType, DomainConfig domainConfig, String xsdExternalPath) {
         this.validationType = validationType;
         this.domainConfig = domainConfig;
+        this.xsdExternalPath = xsdExternalPath;
     }
 
     @Autowired
@@ -33,9 +36,18 @@ public class XSDFileResolver implements LSResourceResolver {
 
     @Override
     public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {
-        File baseURIFile;
+        File baseURIFile = null;
         if (baseURI == null) {
-            baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile().getParentFile();
+        	if(domainConfig.getSchemaFile()!=null && !domainConfig.getSchemaFile().isEmpty()) {
+        		baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile().getParentFile();
+        	}else {
+        		if(!domainConfig.getRemoteSchemaFile().get(validationType).getRemote().isEmpty()) {
+        			baseURIFile = Paths.get(config.getTmpFolder(), "remote_config", domainConfig.getDomainName(), validationType, "xsd").toFile();
+        			systemId = "/import/" + new File(baseURIFile, systemId).getName();
+        		}else {
+        			baseURIFile = Paths.get(xsdExternalPath).toFile();
+        		}
+        	}
         } else {
             try {
                 URI uri = new URI(baseURI);
@@ -45,9 +57,11 @@ public class XSDFileResolver implements LSResourceResolver {
                 throw new IllegalStateException(e);
             }
         }
+        
         File referencedSchemaFile = new File(baseURIFile, systemId);
         baseURI = referencedSchemaFile.getParentFile().toURI().toString();
         systemId = referencedSchemaFile.getName();
+        
         try {
             return new LSInputImpl(publicId, systemId, baseURI, new InputStreamReader(new FileInputStream(referencedSchemaFile)));
         } catch (FileNotFoundException e) {

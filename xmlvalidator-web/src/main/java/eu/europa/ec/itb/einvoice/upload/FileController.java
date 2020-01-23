@@ -156,5 +156,35 @@ public class FileController {
         }
         return handled;
     }
+    
+	@Scheduled(fixedDelayString = "${validator.cleanupWebRate}")
+	public void removeWebFiles() {
+        long currentMillis = System.currentTimeMillis();
+        
+		File reportFolder = new File(config.getTmpFolder());
+		
+		if (reportFolder != null && reportFolder.exists()) {
+            File[] files = reportFolder.listFiles();
+            if (files != null) {
+                for (File file: files) {
+                    if (!handleReportFile(file, currentMillis)) {
+                        handleReportFile(file, currentMillis);
+                    }
+                }
+            }
+        }
+	}
 
+    private boolean handleReportFile(File file, long currentTime) {
+        boolean handled = false;
+        
+        if (file.isDirectory() && !file.getAbsolutePath().equals(fileManager.getRemoteFileCacheFolder().getAbsolutePath())) {
+            handled = true;
+            
+            if (currentTime - file.lastModified() > config.getCleanupWebRate()) {
+                FileUtils.deleteQuietly(file);
+            }
+        }
+        return handled;
+    }
 }

@@ -38,6 +38,7 @@ public class ApplicationConfig {
     private String inputFilePrefix = "ITB-";
     private long minimumCachedInputFileAge = 600000L;
     private long minimumCachedReportFileAge = 600000L;
+    private long cleanupWebRate;
     private String reportFilePrefix = "TAR-";
     private Set<String> acceptedMimeTypes;
     private Set<String> acceptedSchematronExtensions;
@@ -167,6 +168,14 @@ public class ApplicationConfig {
     public Map<String, String> getDomainNameToDomainId() {
         return domainNameToDomainId;
     }
+
+	public long getCleanupWebRate() {
+		return cleanupWebRate;
+	}
+
+	public void setCleanupWebRate(long cleanupWebRate) {
+		this.cleanupWebRate = cleanupWebRate;
+	}
 
     @PostConstruct
     public void init() {

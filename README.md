@@ -162,11 +162,16 @@ The properties here define how a specific validation domain is configured. They 
 | `validator.webServiceDescription.type` | The description of the web service for element "type". Only displayed if there are multiple types. | String | - |
 | `validator.schemaFile.XYZ` | The XSD files loaded for a given invoice type (added as a postfix). This can be a file or folder (must never start with a '/'). | String | - |
 | `validator.schematronFile.XYZ` | The schematron files loaded for a given invoice type (added as a postfix). This can be a file or folder (must never start with a '/'). | String | - |
+| `validator.schemaFile.XYZ.remote.A.url` | The Schema (XSD) files loaded for a given validation type (added as a postfix) as URL. | String | - |
+| `validator.schematronFile.XYZ.remote.A.url` | The Schematron files loaded for a given validation type (added as a postfix) as URL. | String | - |
+| `validator.externalSchemaFile.XYZ` | External Schema (XSD) are allowed for a given validation type (added as a postfix). Possible values are (`required`, `optional`, `none`). | String | `optional` |
+| `validator.externalSchematronFile.XYZ` | External Schematron are allowed for a given validation type (added as a postfix). Possible values are (`required`, `optional`, `none`). | String | `optional` |
 | `validator.includeTestDefinition` | Whether tests should be included in the resulting reports. | Boolean | `true` |
 | `validator.reportsOrdered` | Whether the reports are ordered. | Boolean | `false` |
 | `validator.showAbout` | Whether or not to show the about panel on the web UI. | Boolean | `true` | 
 | `validator.supportMinimalUserInterface` | A minimal UI is available if this is enabled. | Boolean | `false` |
 | `validator.bannerHtml` | Configurable HTML banner replacing the text title. | String | - |
+| `validator.footerHtml` | Configurable HTML banner replacing the footer. | String | - |
 
 In case the email channel is enabled the following properties need to be provided:
 

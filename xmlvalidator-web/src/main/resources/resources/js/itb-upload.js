@@ -7,11 +7,11 @@ function validationTypeChanged() {
 }
 
 function cleanExternalArtefacts(type){
-    var externalArtefact = $("."+type+"Div").length;
-
-    for (var i=0; i<externalArtefact; i++){
-        removeElement(type+"-"+i, type);    
-    }
+    var elements = $("."+type+"Div");
+	
+	for (var i=0; i<elements.length; i++){
+		removeElement(elements[i].getAttribute('id'), type);
+	}
     
     if($("."+type+"Class").is(":hidden")){
     	$("."+type+"Class").toggle();
@@ -41,10 +41,21 @@ function externalArtefactsEnabled(){
 
 function addExternalSchema(){
 	addElement("externalSchema");
-	$('#externalSchemaAddButton').prop('disabled', true);
+	$('#externalSchemaAddButton').addClass('hidden');
 }
 
-function addExternalSchematron(){
+function addExternalSchematron(){	
+	var toggleExtSch = getExternalType("externalSchematron");
+    var elements = $(".externalSchDiv");
+
+	if(toggleExtSch == "required" && elements.length==1){
+		var indexInt = getLastExternalIdNumber(".externalSchDiv");
+		
+		$('#rmvButton-externalSch-'+indexInt).removeClass('hidden');
+		$('#fileToValidate-class-externalSch-'+indexInt).removeClass('col-md-12');
+		$('#fileToValidate-class-externalSch-'+indexInt).addClass('col-md-11');
+	}
+	
 	addElement("externalSch");	
 }
 
@@ -52,8 +63,27 @@ function removeElement(elementId, type) {
 	document.getElementById(elementId).remove();
 	
 	if(type == "externalSchema"){
-		$('#externalSchemaAddButton').prop('disabled', false);	
+		$('#externalSchemaAddButton').removeClass('hidden');
 	}
+
+	var toggleExtSch = getExternalType("externalSchematron");
+    var elements = $("."+type+"Div");
+
+	if(toggleExtSch == "required" && elements.length==1){
+		var indexInt = getLastExternalIdNumber("."+type+"Div");
+		
+		$('#rmvButton-externalSch-'+indexInt).addClass('hidden');
+		$('#fileToValidate-class-externalSch-'+indexInt).removeClass('col-md-11');
+		$('#fileToValidate-class-externalSch-'+indexInt).addClass('col-md-12');
+	}
+}
+
+function getLastExternalIdNumber(type){
+    var elements = $(type);
+	var index = elements.attr('id').indexOf("-")+1;
+	var indexInt = parseInt(elements.attr('id').substring(index));
+	
+	return indexInt;
 }
 
 function triggerFileUploadShapes(elementId) {
@@ -87,8 +117,18 @@ function contentTypeChangedShapes(elementId){
 }
 
 function addElement(type) {
-    var elements = $("."+type+"Div").length;
-    var elementId = type+"-"+elements;
+    var elements = $("."+type+"Div");
+    var indexLast = 0;
+	
+	for (var i=0; i<elements.length; i++){
+		var index = elements[i].getAttribute('id').indexOf("-");
+		var indexInt2 = parseInt(elements[i].getAttribute('id').substring(index))+1;
+		
+		if(indexInt2>indexLast){
+			indexLast = indexInt2;
+		}
+	}
+	var elementId = type+"-"+indexLast;
 
     $("<div class='row form-group "+type+"Div' id='"+elementId+"'>" +
     	"<div class='col-sm-2'>"+
@@ -99,7 +139,7 @@ function addElement(type) {
 		"</div>"+
 		"<div class='col-sm-10'>" +
 		    "<div class='row'>" +
-                "<div class='col-md-11 col-sm-10'>" +
+                "<div id='fileToValidate-class-"+elementId+"' class='col-md-11 col-sm-10'>" +
                     "<div class='input-group' id='fileToValidate-"+elementId+"'>" +
                         "<div class='input-group-btn'>" +
                             "<button class='btn btn-default' type='button' onclick='triggerFileUploadShapes(\"inputFile-"+elementId+"\")'><i class='far fa-folder-open'></i></button>" +
@@ -284,13 +324,18 @@ function toggleExternalArtefactsClassCheck() {
 		
 		if(toggleExtSch == "required"){
 			addElement("externalSch");
-			$('#rmvButton-externalSch-0').prop('disabled', true);
+			$('#rmvButton-externalSch-0').addClass('hidden');
+			$('#fileToValidate-class-externalSch-0').removeClass('col-md-11');
+			$('#fileToValidate-class-externalSch-0').addClass('col-md-12');
 		}
 		
 		if(toggleExt == "required"){
 			addElement("externalSchema");
-			$('#externalSchemaAddButton').prop('disabled', true);	
-			$('#rmvButton-externalSchema-0').prop('disabled', true);	
+			$('#externalSchemaAddButton').addClass('hidden');
+			$('#rmvButton-externalSchema-0').addClass('hidden');
+
+			$('#fileToValidate-class-externalSchema-0').removeClass('col-md-11');
+			$('#fileToValidate-class-externalSchema-0').addClass('col-md-12');
 		}		
 		
 	}else{

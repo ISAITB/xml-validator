@@ -3,7 +3,8 @@
 <head>
     <title th:text="${config.uploadTitle}">Validator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.5.0/css/font-awesome.min.css}"/>
+    <!-- link rel="stylesheet" th:href="@{/webjars/font-awesome/4.5.0/css/font-awesome.min.css}"/-->
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/5.7.2/css/all.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/3.3.6/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/codemirror/5.11/lib/codemirror.css}"/>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
@@ -22,6 +23,8 @@
     </script>
     <script>
     /*<![CDATA[*/
+        var labelFile = "[[${config.label.optionContentFile}]]";
+        var labelURI = "[[${config.label.optionContentURI}]]";
         var isMinimal = [[${minimalUI}]];
     /*]]>*/
     </script>
@@ -133,6 +136,14 @@
 	    	<div th:utext="${config.htmlFooter}">Footer</div>
 		</div>
 	</div>
+    <div style="display: none;">
+        <select class="form-control" id="externalSchema" name="externalSchema">
+       		<option th:each="type : ${externalSchema}" th:text="${type.key}" th:attr="value=${type.label}">Type</option>
+      	</select>
+        <select class="form-control" id="externalSchematron" name="externalSchematron">
+       		<option th:each="type : ${externalSchematron}" th:text="${type.key}" th:attr="value=${type.label}">Type</option>
+      	</select>        
+    </div>
 </div>
 <div class="container about-section" th:if="${config.showAbout} and ${not minimalUI}">
     This service is powered by the ISA&sup2; Interoperability Test Bed, a conformance testing service offered by the European Commission's DG DIGIT for projects

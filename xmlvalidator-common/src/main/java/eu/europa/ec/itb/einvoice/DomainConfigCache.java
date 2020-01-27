@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import eu.europa.ec.itb.einvoice.DomainConfig.RemoteFileInfo;
+
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -98,6 +100,10 @@ public class DomainConfigCache {
                 domainConfig.setWebServiceDescription(parseMap("validator.webServiceDescription", config, Arrays.asList("xml", "type")));
                 domainConfig.setSchemaFile(parseMap("validator.schemaFile", config, domainConfig.getType()));
                 domainConfig.setSchematronFile(parseMap("validator.schematronFile", config, domainConfig.getType()));
+                domainConfig.setRemoteSchemaFile(parseRemoteMap("validator.schemaFile", config, domainConfig.getType()));
+                domainConfig.setRemoteSchematronFile(parseRemoteMap("validator.schematronFile", config, domainConfig.getType()));
+                domainConfig.setExternalSchemaFile(parseStringMap("validator.externalSchemaFile", config, domainConfig.getType(), "validator.schemaFile"));
+                domainConfig.setExternalSchematronFile(parseStringMap("validator.externalSchematronFile", config, domainConfig.getType(), null));
                 domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
                 domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
                 domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
@@ -141,6 +147,10 @@ public class DomainConfigCache {
         domainConfig.getLabel().setOptionContentURI(config.getString("validator.label.optionContentURI", "URI"));
         domainConfig.getLabel().setOptionContentDirectInput(config.getString("validator.label.optionContentDirectInput", "Direct input"));
         domainConfig.getLabel().setResultValidationTypeLabel(config.getString("validator.label.resultValidationTypeLabel", "Validation type:"));
+        domainConfig.getLabel().setIncludeExternalArtefacts(config.getString("validator.label.includeExternalArtefacts", "Include external artefacts"));
+        domainConfig.getLabel().setExternalArtefactsTooltip(config.getString("validator.label.externalArtefactsTooltip", "Additional artefacts that will be considered for the validation"));
+        domainConfig.getLabel().setExternalSchemaLabel(config.getString("validator.label.externalSchemaLabel", "XML Schema"));
+        domainConfig.getLabel().setExternalSchematronLabel(config.getString("validator.label.externalSchematronLabel", "Schematron"));
     }
 
     private Map<String, String> parseMap(String key, CompositeConfiguration config, List<String> types) {
@@ -149,6 +159,57 @@ public class DomainConfigCache {
             String val = config.getString(key+"."+type, null);
             if (val != null) {
                 map.put(type, config.getString(key+"."+type).trim());
+            }
+        }
+        return map;
+    }
+    
+    private Map<String, RemoteFileInfo> parseRemoteMap(String key, CompositeConfiguration config, List<String> types){
+        Map<String, RemoteFileInfo> map = new HashMap<>();
+        for (String type: types) {
+        	DomainConfig.RemoteFileInfo remoteFileInfo = new RemoteFileInfo();
+            Set<String> processedRemote = new HashSet<>();
+            List<String> filesRemote = new ArrayList<>();
+            
+            Iterator<String> it = config.getKeys(key + "." + type + ".remote");
+            while(it.hasNext()) {
+            	String remoteKeys = it.next(); 
+            	String remoteInt = remoteKeys.replaceAll("("+key+"." + type + ".remote.)([0-9]{1,})(.[a-zA-Z]*)(.url)", "$2");
+
+            	if(!processedRemote.contains(remoteInt)) {
+            		processedRemote.add(remoteInt);
+            		filesRemote.add(config.getString(remoteInt));
+            	}
+            }
+            
+            remoteFileInfo.setRemote(filesRemote);            
+            map.put(type, remoteFileInfo);
+        }
+    	
+    	return map;
+    }
+
+    private Map<String, String> parseStringMap(String key, CompositeConfiguration config, List<String> types, String booleanProperty) {
+        Map<String, String> map = new HashMap<>();
+        for (String type: types) {
+            String value = DomainConfig.externalFile_none;
+            
+            try {
+            	value = config.getString(key+"."+type).toLowerCase();
+            	
+            	if((value.equals(DomainConfig.externalFile_req) || value.equals(DomainConfig.externalFile_opt)) && booleanProperty!=null) {
+                    String val = config.getString(booleanProperty+"."+type, null);
+                    Iterator<String> it = config.getKeys(booleanProperty + "." + type + ".remote");
+                    
+                    if(val!=null || it.hasNext()) {
+                    	value = DomainConfig.externalFile_none;
+                    }
+            	}
+            }catch(Exception e){
+            	value = DomainConfig.externalFile_none;
+            }
+            finally {
+                map.put(type, value);
             }
         }
         return map;

@@ -21,6 +21,10 @@ public class DomainConfig {
     private Map<String, String> typeLabel;
     private Map<String,String> schematronFile;
     private Map<String,String> schemaFile;
+    private Map<String,String> externalSchemaFile;
+    private Map<String,String> externalSchematronFile;
+    private Map<String, RemoteFileInfo> remoteSchemaFile;
+    private Map<String, RemoteFileInfo> remoteSchematronFile;
     private String htmlBanner;
     private String htmlFooter;
     private boolean supportMinimalUserInterface;
@@ -40,6 +44,10 @@ public class DomainConfig {
 
     private boolean includeTestDefinition;
     private boolean reportsOrdered;
+    
+    public static final String externalFile_req     	= "required" ;
+    public static final String externalFile_opt     	= "optional" ;
+    public static final String externalFile_none     	= "none" ;
 
     private Label label = new Label();
 
@@ -101,6 +109,38 @@ public class DomainConfig {
 
     public void setSchemaFile(Map<String, String> schemaFile) {
         this.schemaFile = schemaFile;
+    }
+
+    public Map<String, String> getExternalSchemaFile() {
+        return externalSchemaFile;
+    }
+
+    public void setExternalSchemaFile(Map<String, String> externalSchemaFile) {
+        this.externalSchemaFile = externalSchemaFile;
+    }
+
+    public Map<String, String> getExternalSchematronFile() {
+        return externalSchematronFile;
+    }
+
+    public void setExternalSchematronFile(Map<String, String> externalSchematronFile) {
+        this.externalSchematronFile = externalSchematronFile;
+    }
+
+    public Map<String, RemoteFileInfo> getRemoteSchemaFile() {
+        return remoteSchemaFile;
+    }
+
+    public void setRemoteSchemaFile(Map<String, RemoteFileInfo> remoteSchemaFile) {
+        this.remoteSchemaFile = remoteSchemaFile;
+    }
+
+    public Map<String, RemoteFileInfo> getRemoteSchematronFile() {
+        return remoteSchematronFile;
+    }
+
+    public void setRemoteSchematronFile(Map<String, RemoteFileInfo> remoteSchematronFile) {
+        this.remoteSchematronFile = remoteSchematronFile;
     }
 
     public String getMailFrom() {
@@ -291,6 +331,18 @@ public class DomainConfig {
 		this.supportMinimalUserInterface = supportMinimalUserInterface;
 	}
 
+	public static class RemoteFileInfo {
+    	List<String> remote;
+    	
+    	public List<String> getRemote() { 
+    		return remote; 
+    	}
+    	
+    	public void setRemote(List<String> remote) { 
+    		this.remote = remote; 
+    	}
+    }
+
 	public static class Label {
 
         private String resultSectionTitle;
@@ -316,6 +368,10 @@ public class DomainConfig {
         private String optionContentFile;
         private String optionContentURI;
         private String optionContentDirectInput;
+        private String includeExternalArtefacts;
+        private String externalArtefactsTooltip;
+        private String externalSchemaLabel;
+        private String externalSchematronLabel;
 
         public String getResultSectionTitle() {
             return resultSectionTitle;
@@ -500,6 +556,38 @@ public class DomainConfig {
         public void setOptionContentDirectInput(String optionContentDirectInput) {
             this.optionContentDirectInput = optionContentDirectInput;
         }
+
+		public String getIncludeExternalArtefacts() {
+			return includeExternalArtefacts;
+		}
+
+		public void setIncludeExternalArtefacts(String includeExternalArtefacts) {
+			this.includeExternalArtefacts = includeExternalArtefacts;
+		}
+
+		public String getExternalArtefactsTooltip() {
+			return externalArtefactsTooltip;
+		}
+
+		public void setExternalArtefactsTooltip(String externalArtefactsTooltip) {
+			this.externalArtefactsTooltip = externalArtefactsTooltip;
+		}
+
+		public String getExternalSchemaLabel() {
+			return externalSchemaLabel;
+		}
+
+		public void setExternalSchemaLabel(String externalSchemaLabel) {
+			this.externalSchemaLabel = externalSchemaLabel;
+		}
+
+		public String getExternalSchematronLabel() {
+			return externalSchematronLabel;
+		}
+
+		public void setExternalSchematronLabel(String externalSchematronLabel) {
+			this.externalSchematronLabel = externalSchematronLabel;
+		}
     }
 
 }

@@ -7,7 +7,9 @@ import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
+import eu.europa.ec.itb.einvoice.util.FileManager;
 import eu.europa.ec.itb.einvoice.util.Utils;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
@@ -58,12 +60,17 @@ public class XMLValidator implements ApplicationContextAware {
     @Autowired
     private ApplicationConfig config;
 
+    @Autowired
+    private FileManager fileManager;
+    
     private InputStream inputToValidate;
     private byte[] inputBytes;
     private ApplicationContext ctx;
     private final DomainConfig domainConfig;
     private String validationType;
     private ObjectFactory gitbTRObjectFactory = new ObjectFactory();
+    List<FileInfo> externalSchema;
+    List<FileInfo> externalSch;
 
     static {
         try {
@@ -73,10 +80,12 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
-    public XMLValidator(InputStream inputToValidate, String validationType, DomainConfig domainConfig) {
+    public XMLValidator(InputStream inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig) {
         this.inputToValidate = inputToValidate;
         this.validationType = validationType;
         this.domainConfig = domainConfig;
+        this.externalSchema = externalSchema;
+        this.externalSch = externalSch;
         if (validationType == null) {
             this.validationType = domainConfig.getType().get(0);
         }
@@ -93,8 +102,8 @@ public class XMLValidator implements ApplicationContextAware {
         return new ByteArrayInputStream(inputBytes);
     }
 
-    private LSResourceResolver getXSDResolver() {
-        return ctx.getBean(XSDFileResolver.class, validationType, domainConfig);
+    private LSResourceResolver getXSDResolver(String xsdExternalPath) {
+        return ctx.getBean(XSDFileResolver.class, validationType, domainConfig, xsdExternalPath);
     }
 
     private javax.xml.transform.URIResolver getURIResolver(File schematronFile) {
@@ -141,7 +150,7 @@ public class XMLValidator implements ApplicationContextAware {
         // Resolve schema.
         SchemaFactory schemaFactory = XMLSchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         schemaFactory.setErrorHandler(handler);
-        schemaFactory.setResourceResolver(getXSDResolver());
+        schemaFactory.setResourceResolver(getXSDResolver(schemaFile.getParent()));
         Schema schema;
         try {
             schemaFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, false);
@@ -232,12 +241,11 @@ public class XMLValidator implements ApplicationContextAware {
             }
         }
     }
-
-    public TAR validateAgainstSchematron() {
-        File schematronFile = getSchematronFile();
-        List<TAR> reports = new ArrayList<>();
-        List<File> schematronFiles = new ArrayList<>();
-        if (schematronFile != null && schematronFile.exists()) {
+    
+    private List<File> getAllSchematron(File schematronFile) {
+    	List<File> schematronFiles = new ArrayList<>();
+    	
+    	if (schematronFile != null && schematronFile.exists()) {
             if (schematronFile.isFile()) {
                 // We are pointing to a single master schematron file.
                 schematronFiles.add(schematronFile);
@@ -253,6 +261,24 @@ public class XMLValidator implements ApplicationContextAware {
                 }
             }
         }
+    	
+    	return schematronFiles;
+    }
+
+    public TAR validateAgainstSchematron() {
+        File schematronFile = getSchematronFile();
+        List<TAR> reports = new ArrayList<>();
+        List<File> externalFiles = getExternalSchematronFiles();
+        
+        List<File> schematronFiles = getAllSchematron(schematronFile);
+        List<File> remoteFiles = getAllSchematron(getRemoteSchematronFiles());
+        
+        schematronFiles.addAll(remoteFiles);
+        
+        for(File aSchematronFile: externalFiles) {
+        	schematronFiles.addAll(getAllSchematron(aSchematronFile));
+        }
+        
         if (schematronFiles.isEmpty()) {
             logger.info("No schematrons to validate against ["+schematronFile+"]");
             return null;
@@ -278,12 +304,72 @@ public class XMLValidator implements ApplicationContextAware {
         return file;
     }
 
+    private List<File> getExternalSchematronFiles() {
+        List<File> files = new ArrayList<>();
+
+    	if(!domainConfig.getExternalSchematronFile().get(validationType).equals(DomainConfig.externalFile_none) && externalSch != null && !externalSch.isEmpty()) {
+    		for(FileInfo fi: externalSch) {
+    			files.add(fi.getFile());
+    		}
+    	}
+        return files;
+    }
+
+	private File getRemoteSchematronFiles() {
+		File remoteConfigFolder = new File(new File(new File(fileManager.getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType), "sch");
+		
+		
+		if (remoteConfigFolder.exists()) {
+			return remoteConfigFolder;
+		} else {
+			return null;
+		}
+	}
+
+	private File getRemoteSchemaFiles() {
+		File remoteConfigFolder = new File(new File(new File(fileManager.getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType), "xsd");
+		
+		if (remoteConfigFolder.exists() && remoteConfigFolder.listFiles().length>0) {
+			return remoteConfigFolder;
+		} else {
+			return null;
+		}
+	}
+
     private File getSchemaFile() {
         File file = null;
         if (domainConfig.getSchemaFile() != null && domainConfig.getSchemaFile().containsKey(validationType)) {
             file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile();
+        }else {
+        	//Remote Schema file
+        	File remotFile = getRemoteSchemaFiles();
+    		if(remotFile!= null) {
+    			file = getRootFile(remotFile.listFiles());
+    		}else {
+        		//External Schema file
+        		if(!domainConfig.getExternalSchemaFile().get(validationType).equals(DomainConfig.externalFile_none) && externalSchema != null && !externalSchema.isEmpty()) {
+            		File rootFolder = externalSchema.get(0).getFile();
+            		
+            		if(rootFolder.isFile()) {
+            			file = rootFolder;
+            		}else {
+            			file = getRootFile(rootFolder.listFiles());
+            		}
+            	}
+        	}
         }
         return file;
+    }
+    
+    private File getRootFile(File[] listFiles) {
+    	File rootFile = null;
+		for(File f: listFiles) {
+			if(f.isFile()) {
+				rootFile = f;
+			}
+		}
+		
+		return rootFile;
     }
 
     private void logReport(TAR report, String name) {

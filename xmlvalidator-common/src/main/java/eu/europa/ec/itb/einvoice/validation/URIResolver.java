@@ -38,7 +38,7 @@ public class URIResolver implements javax.xml.transform.URIResolver {
     ApplicationConfig config;
 
     private File getBaseFile() {
-        File baseFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronFile().get(validationType)).toFile();
+        File baseFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronFile().get(validationType).getPath()).toFile();
         if (baseFile.exists()) {
             if (baseFile.isDirectory()) {
                 return baseFile;

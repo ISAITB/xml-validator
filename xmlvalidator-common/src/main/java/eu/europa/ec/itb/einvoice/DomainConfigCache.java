@@ -61,59 +61,69 @@ public class DomainConfigCache {
     private DomainConfig getConfigForDomain(String domain) {
         DomainConfig domainConfig = domainConfigs.get(domain);
         if (domainConfig == null) {
-            String[] files = Paths.get(appConfig.getResourceRoot(), domain).toFile().list(propertyFilter);
-            if (files == null || files.length == 0) {
-                domainConfig = undefinedDomainConfig;
-            } else {
-                CompositeConfiguration config = new CompositeConfiguration();
-                for (String file: files) {
-                    Parameters params = new Parameters();
-                    FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
-                            new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
-                                    .configure(params.properties().setFile(Paths.get(appConfig.getResourceRoot(), domain, file).toFile()));
-                    try {
-                        config.addConfiguration(builder.getConfiguration());
-                    } catch (ConfigurationException e) {
-                        throw new IllegalStateException("Unable to load property file ["+file+"]", e);
+            try {
+                String[] files = Paths.get(appConfig.getResourceRoot(), domain).toFile().list(propertyFilter);
+                if (files == null || files.length == 0) {
+                    domainConfig = undefinedDomainConfig;
+                } else {
+                    CompositeConfiguration config = new CompositeConfiguration();
+                    for (String file: files) {
+                        Parameters params = new Parameters();
+                        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
+                                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                                        .configure(params.properties().setFile(Paths.get(appConfig.getResourceRoot(), domain, file).toFile()));
+                        try {
+                            config.addConfiguration(builder.getConfiguration());
+                        } catch (ConfigurationException e) {
+                            throw new IllegalStateException("Unable to load property file ["+file+"]", e);
+                        }
                     }
+                    domainConfig = new DomainConfig();
+                    domainConfig.setDomain(domain);
+                    domainConfig.setDomainName(appConfig.getDomainIdToDomainName().get(domain));
+                    domainConfig.setUploadTitle(config.getString("validator.uploadTitle", "Validator"));
+                    domainConfig.setType(Arrays.stream(StringUtils.split(config.getString("validator.type"), ',')).map(String::trim).collect(Collectors.toList()));
+                    domainConfig.setChannels(Arrays.stream(StringUtils.split(config.getString("validator.channels", ValidatorChannel.FORM.getName()+","+ValidatorChannel.WEB_SERVICE.getName()), ',')).map(String::trim).map(ValidatorChannel::byName).collect(Collectors.toSet()));
+                    domainConfig.setReportTitle(config.getString("validator.reportTitle", "Validation report"));
+                    domainConfig.setWebServiceId(config.getString("validator.webServiceId", "ValidatorService"));
+                    domainConfig.setMailFrom(config.getString("validator.mailFrom", null));
+                    domainConfig.setMailAuthEnable(config.getBoolean("validator.mailAuthEnable", false));
+                    domainConfig.setMailAuthUsername(config.getString("validator.mailAuthUsername", null));
+                    domainConfig.setMailAuthPassword(config.getString("validator.mailAuthPassword", null));
+                    domainConfig.setMailOutboundHost(config.getString("validator.mailOutboundHost", null));
+                    domainConfig.setMailOutboundPort(config.getInt("validator.mailOutboundPort", -1));
+                    domainConfig.setMailOutboundSSLEnable(config.getBoolean("validator.mailOutboundSSLEnable", false));
+                    domainConfig.setMailInboundHost(config.getString("validator.mailInboundHost", null));
+                    domainConfig.setMailInboundPort(config.getInt("validator.mailInboundPort", -1));
+                    domainConfig.setMailInboundSSLEnable(config.getBoolean("validator.mailInboundSSLEnable", false));
+                    domainConfig.setMailInboundFolder(config.getString("validator.mailInboundFolder", "INBOX"));
+                    domainConfig.setTypeLabel(parseMap("validator.typeLabel", config, domainConfig.getType()));
+                    domainConfig.setWebServiceDescription(parseMap("validator.webServiceDescription", config, Arrays.asList("xml", "type")));
+                    domainConfig.setSchemaFile(parseLocalArtifactMap("validator.schemaFile", config, domainConfig.getType(), "xsd"));
+                    domainConfig.setSchematronFile(parseLocalArtifactMap("validator.schematronFile", config, domainConfig.getType(), "sch"));
+                    domainConfig.setRemoteSchemaFile(parseRemoteArtifactMap("validator.schemaFile", config, domainConfig.getType(), "xsd"));
+                    domainConfig.setRemoteSchematronFile(parseRemoteArtifactMap("validator.schematronFile", config, domainConfig.getType(), "sch"));
+                    domainConfig.setExternalSchemaFile(parseExternalArtifactMap("validator.externalSchemaFile", config, domainConfig.getType(), "validator.schemaFile", "xsd"));
+                    domainConfig.setExternalSchematronFile(parseExternalArtifactMap("validator.externalSchematronFile", config, domainConfig.getType(), null, "sch"));
+                    domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
+                    domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
+                    domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
+                    domainConfig.setSupportMinimalUserInterface(config.getBoolean("validator.supportMinimalUserInterface", false));
+                    domainConfig.setHtmlBanner(config.getString("validator.bannerHtml", ""));
+                    domainConfig.setHtmlFooter(config.getString("validator.footerHtml", ""));
+                    setLabels(domainConfig, config);
+                    logger.info("Loaded configuration for domain ["+domain+"]");
                 }
-                domainConfig = new DomainConfig();
-                domainConfig.setDomain(domain);
-                domainConfig.setDomainName(appConfig.getDomainIdToDomainName().get(domain));
-                domainConfig.setUploadTitle(config.getString("validator.uploadTitle", "Validator"));
-                domainConfig.setType(Arrays.stream(StringUtils.split(config.getString("validator.type"), ',')).map(String::trim).collect(Collectors.toList()));
-                domainConfig.setChannels(Arrays.stream(StringUtils.split(config.getString("validator.channels", ValidatorChannel.FORM.getName()+","+ValidatorChannel.WEB_SERVICE.getName()), ',')).map(String::trim).map(ValidatorChannel::byName).collect(Collectors.toSet()));
-                domainConfig.setReportTitle(config.getString("validator.reportTitle", "Validation report"));
-                domainConfig.setWebServiceId(config.getString("validator.webServiceId", "ValidatorService"));
-                domainConfig.setMailFrom(config.getString("validator.mailFrom", null));
-                domainConfig.setMailAuthEnable(config.getBoolean("validator.mailAuthEnable", false));
-                domainConfig.setMailAuthUsername(config.getString("validator.mailAuthUsername", null));
-                domainConfig.setMailAuthPassword(config.getString("validator.mailAuthPassword", null));
-                domainConfig.setMailOutboundHost(config.getString("validator.mailOutboundHost", null));
-                domainConfig.setMailOutboundPort(config.getInt("validator.mailOutboundPort", -1));
-                domainConfig.setMailOutboundSSLEnable(config.getBoolean("validator.mailOutboundSSLEnable", false));
-                domainConfig.setMailInboundHost(config.getString("validator.mailInboundHost", null));
-                domainConfig.setMailInboundPort(config.getInt("validator.mailInboundPort", -1));
-                domainConfig.setMailInboundSSLEnable(config.getBoolean("validator.mailInboundSSLEnable", false));
-                domainConfig.setMailInboundFolder(config.getString("validator.mailInboundFolder", "INBOX"));
-                domainConfig.setTypeLabel(parseMap("validator.typeLabel", config, domainConfig.getType()));
-                domainConfig.setWebServiceDescription(parseMap("validator.webServiceDescription", config, Arrays.asList("xml", "type")));
-                domainConfig.setSchemaFile(parseMap("validator.schemaFile", config, domainConfig.getType()));
-                domainConfig.setSchematronFile(parseMap("validator.schematronFile", config, domainConfig.getType()));
-                domainConfig.setRemoteSchemaFile(parseRemoteMap("validator.schemaFile", config, domainConfig.getType()));
-                domainConfig.setRemoteSchematronFile(parseRemoteMap("validator.schematronFile", config, domainConfig.getType()));
-                domainConfig.setExternalSchemaFile(parseStringMap("validator.externalSchemaFile", config, domainConfig.getType(), "validator.schemaFile"));
-                domainConfig.setExternalSchematronFile(parseStringMap("validator.externalSchematronFile", config, domainConfig.getType(), null));
-                domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
-                domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
-                domainConfig.setShowAbout(config.getBoolean("validator.showAbout", true));
-                domainConfig.setSupportMinimalUserInterface(config.getBoolean("validator.supportMinimalUserInterface", false));
-                domainConfig.setHtmlBanner(config.getString("validator.bannerHtml", ""));
-                domainConfig.setHtmlFooter(config.getString("validator.footerHtml", ""));
-                setLabels(domainConfig, config);
-                logger.info("Loaded configuration for domain ["+domain+"]");
+            } catch (Exception e) {
+                // Never allow a domain's configuration to cause an overall startup failure.
+                logger.error("Error while processing the configuration for domain ["+domain+"]", e);
+                domainConfig = null;
+            } finally {
+                if (domainConfig == null) {
+                    domainConfig = undefinedDomainConfig;
+                }
+                domainConfigs.put(domain, domainConfig);
             }
-            domainConfigs.put(domain, domainConfig);
         }
         if (domainConfig.isDefined()) {
             return domainConfig;
@@ -151,6 +161,8 @@ public class DomainConfigCache {
         domainConfig.getLabel().setExternalArtefactsTooltip(config.getString("validator.label.externalArtefactsTooltip", "Additional artefacts that will be considered for the validation"));
         domainConfig.getLabel().setExternalSchemaLabel(config.getString("validator.label.externalSchemaLabel", "XML Schema"));
         domainConfig.getLabel().setExternalSchematronLabel(config.getString("validator.label.externalSchematronLabel", "Schematron"));
+        domainConfig.getLabel().setExternalSchemaPlaceholder(config.getString("validator.label.externalSchemaPlaceholder", ""));
+        domainConfig.getLabel().setExternalSchematronPlaceholder(config.getString("validator.label.externalSchematronPlaceholder", ""));
     }
 
     private Map<String, String> parseMap(String key, CompositeConfiguration config, List<String> types) {
@@ -163,23 +175,45 @@ public class DomainConfigCache {
         }
         return map;
     }
-    
-    private Map<String, RemoteFileInfo> parseRemoteMap(String key, CompositeConfiguration config, List<String> types){
+
+    private Map<String, DomainConfig.ValidationArtifactInfo> parseLocalArtifactMap(String key, CompositeConfiguration config, List<String> types, String defaultPreprocessorExtension) {
+        Map<String, DomainConfig.ValidationArtifactInfo> map = new HashMap<>();
+        for (String type: types) {
+            String localPath = config.getString(key + "." + type);
+            if (localPath != null) {
+                DomainConfig.ValidationArtifactInfo artifactInfo = new DomainConfig.ValidationArtifactInfo();
+                artifactInfo.setPath(localPath);
+                artifactInfo.setPreProcessorPath(config.getString(key + "." + type + ".preprocessor"));
+                artifactInfo.setPreProcessorOutputExtension(config.getString(key + "." + type + ".preprocessor.output", defaultPreprocessorExtension));
+                map.put(type, artifactInfo);
+            }
+        }
+        return map;
+    }
+
+    private Map<String, RemoteFileInfo> parseRemoteArtifactMap(String key, CompositeConfiguration config, List<String> types, String defaultPreprocessorExtension) {
         Map<String, RemoteFileInfo> map = new HashMap<>();
         for (String type: types) {
         	DomainConfig.RemoteFileInfo remoteFileInfo = new RemoteFileInfo();
             Set<String> processedRemote = new HashSet<>();
-            List<String> filesRemote = new ArrayList<>();
+            List<DomainConfig.ValidationArtifactInfo> filesRemote = new ArrayList<>();
             
             Iterator<String> it = config.getKeys(key + "." + type + ".remote");
             while(it.hasNext()) {
-            	String remoteKeys = it.next(); 
-            	String remoteInt = remoteKeys.replaceAll("("+key+"." + type + ".remote.)([0-9]{1,})(.[a-zA-Z]*)(.url)", "$2");
-
-            	if(!processedRemote.contains(remoteInt)) {
-            		processedRemote.add(remoteInt);
-            		filesRemote.add(config.getString(remoteInt));
-            	}
+            	String remoteKeys = it.next();
+            	String[] parts = StringUtils.split(remoteKeys, '.');
+            	if (parts.length >= 5) {
+                    // e.g. "validator.schematronFile.TYPE.remote.N"
+                    String remoteInt = parts[4]; // The N part.
+                    if (!processedRemote.contains(remoteInt)) {
+                        processedRemote.add(remoteInt);
+                        DomainConfig.ValidationArtifactInfo artifactInfo = new DomainConfig.ValidationArtifactInfo();
+                        artifactInfo.setPath(config.getString(key+"."+type+".remote."+remoteInt+".url"));
+                        artifactInfo.setPreProcessorPath(config.getString(key+"."+type+".remote."+remoteInt+".preprocessor"));
+                        artifactInfo.setPreProcessorOutputExtension(config.getString(key+"."+type+".remote."+remoteInt+".preprocessor.output", defaultPreprocessorExtension));
+                        filesRemote.add(artifactInfo);
+                    }
+                }
             }
             
             remoteFileInfo.setRemote(filesRemote);            
@@ -189,37 +223,38 @@ public class DomainConfigCache {
     	return map;
     }
 
-    private Map<String, String> parseStringMap(String key, CompositeConfiguration config, List<String> types, String booleanProperty) {
-        Map<String, String> map = new HashMap<>();
+    private Map<String, DomainConfig.ExternalValidationArtifactInfo> parseExternalArtifactMap(String key, CompositeConfiguration config, List<String> types, String preconfiguredArtifactKey, String defaultPreprocessorExtension) {
+        Map<String, DomainConfig.ExternalValidationArtifactInfo> map = new HashMap<>();
         for (String type: types) {
             String value = DomainConfig.externalFile_none;
-            
             try {
-            	value = config.getString(key+"."+type).toLowerCase();
-            	
-            	if((value.equals(DomainConfig.externalFile_req) || value.equals(DomainConfig.externalFile_opt)) && booleanProperty!=null) {
-                    String val = config.getString(booleanProperty+"."+type, null);
-                    Iterator<String> it = config.getKeys(booleanProperty + "." + type + ".remote");
-                    
-                    if(val!=null || it.hasNext()) {
-                    	value = DomainConfig.externalFile_none;
+                if (config.containsKey(key+"."+type)) {
+                    value = config.getString(key+"."+type).toLowerCase();
+                    if ((value.equals(DomainConfig.externalFile_req) || value.equals(DomainConfig.externalFile_opt)) && preconfiguredArtifactKey!=null) {
+                        String val = config.getString(preconfiguredArtifactKey+"."+type, null);
+                        Iterator<String> it = config.getKeys(preconfiguredArtifactKey + "." + type + ".remote");
+                        if (val!=null || it.hasNext()) {
+                            // An exclusive preconfigured artifact (local or remote is already defined)
+                            value = DomainConfig.externalFile_none;
+                        }
                     }
-            	}
-            }catch(Exception e){
-            	value = DomainConfig.externalFile_none;
-            }
-            finally {
-                map.put(type, value);
+                }
+            } finally {
+                DomainConfig.ExternalValidationArtifactInfo artifactInfo = new DomainConfig.ExternalValidationArtifactInfo();
+                artifactInfo.setSupportForExternalArtifacts(value);
+                artifactInfo.setPreProcessorPath(config.getString(key+"."+type+".preprocessor"));
+                artifactInfo.setPreProcessorOutputExtension(config.getString(key+"."+type+".preprocessor.output", defaultPreprocessorExtension));
+                map.put(type, artifactInfo);
             }
         }
         return map;
     }
 
-    private class ExtensionFilter implements FilenameFilter {
+    private static class ExtensionFilter implements FilenameFilter {
 
         private String ext;
 
-        public ExtensionFilter(String ext) {
+        ExtensionFilter(String ext) {
             this.ext = ext;
         }
 

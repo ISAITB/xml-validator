@@ -39,7 +39,7 @@ public class XSDFileResolver implements LSResourceResolver {
         File baseURIFile = null;
         if (baseURI == null) {
         	if(domainConfig.getSchemaFile()!=null && !domainConfig.getSchemaFile().isEmpty()) {
-        		baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile().getParentFile();
+        		baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType).getPath()).toFile().getParentFile();
         	}else {
         		if(!domainConfig.getRemoteSchemaFile().get(validationType).getRemote().isEmpty()) {
         			baseURIFile = Paths.get(config.getTmpFolder(), "remote_config", domainConfig.getDomainName(), validationType, "xsd").toFile();

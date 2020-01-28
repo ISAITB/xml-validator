@@ -6,7 +6,7 @@ import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig.RemoteFileInfo;
 import eu.europa.ec.itb.einvoice.DomainConfigCache;
-
+import eu.europa.ec.itb.einvoice.validation.ArtifactPreprocessor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
@@ -33,20 +33,12 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
-import java.net.Proxy;
-import java.net.ProxySelector;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -76,6 +68,9 @@ public class FileManager {
     
 	@Autowired
 	private DomainConfigCache domainConfigCache;
+
+	@Autowired
+	private ArtifactPreprocessor preprocessor;
 
 	private ConcurrentHashMap<String, ReadWriteLock> externalDomainFileCacheLocks = new ConcurrentHashMap<>();
 
@@ -139,7 +134,7 @@ public class FileManager {
 
     /**
      * Get InputStream file from a URI.
-     * @param String URI to be downloaded.
+     * @param URLConvert String URI to be downloaded.
      * @return The InputStream of the URI.
      */
     public InputStream getURIInputStream(String URLConvert) {
@@ -182,31 +177,32 @@ public class FileManager {
         UUID folderUUID = UUID.randomUUID();
 		Path tmpFolder = Paths.get(config.getTmpFolder(), folderUUID.toString());
 		
-    	return getURLFile(tmpFolder.toString(), url, isSchema);
+    	return getURLFile(tmpFolder.toString(), url, isSchema, null, null);
     }
     /**
      * Returns a File in a specific folder from a URI. If the expected file is an XSD, it retrieves the imported/included schemas.
-     * @param String targetFolder Folder to save the File.
-     * @param String URLConvert URI from where to retrieve the File.
-     * @param Boolean isSchema Whether the expected File is an XSD or Schematron.
+     * @param targetFolder Folder to save the File.
+     * @param URLConvert URI from where to retrieve the File.
+     * @param isSchema Whether the expected File is an XSD or Schematron.
      * @return File URI as File in  the specific folder.
      * @throws IOException
      */
-	public File getURLFile(String targetFolder, String URLConvert, boolean isSchema) throws IOException {
+	private File getURLFile(String targetFolder, String URLConvert, boolean isSchema, File preprocessorFile, String preprocessorOutputExtension) throws IOException {
 		URL url = new URL(URLConvert);
-		
 		String filename = FilenameUtils.getName(url.getFile());
-		
 		File rootFile = getURLFile(targetFolder, URLConvert, filename);
-		
-		if(isSchema && rootFile!=null) {	        
+		if (preprocessorFile != null) {
+			File processedFile = preprocessor.preprocessFile(rootFile, preprocessorFile, preprocessorOutputExtension);
+			FileUtils.deleteQuietly(rootFile);
+			rootFile = processedFile;
+		}
+		if (isSchema) {
 			retreiveImportSchema(URLConvert, rootFile.getParent()+"/import");
 		}
-		
 		return rootFile;
 	}
 	
-	public File getURLFile(String targetFolder, String URLConvert, String filename) throws IOException {
+	private File getURLFile(String targetFolder, String URLConvert, String filename) throws IOException {
 		Path tmpPath;
 		
 		tmpPath = getFilePathFilename(targetFolder, filename);
@@ -239,7 +235,7 @@ public class FileManager {
 					String currentLocation = (String)sl.get(k);
 					
 					try {
-						getURLFile(rootFile, currentLocation, false);
+						getURLFile(rootFile, currentLocation, false, null, null);
 						
 						documentLocations.add(currentLocation);
 					} catch (IOException e) {
@@ -336,24 +332,22 @@ public class FileManager {
 				logger.debug("Waiting for lock to reset cache for ["+domainConfig.getDomainName()+"]");
 				externalDomainFileCacheLocks.get(domainConfig.getDomainName()).writeLock().lock();
 				logger.debug("Locked cache for ["+domainConfig.getDomainName()+"]");
-				for (String validationType: domainConfig.getType()) {
-					// Empty cache folder.
-					File remoteConfigFolder = new File(new File(getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType);
-					FileUtils.deleteQuietly(remoteConfigFolder);
-					
-					File remoteSchFolder = new File(remoteConfigFolder, "sch");
-					File remoteXsdFolder = new File(remoteConfigFolder, "xsd");
-					remoteSchFolder.mkdirs();
-					remoteXsdFolder.mkdirs();
-					
-					// Download remote SCH/XSD files (if needed).
-					try {
-						downloadRemoteFiles(domainConfig.getRemoteSchematronFile(), validationType, remoteSchFolder.getAbsolutePath(), false);
-						downloadRemoteFiles(domainConfig.getRemoteSchemaFile(), validationType, remoteXsdFolder.getAbsolutePath(), true);
-					} catch (IOException e) {
-						logger.error("Error to load the remote files", e);
-						throw new IllegalStateException("Error to load the remote files", e);
+				try {
+					for (String validationType: domainConfig.getType()) {
+						// Empty cache folder.
+						File remoteConfigFolder = new File(new File(getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType);
+						FileUtils.deleteQuietly(remoteConfigFolder);
+						File remoteSchFolder = new File(remoteConfigFolder, "sch");
+						File remoteXsdFolder = new File(remoteConfigFolder, "xsd");
+						remoteSchFolder.mkdirs();
+						remoteXsdFolder.mkdirs();
+						// Download remote SCH/XSD files (if needed).
+						downloadRemoteFiles(domainConfig.getDomain(), domainConfig.getRemoteSchematronFile(), validationType, remoteSchFolder.getAbsolutePath(), false);
+						downloadRemoteFiles(domainConfig.getDomain(), domainConfig.getRemoteSchemaFile(), validationType, remoteXsdFolder.getAbsolutePath(), true);
 					}
+				} catch (Exception e) {
+					// Never allow configuration errors in one domain to prevent the others from being available.
+					logger.error("Error while processing configuration for domain ["+domainConfig.getDomainName()+"]", e);
 				}
 			} finally {
 				// Unlock domain.
@@ -363,12 +357,16 @@ public class FileManager {
 		}
 	}
 	
-	private void downloadRemoteFiles(Map<String, RemoteFileInfo> map, String validationType, String remoteConfigPath, boolean isSchema) throws IOException{
+	private void downloadRemoteFiles(String domain, Map<String, RemoteFileInfo> map, String validationType, String remoteConfigPath, boolean isSchema) throws IOException{
 		// Download remote SCH/XSD files (if needed).
-		List<String> ri = map.get(validationType).getRemote();
-		if (ri != null) {
-			for (String uri: ri) {
-				getURLFile(remoteConfigPath, uri, isSchema);
+		List<DomainConfig.ValidationArtifactInfo> remoteFiles = map.get(validationType).getRemote();
+		if (remoteFiles != null) {
+			for (DomainConfig.ValidationArtifactInfo artifactInfo: remoteFiles) {
+				File preprocessorFile = null;
+				if (artifactInfo.getPreProcessorPath() != null) {
+					preprocessorFile = Paths.get(config.getResourceRoot(), domain, artifactInfo.getPreProcessorPath()).toFile();
+				}
+				getURLFile(remoteConfigPath, artifactInfo.getPath(), isSchema, preprocessorFile, artifactInfo.getPreProcessorOutputExtension());
 			}
 		}
 	}

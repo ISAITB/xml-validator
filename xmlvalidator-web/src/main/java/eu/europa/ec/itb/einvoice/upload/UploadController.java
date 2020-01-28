@@ -131,44 +131,46 @@ public class UploadController {
             validationType = config.getType().get(0);
         }
         if (config.hasMultipleValidationTypes() && (validationType == null || !config.getType().contains(validationType))) {
-            // A invoice type is required.
+            // A validation type is required.
             attributes.put("message", "Provided validation type is not valid");
         }
         try {
             if (stream != null) {
             	List<FileInfo> externalSchIS = new ArrayList<>();
             	List<FileInfo> externalSchemaIS = new ArrayList<>();
-            	
+            	boolean proceedToValidate = true;
             	try {
             		externalSchemaIS = getExternalFiles(externalSchemaContentType, externalSchemaFiles, externalSchemaUri, config.getExternalSchemaFile(), validationType, true);
             		externalSchIS = getExternalFiles(externalSchContentType, externalSchFiles, externalSchUri, config.getExternalSchematronFile(), validationType, false);
             	} catch (Exception e) {
                     logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
                     attributes.put("message", "Error in upload [" + e.getMessage() + "]");
+					proceedToValidate = false;
                 }
-            	
-                XMLValidator validator = beans.getBean(XMLValidator.class, stream, validationType, externalSchemaIS, externalSchIS, config);
-                TAR report = validator.validateAll();
-                attributes.put("report", report);
-                attributes.put("date", report.getDate().toString());
-                
-                if(contentType.equals(contentType_file)) {
-					attributes.put("fileName", file.getOriginalFilename());
-				} else if(contentType.equals(contentType_uri)) {
-					attributes.put("fileName", uri);
-				} else {
-					attributes.put("fileName", "-");
+            	if (proceedToValidate) {
+					XMLValidator validator = beans.getBean(XMLValidator.class, stream, validationType, externalSchemaIS, externalSchIS, config);
+					TAR report = validator.validateAll();
+					attributes.put("report", report);
+					attributes.put("date", report.getDate().toString());
+
+					if(contentType.equals(contentType_file)) {
+						attributes.put("fileName", file.getOriginalFilename());
+					} else if(contentType.equals(contentType_uri)) {
+						attributes.put("fileName", uri);
+					} else {
+						attributes.put("fileName", "-");
+					}
+
+					// Cache detailed report.
+					try {
+						String xmlID = fileManager.writeXML(config.getDomainName(), report.getContext().getItem().get(0).getValue());
+						attributes.put("xmlID", xmlID);
+						fileManager.saveReport(report, xmlID);
+					} catch (IOException e) {
+						logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
+						attributes.put("message", "Error generating detailed report [" + e.getMessage() + "]");
+					}
 				}
-                
-                // Cache detailed report.
-                try {
-                    String xmlID = fileManager.writeXML(config.getDomainName(), report.getContext().getItem().get(0).getValue());
-                    attributes.put("xmlID", xmlID);
-                    fileManager.saveReport(report, xmlID);
-                } catch (IOException e) {
-                    logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
-                    attributes.put("message", "Error generating detailed report [" + e.getMessage() + "]");
-                }
             }
         } catch (Exception e) {
             logger.error("An error occurred during the validation [" + e.getMessage() + "]", e);
@@ -239,11 +241,11 @@ public class UploadController {
         return types;
     }
     
-	private List<ValidationType> includeExternalArtefacts(Map<String, String> externalArtefact){
+	private List<ValidationType> includeExternalArtefacts(Map<String, DomainConfig.ExternalValidationArtifactInfo> externalArtefact){
         List<ValidationType> types = new ArrayList<>();
     	
-    	for(Map.Entry<String, String> entry : externalArtefact.entrySet()) {
-    		types.add(new ValidationType(entry.getKey(), entry.getValue()));
+    	for(Map.Entry<String, DomainConfig.ExternalValidationArtifactInfo> entry : externalArtefact.entrySet()) {
+    		types.add(new ValidationType(entry.getKey(), entry.getValue().getSupportForExternalArtifacts()));
     	}
     	
     	return types;
@@ -265,8 +267,9 @@ public class UploadController {
 		return types;        
     }
     
-    private List<FileInfo> getExternalFiles(String[] externalContentType, MultipartFile[] externalFiles, String[] externalUri, 
-    		Map<String, String> externalProperties, String validationType, boolean isSchema) throws Exception {
+    private List<FileInfo> getExternalFiles(String[] externalContentType, MultipartFile[] externalFiles, String[] externalUri,
+											Map<String, DomainConfig.ExternalValidationArtifactInfo> externalProperties, String validationType,
+											boolean isSchema) throws Exception {
     	List<FileInfo> lis = new ArrayList<>();
     	
     	if(externalContentType != null) {
@@ -338,8 +341,8 @@ public class UploadController {
     	return (iRootFiles>1)? false : true;
     }
     
-    private boolean validateExternalFiles(List<FileInfo> lis, Map<String, String> externalArtefacts, String validationType) {
-    	String externalArtefactProperty = externalArtefacts.get(validationType);
+    private boolean validateExternalFiles(List<FileInfo> lis, Map<String, DomainConfig.ExternalValidationArtifactInfo> externalArtefacts, String validationType) {
+    	String externalArtefactProperty = externalArtefacts.get(validationType).getSupportForExternalArtifacts();
 		
     	boolean validated = false;
     	

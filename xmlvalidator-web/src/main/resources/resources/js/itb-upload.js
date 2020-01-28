@@ -1,7 +1,6 @@
 function validationTypeChanged() {
 	cleanExternalArtefacts("externalSch");
 	cleanExternalArtefacts("externalSchema");
-	
 	checkForSubmit();
 	externalArtefactsEnabled();
 }
@@ -28,7 +27,7 @@ function externalArtefactsEnabled(){
 
 	if(includeExternalArtefacts=="none" && includeExternalArtefactsSch=="none"){
 		$(".includeExternalArtefacts").addClass('hidden');
-	}else{
+	} else {
 		if(includeExternalArtefacts=="required" || includeExternalArtefactsSch=="required"){
 			$(".includeExternalArtefacts").addClass('hidden');
 		}else{
@@ -40,7 +39,7 @@ function externalArtefactsEnabled(){
 }
 
 function addExternalSchema(){
-	addElement("externalSchema");
+	addElement("externalSchema", externalSchemaPlaceholder, true);
 	$('#externalSchemaAddButton').addClass('hidden');
 }
 
@@ -48,15 +47,16 @@ function addExternalSchematron(){
 	var toggleExtSch = getExternalType("externalSchematron");
     var elements = $(".externalSchDiv");
 
-	if(toggleExtSch == "required" && elements.length==1){
+	if (toggleExtSch == "required" && elements.length == 1){
 		var indexInt = getLastExternalIdNumber(".externalSchDiv");
-		
 		$('#rmvButton-externalSch-'+indexInt).removeClass('hidden');
-		$('#fileToValidate-class-externalSch-'+indexInt).removeClass('col-md-12');
-		$('#fileToValidate-class-externalSch-'+indexInt).addClass('col-md-11');
+		$('#fileToValidate-class-externalSch-'+indexInt).removeClass('col-sm-12');
+		$('#fileToValidate-class-externalSch-'+indexInt).addClass('col-sm-11');
+		$('#uriToValidate-externalSch-'+indexInt).removeClass('col-sm-12');
+		$('#uriToValidate-externalSch-'+indexInt).addClass('col-sm-11');
 	}
 	
-	addElement("externalSch");	
+	addElement("externalSch", externalSchematronPlaceholder, true);
 }
 
 function removeElement(elementId, type) {
@@ -73,9 +73,12 @@ function removeElement(elementId, type) {
 		var indexInt = getLastExternalIdNumber("."+type+"Div");
 		
 		$('#rmvButton-externalSch-'+indexInt).addClass('hidden');
-		$('#fileToValidate-class-externalSch-'+indexInt).removeClass('col-md-11');
-		$('#fileToValidate-class-externalSch-'+indexInt).addClass('col-md-12');
+		$('#fileToValidate-class-externalSch-'+indexInt).removeClass('col-sm-11');
+		$('#fileToValidate-class-externalSch-'+indexInt).addClass('col-sm-12');
+		$('#uriToValidate-externalSch-'+indexInt).removeClass('col-sm-11');
+		$('#uriToValidate-externalSch-'+indexInt).addClass('col-sm-12');
 	}
+    checkForSubmit();
 }
 
 function getLastExternalIdNumber(type){
@@ -103,12 +106,11 @@ function fileInputChanged() {
 }
 function contentTypeChangedShapes(elementId){
 	var type = $('#contentType-'+elementId).val();
-	
-	if(type == "uriType"){
+
+	if (type == "uriType"){
 		$("#uriToValidate-"+elementId).removeClass('hidden');
 		$("#fileToValidate-"+elementId).addClass('hidden');
-	}
-	if(type == "fileType"){
+	} else if (type == "fileType"){
 		$("#fileToValidate-"+elementId).removeClass('hidden');
 		$("#uriToValidate-"+elementId).addClass('hidden');
 	}
@@ -116,19 +118,19 @@ function contentTypeChangedShapes(elementId){
 	fileInputChangedShapes(elementId);
 }
 
-function addElement(type) {
+function addElement(type, placeholderText, focus) {
     var elements = $("."+type+"Div");
     var indexLast = 0;
 	
 	for (var i=0; i<elements.length; i++){
-		var index = elements[i].getAttribute('id').indexOf("-");
-		var indexInt2 = parseInt(elements[i].getAttribute('id').substring(index))+1;
+		var index = elements[i].getAttribute('id').indexOf("-")+1;
+		var indexInt2 = parseInt(elements[i].getAttribute('id').substring(index));
 		
 		if(indexInt2>indexLast){
 			indexLast = indexInt2;
 		}
 	}
-	var elementId = type+"-"+indexLast;
+	var elementId = type+"-"+(indexLast+1);
 
     $("<div class='row form-group "+type+"Div' id='"+elementId+"'>" +
     	"<div class='col-sm-2'>"+
@@ -139,93 +141,68 @@ function addElement(type) {
 		"</div>"+
 		"<div class='col-sm-10'>" +
 		    "<div class='row'>" +
-                "<div id='fileToValidate-class-"+elementId+"' class='col-md-11 col-sm-10'>" +
+                "<div id='fileToValidate-class-"+elementId+"' class='col-sm-11'>" +
                     "<div class='input-group' id='fileToValidate-"+elementId+"'>" +
                         "<div class='input-group-btn'>" +
                             "<button class='btn btn-default' type='button' onclick='triggerFileUploadShapes(\"inputFile-"+elementId+"\")'><i class='far fa-folder-open'></i></button>" +
                         "</div>" +
-                        "<input type='text' id='inputFileName-"+elementId+"' class='form-control clickable' onclick='triggerFileUploadShapes(\"inputFile-"+elementId+"\")' readonly='readonly'/>" +
+                        "<input type='text' id='inputFileName-"+elementId+"' placeholder='"+placeholderText+"' class='form-control clickable' onclick='triggerFileUploadShapes(\"inputFile-"+elementId+"\")' readonly='readonly'/>" +
                     "</div>" +
                 "</div>" +
-                "<div class='col-md-11 col-sm-10 hidden' id='uriToValidate-"+elementId+"'>"+
+                "<div class='col-sm-11 hidden' id='uriToValidate-"+elementId+"'>"+
                     "<input type='url' class='form-control' id='uri-"+elementId+"' name='uri-"+type+"' onchange='fileInputChangedShapes(\""+elementId+"\")'>"+
                 "</div>"+
                 "<input type='file' class='inputFile' id='inputFile-"+elementId+"' name='inputFile-"+type+"' onchange='fileInputChangedShapes(\""+elementId+"\")'/>" +
-                "<div class='col-md-1 col-sm-2'>" +
+                "<div class='col-sm-1'>" +
                     "<button class='btn btn-default' id='rmvButton-"+elementId+"' type='button' onclick='removeElement(\""+elementId+"\", \""+type+"\")'><i class='far fa-trash-alt'></i></button>" +
                 "</div>" +
     		"</div>"+
 		"</div>"+
     "</div>").insertBefore("#"+type+"AddButton");
-    $("#"+elementId+" input").focus();
+    if (focus) {
+        $("#"+elementId+" input").focus();
+    }
 }
 
 function checkForSubmit() {
 	var type = $('#contentType').val();
 	var inputType = $('#validationType');
 	$('#inputFileSubmit').prop('disabled', true);	
-	
-	if(type == "fileType"){
+	var submitDisabled = true
+	if (type == "fileType") {
 		var inputFile = $("#inputFileName");
-		$('#inputFileSubmit').prop('disabled', (inputFile.val() && (!inputType.length || inputType.val()))?false:true);
-	}
-	if(type == "uriType"){
+		submitDisabled = (inputFile.val() && (!inputType.length || inputType.val()))?false:true
+	} else if(type == "uriType") {
 		var uriInput = $("#uri");
-		$('#inputFileSubmit').prop('disabled', (uriInput.val() && (!inputType.length || inputType.val()))?false:true);		
+		submitDisabled = (uriInput.val() && (!inputType.length || inputType.val()))?false:true
+	} else if(type == "stringType") {
+		var stringType = getCodeMirrorNative('#text-editor').getDoc();
+		submitDisabled = (stringType.getValue() && (!inputType.length || inputType.val()))?false:true
 	}
-	if(type == "stringType"){
-		var stringType = getCodeMirrorNative('#text-editor').getDoc();	
-		var contentType = $("#contentSyntaxType");
-		
-		$('#inputFileSubmit').prop('disabled', (stringType.getValue() && (!contentType.length || contentType.val()) && (!inputType.length || inputType.val()))?false:true);		
+	if (!submitDisabled) {
+        if (getExternalType("externalSchema") == "required") {
+            submitDisabled = !externalElementHasValue(document.getElementsByName("contentType-externalSchema"));
+        }
+        if (!submitDisabled) {
+            if (getExternalType("externalSchematron") == "required") {
+                submitDisabled = !externalElementHasValue(document.getElementsByName("contentType-externalSch"));
+            }
+        }
 	}
-	
-	checkForSubmitExternal();
+    $('#inputFileSubmit').prop('disabled', submitDisabled);
 }
 
-function checkForSubmitExternal(){	
-	var includeExternalArtefactsSch = getExternalType("externalSchematron");
-	var includeExternalArtefacts = getExternalType("externalSchema");
-	
-	if(includeExternalArtefacts=="required" || includeExternalArtefactsSch=="required"){
-		
-		var elementExt = document.getElementsByName("contentType-externalSchema");
-		var elementExtSch = document.getElementsByName("contentType-externalSch");
-		
-		var submitExt = checkForSubmitExternalElement(elementExt);
-		var submitExtSch = checkForSubmitExternalElement(elementExtSch);
-		
-		if(includeExternalArtefacts=="required" && includeExternalArtefactsSch=="required"){
-			$('#inputFileSubmit').prop('disabled', (submitExtSch || submitExt)?true:false);
-		}
-		if(includeExternalArtefacts=="required" && includeExternalArtefactsSch!="required"){
-			$('#inputFileSubmit').prop('disabled', (submitExt)?true:false);
-		}
-		if(includeExternalArtefacts!="required" && includeExternalArtefactsSch=="required"){
-			$('#inputFileSubmit').prop('disabled', (submitExtSch)?true:false);
-		}
+function externalElementHasValue(elementExt) {
+	if (elementExt.length > 0) {
+	    for (var i=0; i < elementExt.length; i++) {
+            var type = elementExt[i].options[elementExt[i].selectedIndex].value;
+            var id = elementExt[i].id.substring("contentType-".length, elementExt[i].id.length);
+            if (type == "fileType" && $("#inputFileName-"+id).val() || type == "uriType" && $("#uri-"+id).val()) {
+                    return true;
+            }
+	    }
 	}
-}
-
-function checkForSubmitExternalElement(elementExt){	
-	var disabled = true;
-	
-	if(elementExt.length > 0){
-		var type = elementExt[0].options[elementExt[0].selectedIndex].value;
-		var id = elementExt[0].id.substring("contentType-".length, elementExt[0].id.length);
-		
-		if(type == "fileType"){
-			var inputFile = $("#inputFileName-"+id);
-			
-			disabled = (inputFile.val()?false:true);
-		}
-		if(type == "uriType"){
-			var uriInput = $("#uri-"+id);
-			disabled = (uriInput.val()?false:true);	
-		}
-	}
-	
-	return disabled;
+	return false;
 }
 
 function triggerFileUpload() {
@@ -323,20 +300,24 @@ function toggleExternalArtefactsClassCheck() {
 		}
 		
 		if(toggleExtSch == "required"){
-			addElement("externalSch");
-			$('#rmvButton-externalSch-0').addClass('hidden');
-			$('#fileToValidate-class-externalSch-0').removeClass('col-md-11');
-			$('#fileToValidate-class-externalSch-0').addClass('col-md-12');
+			addElement("externalSch", externalSchematronPlaceholder, false);
+			$('#rmvButton-externalSch-1').addClass('hidden');
+			$('#fileToValidate-class-externalSch-1').removeClass('col-sm-11');
+			$('#fileToValidate-class-externalSch-1').addClass('col-sm-12');
+			$('#uriToValidate-externalSch-1').removeClass('col-sm-11');
+			$('#uriToValidate-externalSch-1').addClass('col-sm-12');
 		}
 		
 		if(toggleExt == "required"){
-			addElement("externalSchema");
+			addElement("externalSchema", externalSchemaPlaceholder, false);
 			$('#externalSchemaAddButton').addClass('hidden');
-			$('#rmvButton-externalSchema-0').addClass('hidden');
+			$('#rmvButton-externalSchema-1').addClass('hidden');
 
-			$('#fileToValidate-class-externalSchema-0').removeClass('col-md-11');
-			$('#fileToValidate-class-externalSchema-0').addClass('col-md-12');
-		}		
+			$('#fileToValidate-class-externalSchema-1').removeClass('col-sm-11');
+			$('#fileToValidate-class-externalSchema-1').addClass('col-sm-12');
+			$('#uriToValidate-externalSchema-1').removeClass('col-sm-11');
+			$('#uriToValidate-externalSchema-1').addClass('col-sm-12');
+		}
 		
 	}else{
 		if(toggleExtSch == "none" && toggleExt == "none"){

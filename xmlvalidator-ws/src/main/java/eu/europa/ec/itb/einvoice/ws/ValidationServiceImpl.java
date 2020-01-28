@@ -8,9 +8,14 @@ import com.gitb.vs.ValidationResponse;
 import com.gitb.vs.Void;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
+import eu.europa.ec.itb.einvoice.util.FileManager;
+import eu.europa.ec.itb.einvoice.validation.FileContent;
+import eu.europa.ec.itb.einvoice.validation.FileInfo;
 import eu.europa.ec.itb.einvoice.validation.ValidationConstants;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -24,9 +29,11 @@ import java.io.*;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -43,7 +50,9 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
     ApplicationContext ctx;
     @Autowired
     ApplicationConfig config;
-
+    @Autowired
+	FileManager fileManager;
+    
     public ValidationServiceImpl(DomainConfig domainConfig) {
         this.domainConfig = domainConfig;
     }
@@ -103,13 +112,17 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
             }
         }
         String invoiceToValidate;
+        List<FileInfo> externalSchema = new ArrayList<>();
+        List<FileInfo> externalSch = new ArrayList<>();
         try {
             invoiceToValidate = extractContent(fileInputs.get(0)).trim();
+            externalSchema = validateExternalFiles(validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMA, validationType);
+            externalSch = validateExternalFiles(validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, validationType);
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not read provided input", e);
         }
         XMLValidator validator;
-        validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes(StandardCharsets.UTF_8)), validationType, domainConfig);
+        validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes(StandardCharsets.UTF_8)), validationType, externalSchema, externalSch, domainConfig);
         TAR report = validator.validateAll();
         ValidationResponse result = new ValidationResponse();
         result.setReport(report);
@@ -136,6 +149,115 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
             }
         }
         return inputs;
+    }
+    
+    private List<FileInfo> validateExternalFiles(ValidateRequest validateRequest, String name, String validationType){
+    	List<FileInfo> filesContent = new ArrayList<>();
+    	List<AnyContent> listInput = getInputFor(validateRequest, name);
+    	
+    	try {
+	    	if(!listInput.isEmpty()) {
+		    	AnyContent listRuleSets = listInput.get(0);
+	
+				if (listRuleSets.getItem() != null && !listRuleSets.getItem().isEmpty()) {
+	
+					//Validate variables and ruleSets
+					for (AnyContent ruleSet : listRuleSets.getItem()) {
+						FileInfo fileContent = getFileInfo(ruleSet, name);
+						
+						if (fileContent.getFile()!=null) {
+							filesContent.add(fileContent);
+						}
+					}
+				}
+	    	}else {
+	    		return Collections.emptyList();
+	    	}
+    	}catch(Exception e) {
+            logger.error("Error while reading uploaded external file [" + e.getMessage() + "]", e);
+            
+    		return Collections.emptyList();
+    	}
+    	
+    	return filesContent;
+    }
+    
+   /* private boolean validExternalFiles(String validationType, String name, AnyContent ruleSet) {
+    	config.g
+    }*/
+    
+    private FileInfo getFileInfo(AnyContent content, String name) throws Exception {
+    	FileInfo fileContent = new FileInfo();
+    	ValueEmbeddingEnumeration contentType = content.getEmbeddingMethod();
+    	
+    	if(contentType.equals(ValueEmbeddingEnumeration.URI)) {
+    		String mimeType = fileManager.checkContentTypeUrl(content.getValue());
+    		
+    		if(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON.equals(name)) {
+    			if(config.getAcceptedSchematronSyntax().contains(mimeType)) {
+	    			File f = fileManager.getURLFile(content.getValue(), false);
+	    			fileContent.setFile(f);    				
+    			}
+    		}else {
+	    		if(config.getAcceptedZipSyntax().contains(mimeType)) {
+	    			//ZIP file
+	    			File f = fileManager.getURLFile(content.getValue(), false);
+	    			File zipFile = fileManager.unzipFile(f);
+	    			//Validate ZIP file    			
+					boolean isValid = validateSchemaZip(zipFile);
+					
+					if(isValid) {
+		    			fileContent.setFile(zipFile);
+					}else {
+			            logger.error("An error occurred during the validation of the external XSD ZIP File: XSD configuration needs to include a single XSD at its root (and any folders with sub-folders and other imported XSDs).");
+			    		throw new Exception("An error occurred during the validation of the external XSD ZIP File: XSD configuration needs to include a single XSD at its root (and any folders with sub-folders and other imported XSDs).");							
+					}
+	    		}
+	    		if(config.getAcceptedSchemaSyntax().contains(mimeType)) {
+	    			//XSD
+	    			File f = fileManager.getURLFile(content.getValue(), true);
+	    			fileContent.setFile(f);
+	    		}
+    		}
+    	}else {
+        	String sContent = extractContent(content);
+    		String mimeType = fileManager.checkContentType(sContent);
+    		
+    		if(contentType.equals(ValueEmbeddingEnumeration.BASE_64) || contentType.equals(ValueEmbeddingEnumeration.STRING)) {
+    			if(ValidationConstants.INPUT_EXTERNAL_SCHEMA.equals(name) && config.getAcceptedSchemaSyntax().contains(mimeType)) {
+    				File f = fileManager.getStringFile(sContent, "");
+    		    	fileContent.setFile(f);
+    			}
+    			if(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON.equals(name) && config.getAcceptedSchematronSyntax().contains(mimeType)) {
+    		    	File f = fileManager.getStringFile(sContent, "xsl");
+    		    	fileContent.setFile(f);
+    			}
+    		}
+    		
+    	}
+    	
+    	return fileContent;
+    }
+    
+    private boolean validateSchemaZip(File rootFolder) {
+    	int iRootFiles = 0;
+    	
+    	//1 file as root, other files in a folder.
+		if (rootFolder.isFile()) {
+		     iRootFiles++;
+		} else {
+		     // List all files.
+		     File[] files = rootFolder.listFiles();
+		     if (files != null) {
+		         for (File aSchemaFile: files) {
+		             if (aSchemaFile.isFile()) {
+		                 iRootFiles++;
+		             }
+		         }
+		     }
+		}
+    	
+    	return (iRootFiles>1)? false : true;
     }
 
     /**
@@ -203,5 +325,6 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         }
         return stringContent;
     }
+
 
 }

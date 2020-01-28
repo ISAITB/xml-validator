@@ -12,11 +12,20 @@ public class FileInfo {
         this.contentLang = contentLang;
     }
 
-    public File getFile() {
+    public FileInfo() {
+	}
+
+	public File getFile() {
         return file;
     }
+	public void setFile(File f) {
+		file = f;
+	}
 
     public String getContentLang() {
         return contentLang;
+    }
+    public void setContentLang(String lang) {
+    	contentLang = lang;
     }
 }

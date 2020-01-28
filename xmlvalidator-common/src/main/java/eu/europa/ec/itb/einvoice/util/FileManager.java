@@ -36,6 +36,7 @@ import java.io.*;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -135,6 +136,25 @@ public class FileManager {
         Tika tika = new Tika();
         String type = tika.detect(stream);
         return config.getAcceptedMimeTypes().contains(type);
+    }
+    
+    public String checkContentTypeUrl(String url) throws IOException, URISyntaxException {
+        Tika tika = new Tika();
+        String mimeType = "";
+        
+        URI uri = new URI(url);
+        return tika.detect(uri.toURL());
+    }
+    
+    public String checkContentType(String content) throws IOException {
+        Tika tika = new Tika();
+        String mimeType = "";
+        
+        try(InputStream in = new ByteArrayInputStream(content.getBytes())){
+            mimeType = tika.detect(in);
+		}
+        
+        return mimeType;
     }
 
     /**
@@ -249,6 +269,37 @@ public class FileManager {
 				}
 			}
 		}
+	}
+
+	private Path getFilePath(String folder) {
+		Path tmpPath = Paths.get(folder, UUID.randomUUID().toString());
+		tmpPath.toFile().getParentFile().mkdirs();
+
+		return tmpPath;
+	}
+
+	private Path getFilePath(String folder, String extension) {
+		Path tmpPath = Paths.get(folder, UUID.randomUUID().toString()+"."+extension);
+		tmpPath.toFile().getParentFile().mkdirs();
+
+		return tmpPath;
+	}
+	
+	public File getStringFile(String content, String extension) throws IOException {
+		File tmpFolder = getTempFolder();
+		Path tempPath = null;
+		
+		if(extension.isEmpty()) {
+			tempPath = getFilePath(tmpFolder.getAbsolutePath().toString());
+		}else {
+			tempPath = getFilePath(tmpFolder.getAbsolutePath().toString(), extension);			
+		}
+
+		try(InputStream in = new ByteArrayInputStream(content.getBytes())){
+			Files.copy(in, tempPath, StandardCopyOption.REPLACE_EXISTING);
+		}
+		
+		return tempPath.toFile();
 	}
 	
 	private boolean getZipFiles(ZipInputStream zis, String tmpFolder) throws IOException{

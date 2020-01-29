@@ -134,8 +134,6 @@ public class FileManager {
     
     public String checkContentTypeUrl(String url) throws IOException, URISyntaxException {
         Tika tika = new Tika();
-        String mimeType = "";
-        
         URI uri = new URI(url);
         return tika.detect(uri.toURL());
     }
@@ -143,13 +141,20 @@ public class FileManager {
     public String checkContentType(String content) throws IOException {
         Tika tika = new Tika();
         String mimeType = "";
-        
         try(InputStream in = new ByteArrayInputStream(content.getBytes())){
             mimeType = tika.detect(in);
 		}
-        
         return mimeType;
     }
+
+	public String checkContentType(byte[] content) throws IOException {
+		Tika tika = new Tika();
+		String mimeType = "";
+		try (InputStream in = new ByteArrayInputStream(content)){
+			mimeType = tika.detect(in);
+		}
+		return mimeType;
+	}
 
     /**
      * Get InputStream file from a URI.
@@ -184,20 +189,21 @@ public class FileManager {
     	return getInputStreamFile(config.getTmpFolder(), stream, filename);
     }
 	
-	public File getInputStreamFile(String targetFolder, InputStream stream, String fileName) throws IOException {
+	private File getInputStreamFile(String targetFolder, InputStream stream, String fileName) throws IOException {
 		Path tmpPath = getFilePathFilename(targetFolder, fileName);
 		
 		Files.copy(stream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
 
 		return tmpPath.toFile();
 	}
-    
+
     public File getURLFile(String url, boolean isSchema) throws IOException {
         UUID folderUUID = UUID.randomUUID();
 		Path tmpFolder = Paths.get(config.getTmpFolder(), folderUUID.toString());
 		
     	return getURLFile(tmpFolder.toString(), url, isSchema, null, null);
     }
+
     /**
      * Returns a File in a specific folder from a URI. If the expected file is an XSD, it retrieves the imported/included schemas.
      * @param targetFolder Folder to save the File.
@@ -282,18 +288,18 @@ public class FileManager {
 	
 	public File getStringFile(String content, String extension) throws IOException {
 		File tmpFolder = getTempFolder();
-		Path tempPath = null;
+		Path tempPath;
 		
-		if(extension.isEmpty()) {
-			tempPath = getFilePath(tmpFolder.getAbsolutePath().toString());
-		}else {
-			tempPath = getFilePath(tmpFolder.getAbsolutePath().toString(), extension);			
+		if (extension.isEmpty()) {
+			tempPath = getFilePath(tmpFolder.getAbsolutePath());
+		} else {
+			tempPath = getFilePath(tmpFolder.getAbsolutePath(), extension);
 		}
 
-		try(InputStream in = new ByteArrayInputStream(content.getBytes())){
+		try (InputStream in = new ByteArrayInputStream(content.getBytes())){
 			Files.copy(in, tempPath, StandardCopyOption.REPLACE_EXISTING);
 		}
-		
+
 		return tempPath.toFile();
 	}
 	
@@ -326,7 +332,35 @@ public class FileManager {
         
         return true;
 	}
-	
+
+	public File unzipFile(byte[] zipContent){
+		File unzipFiles = null;
+		boolean isZip = false;
+		UUID folderUUID = UUID.randomUUID();
+		Path tmpFolder = Paths.get(config.getTmpFolder(), folderUUID.toString());
+
+		try {
+			ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipContent));
+			File rootFolder = tmpFolder.toFile();
+			rootFolder.mkdirs();
+
+			isZip = getZipFiles(zis, tmpFolder.toString());
+
+			unzipFiles = rootFolder;
+
+			zis.closeEntry();
+			zis.close();
+		}catch(Exception e) {
+			return null;
+		}
+
+		if(isZip) {
+			return unzipFiles;
+		}else {
+			return null;
+		}
+	}
+
 	public File unzipFile(File zipFile){
 		File unzipFiles = null;		
 		boolean isZip = false;

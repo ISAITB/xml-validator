@@ -43,10 +43,10 @@ public class ApplicationConfig {
     private Set<String> acceptedMimeTypes;
     private Set<String> acceptedSchematronExtensions;
     private Set<String> acceptedSchemaExtensions;
-    private Set<String> acceptedSchematronSyntax;
     private Set<String> domain;
-    private Set<String> acceptedZipSyntax;
-    private Set<String> acceptedSchemaSyntax;
+    private Set<String> acceptedZipMimeType;
+    private Set<String> acceptedSchemaMimeType;
+    private Set<String> acceptedSchematronMimeType;
     private Map<String, String> domainIdToDomainName = new HashMap<>();
     private Map<String, String> domainNameToDomainId = new HashMap<>();
     private String startupTimestamp;
@@ -140,12 +140,12 @@ public class ApplicationConfig {
         this.acceptedSchemaExtensions = acceptedSchemaExtensions;
     }
 
-    public Set<String> getAcceptedSchematronSyntax() {
-        return acceptedSchematronSyntax;
+    public Set<String> getAcceptedSchematronMimeType() {
+        return acceptedSchematronMimeType;
     }
 
-    public void setAcceptedSchematronSyntax(Set<String> acceptedSchematronSyntax) {
-        this.acceptedSchematronSyntax = acceptedSchematronSyntax;
+    public void setAcceptedSchematronMimeType(Set<String> acceptedSchematronMimeType) {
+        this.acceptedSchematronMimeType = acceptedSchematronMimeType;
     }
 
     public Set<String> getDomain() {
@@ -188,20 +188,20 @@ public class ApplicationConfig {
 		this.cleanupWebRate = cleanupWebRate;
 	}
 
-	public Set<String> getAcceptedZipSyntax() {
-		return acceptedZipSyntax;
+	public Set<String> getAcceptedZipMimeType() {
+		return acceptedZipMimeType;
 	}
 
-	public void setAcceptedZipSyntax(Set<String> acceptedZipSyntax) {
-		this.acceptedZipSyntax = acceptedZipSyntax;
+	public void setAcceptedZipMimeType(Set<String> acceptedZipMimeType) {
+		this.acceptedZipMimeType = acceptedZipMimeType;
 	}
 
-	public Set<String> getAcceptedSchemaSyntax() {
-		return acceptedSchemaSyntax;
+	public Set<String> getAcceptedSchemaMimeType() {
+		return acceptedSchemaMimeType;
 	}
 
-	public void setAcceptedSchemaSyntax(Set<String> acceptedSchemaSyntax) {
-		this.acceptedSchemaSyntax = acceptedSchemaSyntax;
+	public void setAcceptedSchemaMimeType(Set<String> acceptedSchemaMimeType) {
+		this.acceptedSchemaMimeType = acceptedSchemaMimeType;
 	}
 
     @PostConstruct

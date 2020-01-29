@@ -144,7 +144,7 @@ public class DomainConfig {
         this.remoteSchematronFile = remoteSchematronFile;
     }
 
-    public String getMailFrom() {
+	public String getMailFrom() {
         return mailFrom;
     }
 

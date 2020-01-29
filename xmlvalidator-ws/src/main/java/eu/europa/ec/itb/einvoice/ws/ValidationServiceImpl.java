@@ -8,11 +8,11 @@ import com.gitb.vs.ValidationResponse;
 import com.gitb.vs.Void;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
+import eu.europa.ec.itb.einvoice.util.FileManager;
+import eu.europa.ec.itb.einvoice.validation.FileInfo;
 import eu.europa.ec.itb.einvoice.validation.ValidationConstants;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.commons.codec.binary.Base64;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -21,13 +21,11 @@ import org.springframework.stereotype.Component;
 
 import javax.jws.WebParam;
 import java.io.*;
-import java.net.Proxy;
-import java.net.ProxySelector;
-import java.net.URI;
-import java.net.URLConnection;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by simatosc on 25/02/2016.
@@ -36,14 +34,15 @@ import java.util.List;
 @Scope("prototype")
 public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ValidationServiceImpl.class);
     private final DomainConfig domainConfig;
 
     @Autowired
     ApplicationContext ctx;
     @Autowired
     ApplicationConfig config;
-
+    @Autowired
+	FileManager fileManager;
+    
     public ValidationServiceImpl(DomainConfig domainConfig) {
         this.domainConfig = domainConfig;
     }
@@ -60,22 +59,46 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         response.getModule().getMetadata().setVersion("1.0.0");
         response.getModule().setInputs(new TypedParameters());
         if (domainConfig.hasMultipleValidationTypes()) {
-            TypedParameter xmlInput =  new TypedParameter();
-            xmlInput.setName(ValidationConstants.INPUT_TYPE);
-            xmlInput.setType("string");
-            xmlInput.setUse(UsageEnumeration.R);
-            xmlInput.setKind(ConfigurationType.SIMPLE);
-            xmlInput.setDesc(domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_TYPE));
-            response.getModule().getInputs().getParam().add(xmlInput);
+            response.getModule().getInputs().getParam().add(createParameter(ValidationConstants.INPUT_TYPE, "string", UsageEnumeration.R, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_TYPE)));
         }
-        TypedParameter xmlInput =  new TypedParameter();
-        xmlInput.setName(ValidationConstants.INPUT_XML);
-        xmlInput.setType("object");
-        xmlInput.setUse(UsageEnumeration.R);
-        xmlInput.setKind(ConfigurationType.SIMPLE);
-        xmlInput.setDesc(domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_XML));
-        response.getModule().getInputs().getParam().add(xmlInput);
+        response.getModule().getInputs().getParam().add(createParameter(ValidationConstants.INPUT_XML, "object", UsageEnumeration.R, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_XML)));
+        if (supportsExternalArtifacts(domainConfig.getExternalSchemaFile())) {
+            response.getModule().getInputs().getParam().add(createParameter(ValidationConstants.INPUT_EXTERNAL_SCHEMA, "list[map]", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_EXTERNAL_SCHEMA)));
+        }
+        if (supportsExternalArtifacts(domainConfig.getExternalSchematronFile())) {
+            response.getModule().getInputs().getParam().add(createParameter(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, "list[map]", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON)));
+        }
         return response;
+    }
+
+    private boolean supportsExternalArtifacts(Map<String, DomainConfig.ExternalValidationArtifactInfo> artifactInfoMap) {
+        for (DomainConfig.ExternalValidationArtifactInfo artifactInfo: artifactInfoMap.values()) {
+            if (DomainConfig.externalFile_req.equals(artifactInfo.getSupportForExternalArtifacts())
+                    || DomainConfig.externalFile_opt.equals(artifactInfo.getSupportForExternalArtifacts())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Create a parameter definition.
+     *
+     * @param name The name of the parameter.
+     * @param type The type of the parameter. This needs to match one of the GITB types.
+     * @param use The use (required or optional).
+     * @param kind The kind of parameter it is (whether it should be provided as the specific value, as BASE64 content or as a URL that needs to be looked up to obtain the value).
+     * @param description The description of the parameter.
+     * @return The created parameter.
+     */
+    private TypedParameter createParameter(String name, String type, UsageEnumeration use, ConfigurationType kind, String description) {
+        TypedParameter parameter =  new TypedParameter();
+        parameter.setName(name);
+        parameter.setType(type);
+        parameter.setUse(use);
+        parameter.setKind(kind);
+        parameter.setDesc(description);
+        return parameter;
     }
 
     @Override
@@ -108,8 +131,11 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not read provided input", e);
         }
-        XMLValidator validator;
-        validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes(StandardCharsets.UTF_8)), validationType, domainConfig);
+        // Get and validate any externally provided validation artifacts
+        List<FileInfo> externalSchema = getExternalFiles(validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMA, validationType);
+        List<FileInfo> externalSch = getExternalFiles(validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, validationType);
+        // Proceed with the validation.
+        XMLValidator validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes(StandardCharsets.UTF_8)), validationType, externalSchema, externalSch, domainConfig);
         TAR report = validator.validateAll();
         ValidationResponse result = new ValidationResponse();
         result.setReport(report);
@@ -136,6 +162,137 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
             }
         }
         return inputs;
+    }
+
+    private List<AnyContent> getInputFor(List<AnyContent> inputsToConsider, String name) {
+        List<AnyContent> inputs = new ArrayList<>();
+        if (inputsToConsider != null) {
+            for (AnyContent anInput: inputsToConsider) {
+                if (name.equals(anInput.getName())) {
+                    inputs.add(anInput);
+                }
+            }
+        }
+        return inputs;
+    }
+
+    private List<FileInfo> getExternalFiles(ValidateRequest validateRequest, String name, String validationType) {
+    	List<FileInfo> filesContent = new ArrayList<>();
+    	List<AnyContent> listInput = getInputFor(validateRequest, name);
+        List<AnyContent> listInputContent;
+        if (!listInput.isEmpty()) {
+            listInputContent = listInput.get(0).getItem();
+        } else {
+            listInputContent = new ArrayList<>(0);
+        }
+        String externalArtifactSupport = (ValidationConstants.INPUT_EXTERNAL_SCHEMA.equals(name)?domainConfig.getExternalSchemaFile():domainConfig.getExternalSchematronFile()).get(validationType).getSupportForExternalArtifacts();
+        if (DomainConfig.externalFile_none.equals(externalArtifactSupport) && (!listInput.isEmpty() || !listInputContent.isEmpty())) {
+            throw new IllegalArgumentException("Validation artifact(s) were provided for ["+name+"] when none are expected.");
+        } else if (DomainConfig.externalFile_req.equals(externalArtifactSupport) && listInputContent.isEmpty()) {
+            throw new IllegalArgumentException("No validation artifact(s) were provided for ["+name+"].");
+        }
+        for (AnyContent inputContent: listInputContent) {
+            /*
+              This is a map with two items:
+              - "content": The content to consider.
+              - "type": For schemas this is "zip" or "xsd" whereas for schematron this is "sch" or "xsl".
+             */
+            List<AnyContent> contentInput =  getInputFor(inputContent.getItem(), "content");
+            List<AnyContent> typeInput =  getInputFor(inputContent.getItem(), "type");
+            if (contentInput.size() != 1 || typeInput.size() != 1) {
+                throw new IllegalArgumentException("A single \"content\" and \"type\" input is expected per provided validation artifact");
+            }
+            String type;
+            try {
+                type = extractContent(typeInput.get(0));
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Unable to extract the \"type\" input for a provided validation artifact", e);
+            }
+            if (ValidationConstants.INPUT_EXTERNAL_SCHEMA.equals(name) && !"xsd".equals(type) && !"zip".equals(type)) {
+                throw new IllegalArgumentException("Invalid value for provided XSD ["+type+"]");
+            } else if (ValidationConstants.INPUT_EXTERNAL_SCHEMATRON.equals(name) && !"sch".equals(type) && !"xsl".equals(type)) {
+                throw new IllegalArgumentException("Invalid value for provided schematron ["+type+"]");
+            }
+            try {
+                FileInfo fileContent = getExternalFileInfo(contentInput.get(0), type, name, validationType);
+                if (fileContent.getFile() != null) {
+                    filesContent.add(fileContent);
+                }
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Unable to extract the content for a provided validation artifact", e);
+            }
+        }
+    	return filesContent;
+    }
+
+    private FileInfo getExternalFileInfo(AnyContent content, String type, String name, String validationType) throws IOException, URISyntaxException {
+    	FileInfo fileContent = new FileInfo();
+        if (ValidationConstants.INPUT_EXTERNAL_SCHEMATRON.equals(name)) {
+            String stringContent = extractContent(content);
+            String mimeType = fileManager.checkContentType(stringContent);
+            if (!config.getAcceptedSchematronMimeType().contains(mimeType)) {
+                throw new IllegalArgumentException("Unsupported mime type ["+mimeType+"] for provided schematron");
+            }
+            fileContent.setFile(fileManager.getStringFile(stringContent, type));
+        } else {
+            if ("xsd".equals(type)) {
+                String stringContent = extractContent(content);
+                String mimeType = fileManager.checkContentType(stringContent);
+                if (!config.getAcceptedSchemaMimeType().contains(mimeType)) {
+                    throw new IllegalArgumentException("Unsupported mime type ["+mimeType+"] for provided schema");
+                }
+                fileContent.setFile(fileManager.getStringFile(stringContent, type));
+            } else {
+                // zip - can only be provided as URI or BASE64
+                ValueEmbeddingEnumeration contentType = content.getEmbeddingMethod();
+                if (ValueEmbeddingEnumeration.STRING.equals(contentType)) {
+                    throw new IllegalArgumentException("A zip archive containing the XSD cannot be provided with an embedding method of STRING");
+                } else {
+                    File zipFile;
+                    if (ValueEmbeddingEnumeration.BASE_64.equals(contentType)) {
+                        byte[] contentBytes = Base64.decodeBase64(content.getValue());
+                        String mimeType = fileManager.checkContentType(contentBytes);
+                        if (config.getAcceptedZipMimeType().contains(mimeType)) {
+                            throw new IllegalArgumentException("Unexpected mime type ["+mimeType+"] for XSD zip archive");
+                        }
+                        zipFile = fileManager.unzipFile(contentBytes);
+                    } else {
+                        String mimeType = fileManager.checkContentTypeUrl(content.getValue());
+                        if (config.getAcceptedZipMimeType().contains(mimeType)) {
+                            throw new IllegalArgumentException("Unexpected mime type ["+mimeType+"] for XSD zip archive");
+                        }
+                        zipFile = fileManager.unzipFile(fileManager.getURLFile(content.getValue(), false));
+                    }
+                    if (validateSchemaZip(zipFile)) {
+                        fileContent.setFile(zipFile);
+                    } else {
+                        throw new IllegalArgumentException("When XSD configuration is provided as a ZIP archive it needs to include a single XSD at its root (and any other folders with imported XSDs)");
+                    }
+                }
+            }
+        }
+    	return fileContent;
+    }
+    
+    private boolean validateSchemaZip(File rootFolder) {
+    	int iRootFiles = 0;
+    	
+    	//1 file as root, other files in a folder.
+		if (rootFolder.isFile()) {
+		     iRootFiles++;
+		} else {
+		     // List all files.
+		     File[] files = rootFolder.listFiles();
+		     if (files != null) {
+		         for (File aSchemaFile: files) {
+		             if (aSchemaFile.isFile()) {
+		                 iRootFiles++;
+		             }
+		         }
+		     }
+		}
+    	
+    	return iRootFiles == 1;
     }
 
     /**
@@ -203,5 +360,6 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         }
         return stringContent;
     }
+
 
 }

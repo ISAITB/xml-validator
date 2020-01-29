@@ -544,7 +544,7 @@ public class XMLValidator implements ApplicationContextAware {
                     throw new IllegalStateException(e);
                 }
             } else {
-                throw new IllegalStateException("Schematron file ["+schematronFile.getAbsolutePath()+"] is invalid");
+                throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid");
             }
         }
         //handle invoice report

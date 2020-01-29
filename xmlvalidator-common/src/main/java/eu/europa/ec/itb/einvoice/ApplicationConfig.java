@@ -44,6 +44,9 @@ public class ApplicationConfig {
     private Set<String> acceptedSchematronExtensions;
     private Set<String> acceptedSchemaExtensions;
     private Set<String> domain;
+    private Set<String> acceptedZipMimeType;
+    private Set<String> acceptedSchemaMimeType;
+    private Set<String> acceptedSchematronMimeType;
     private Map<String, String> domainIdToDomainName = new HashMap<>();
     private Map<String, String> domainNameToDomainId = new HashMap<>();
     private String startupTimestamp;
@@ -137,6 +140,14 @@ public class ApplicationConfig {
         this.acceptedSchemaExtensions = acceptedSchemaExtensions;
     }
 
+    public Set<String> getAcceptedSchematronMimeType() {
+        return acceptedSchematronMimeType;
+    }
+
+    public void setAcceptedSchematronMimeType(Set<String> acceptedSchematronMimeType) {
+        this.acceptedSchematronMimeType = acceptedSchematronMimeType;
+    }
+
     public Set<String> getDomain() {
         return domain;
     }
@@ -175,6 +186,22 @@ public class ApplicationConfig {
 
 	public void setCleanupWebRate(long cleanupWebRate) {
 		this.cleanupWebRate = cleanupWebRate;
+	}
+
+	public Set<String> getAcceptedZipMimeType() {
+		return acceptedZipMimeType;
+	}
+
+	public void setAcceptedZipMimeType(Set<String> acceptedZipMimeType) {
+		this.acceptedZipMimeType = acceptedZipMimeType;
+	}
+
+	public Set<String> getAcceptedSchemaMimeType() {
+		return acceptedSchemaMimeType;
+	}
+
+	public void setAcceptedSchemaMimeType(Set<String> acceptedSchemaMimeType) {
+		this.acceptedSchemaMimeType = acceptedSchemaMimeType;
 	}
 
     @PostConstruct

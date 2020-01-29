@@ -9,13 +9,10 @@ import com.gitb.vs.Void;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
 import eu.europa.ec.itb.einvoice.util.FileManager;
-import eu.europa.ec.itb.einvoice.validation.FileContent;
 import eu.europa.ec.itb.einvoice.validation.FileInfo;
 import eu.europa.ec.itb.einvoice.validation.ValidationConstants;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -29,7 +26,6 @@ import java.io.*;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -120,6 +116,8 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
             externalSch = validateExternalFiles(validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, validationType);
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not read provided input", e);
+        } catch(Exception e) {
+            throw new IllegalArgumentException("An error occurred during the validation of the external Schema.");
         }
         XMLValidator validator;
         validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(invoiceToValidate.getBytes(StandardCharsets.UTF_8)), validationType, externalSchema, externalSch, domainConfig);
@@ -151,28 +149,34 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         return inputs;
     }
     
-    private List<FileInfo> validateExternalFiles(ValidateRequest validateRequest, String name, String validationType){
+    private List<FileInfo> validateExternalFiles(ValidateRequest validateRequest, String name, String validationType) throws Exception{
     	List<FileInfo> filesContent = new ArrayList<>();
     	List<AnyContent> listInput = getInputFor(validateRequest, name);
-    	
+
+    	boolean isValid = validExternalFiles(validationType, name, listInput);
+    	if(!isValid) {
+            logger.error("An error occurred during the validation of the external Schema.");
+    		throw new Exception("An error occurred during the validation of the external Schema.");
+    	}
+    		
     	try {
-	    	if(!listInput.isEmpty()) {
-		    	AnyContent listRuleSets = listInput.get(0);
-	
-				if (listRuleSets.getItem() != null && !listRuleSets.getItem().isEmpty()) {
-	
-					//Validate variables and ruleSets
-					for (AnyContent ruleSet : listRuleSets.getItem()) {
-						FileInfo fileContent = getFileInfo(ruleSet, name);
-						
-						if (fileContent.getFile()!=null) {
-							filesContent.add(fileContent);
+		    	if(!listInput.isEmpty()) {
+			    	AnyContent listRuleSets = listInput.get(0);
+		
+					if (listRuleSets.getItem() != null && !listRuleSets.getItem().isEmpty()) {
+		
+						//Validate variables and ruleSets
+						for (AnyContent ruleSet : listRuleSets.getItem()) {
+							FileInfo fileContent = getFileInfo(ruleSet, name);
+							
+							if (fileContent.getFile()!=null) {
+								filesContent.add(fileContent);
+							}
 						}
 					}
-				}
-	    	}else {
-	    		return Collections.emptyList();
-	    	}
+		    	}else {
+		    		return Collections.emptyList();
+		    	}
     	}catch(Exception e) {
             logger.error("Error while reading uploaded external file [" + e.getMessage() + "]", e);
             
@@ -182,9 +186,69 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
     	return filesContent;
     }
     
-   /* private boolean validExternalFiles(String validationType, String name, AnyContent ruleSet) {
-    	config.g
-    }*/
+    private boolean validExternalFiles(String validationType, String name, List<AnyContent> listRuleSet) {
+    	boolean isValid = false;
+    	String externalSchema = domainConfig.getExternalSchemaFile().get(validationType);
+    	
+    	if(ValidationConstants.INPUT_EXTERNAL_SCHEMA.contentEquals(name)) {
+    		isValid = validExternalSchemaFiles(externalSchema, listRuleSet);
+    	}
+    	if(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON.contentEquals(name)) {
+    		isValid = validExternalSchematronFiles(externalSchema, listRuleSet);
+    	}
+    	
+    	return isValid;
+    }
+    
+    private boolean validExternalSchematronFiles(String externalRequirement, List<AnyContent> ruleSet) {
+    	boolean isValid = false;
+    	boolean existRuleSet = !ruleSet.isEmpty();
+    	boolean existValues = false;
+    	
+    	if(existRuleSet) {
+    		existValues = (ruleSet.get(0).getItem()!=null && !ruleSet.get(0).getItem().isEmpty());
+    	}
+    	
+    	if(DomainConfig.externalFile_none.equals(externalRequirement) && !existRuleSet) {
+    		isValid = true;
+    	}
+    	
+    	if(DomainConfig.externalFile_req.equals(externalRequirement) && existValues) {
+    		isValid = true;
+    	}
+    	
+    	if(DomainConfig.externalFile_opt.equals(externalRequirement)) {
+    		isValid = true;
+    	}
+    	
+    	return isValid;
+    }
+    
+    private boolean validExternalSchemaFiles(String externalRequirement, List<AnyContent> ruleSet) {
+    	boolean isValid = false;
+    	boolean existRuleSet = !ruleSet.isEmpty();
+    	int values = 0;
+
+    	if(existRuleSet) {
+    		if(ruleSet.get(0).getItem()!=null && !ruleSet.get(0).getItem().isEmpty()) {
+    			values = ruleSet.get(0).getItem().size();
+    		}
+    	}
+    	
+    	if(DomainConfig.externalFile_none.equals(externalRequirement) && !existRuleSet && values==0) {
+    		isValid = true;
+    	}
+    	
+    	if(DomainConfig.externalFile_req.equals(externalRequirement) && existRuleSet && values==1) {
+    		isValid = true;
+    	}
+    	
+    	if(DomainConfig.externalFile_opt.equals(externalRequirement) && values<=1) {
+    		isValid = true;
+    	}
+    	
+    	return isValid;
+    }
     
     private FileInfo getFileInfo(AnyContent content, String name) throws Exception {
     	FileInfo fileContent = new FileInfo();

@@ -188,7 +188,11 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
     
     private boolean validExternalFiles(String validationType, String name, List<AnyContent> listRuleSet) {
     	boolean isValid = false;
+<<<<<<< HEAD
     	String externalSchema = domainConfig.getExternalSchemaFile().get(validationType).getSupportForExternalArtifacts();
+=======
+    	String externalSchema = domainConfig.getExternalSchemaFile().get(validationType);
+>>>>>>> branch 'soap_api' of https://webgate.ec.europa.eu/CITnet/stash/scm/itb/xml-validator.git
     	
     	if(ValidationConstants.INPUT_EXTERNAL_SCHEMA.contentEquals(name)) {
     		isValid = validExternalSchemaFiles(externalSchema, listRuleSet);

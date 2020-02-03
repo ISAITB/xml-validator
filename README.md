@@ -146,6 +146,7 @@ defined.
 | `validator.reportFilePrefix` | Prefix of report files in the report folder. | String | `TAR-` |
 | `validator.acceptedMimeTypes` | Accepted mime-types for input files.  | Comma-separated Strings | `application/xml, text/xml, text/plain` |
 | `validator.acceptedSchematronExtensions` | Accepted schematron extensions.  | Comma-separated Strings | `xsl,xslt,sch` |
+| `validator.disablePreprocessingCache` | Whether to disable caching for pre-processing XSLTs. | Boolean | `false` |
 
 ## Domain-level configuration
 
@@ -161,12 +162,29 @@ The properties here define how a specific validation domain is configured. They 
 | `validator.webServiceDescription.xml` | The description of the web service for element "xml". | String | - |
 | `validator.webServiceDescription.type` | The description of the web service for element "type". Only displayed if there are multiple types. | String | - |
 | `validator.schemaFile.XYZ` | The XSD files loaded for a given invoice type (added as a postfix). This can be a file or folder (must never start with a '/'). | String | - |
+| `validator.schemaFile.XYZ.preprocessor` | The relative path to a XSLT file that will be used for XSD pre-processing. | String | - |
+| `validator.schemaFile.XYZ.preprocessor.output` | The file extension for the XSD pre-processing. | String | `xsd` |
 | `validator.schematronFile.XYZ` | The schematron files loaded for a given invoice type (added as a postfix). This can be a file or folder (must never start with a '/'). | String | - |
+| `validator.schematronFile.XYZ.preprocessor` | The relative path to a XSLT file that will be used for Schematron pre-processing. | String | - |
+| `validator.schematronFile.XYZ.preprocessor.output` | The file extension for the Schematron pre-processing. | String | `sch` |
+| `validator.schemaFile.XYZ.remote.A.url` | The Schema (XSD) files loaded for a given validation type (added as a postfix) as URL. | String | - |
+| `validator.schemaFile.XYZ.remote.A.preprocessor` | The relative path to a XSLT file that will be used for XSD pre-processing. | String | - |
+| `validator.schemaFile.XYZ.remote.A.preprocessor.output` | The file extension for the XSD pre-processing. | String | `xsd` |
+| `validator.schematronFile.XYZ.remote.A.url` | The Schematron files loaded for a given validation type (added as a postfix) as URL. | String | - |
+| `validator.schematronFile.XYZ.remote.A.url.preprocessor` | The relative path to a XSLT file that will be used for Schematron pre-processing. | String | - |
+| `validator.schematronFile.XYZ.remote.A.url.preprocessor.output` | The file extension for the Schematron pre-processing. | String | `sch` |` | The Schematron files loaded for a given validation type (added as a postfix) as URL. | String | - |
+| `validator.externalSchemaFile.XYZ` | External Schema (XSD) are allowed for a given validation type (added as a postfix). Possible values are (`required`, `optional`, `none`). | String | `optional` |
+| `validator.externalSchemaFile.preprocessor` | The relative path to a XSLT file that will be used for XSD pre-processing. | String | - |
+| `validator.externalSchemaFile.preprocessor.output` | The file extension for the XSD pre-processing. | String | `xsd` |
+| `validator.externalSchematronFile.XYZ` | External Schematron are allowed for a given validation type (added as a postfix). Possible values are (`required`, `optional`, `none`). | String | `optional` |
+| `validator.externalSchematronFile.XYZ.preprocessor` | The relative path to a XSLT file that will be used for Schematron pre-processing. | String | - |
+| `validator.externalSchematronFile.XYZ.preprocessor.output` | The file extension for the Schematron pre-processing. | String | `sch` |
 | `validator.includeTestDefinition` | Whether tests should be included in the resulting reports. | Boolean | `true` |
 | `validator.reportsOrdered` | Whether the reports are ordered. | Boolean | `false` |
 | `validator.showAbout` | Whether or not to show the about panel on the web UI. | Boolean | `true` | 
 | `validator.supportMinimalUserInterface` | A minimal UI is available if this is enabled. | Boolean | `false` |
 | `validator.bannerHtml` | Configurable HTML banner replacing the text title. | String | - |
+| `validator.footerHtml` | Configurable HTML banner replacing the footer. | String | - |
 
 In case the email channel is enabled the following properties need to be provided:
 

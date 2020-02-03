@@ -1,5 +1,6 @@
 package eu.europa.ec.itb.einvoice;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,8 +20,12 @@ public class DomainConfig {
     private List<String> type;
     private Set<ValidatorChannel> channels;
     private Map<String, String> typeLabel;
-    private Map<String,String> schematronFile;
-    private Map<String,String> schemaFile;
+    private Map<String, ValidationArtifactInfo> schematronFile;
+    private Map<String, ValidationArtifactInfo> schemaFile;
+    private Map<String, ExternalValidationArtifactInfo> externalSchemaFile;
+    private Map<String, ExternalValidationArtifactInfo> externalSchematronFile;
+    private Map<String, RemoteFileInfo> remoteSchemaFile;
+    private Map<String, RemoteFileInfo> remoteSchematronFile;
     private String htmlBanner;
     private String htmlFooter;
     private boolean supportMinimalUserInterface;
@@ -40,6 +45,10 @@ public class DomainConfig {
 
     private boolean includeTestDefinition;
     private boolean reportsOrdered;
+    
+    public static final String externalFile_req     	= "required" ;
+    public static final String externalFile_opt     	= "optional" ;
+    public static final String externalFile_none     	= "none" ;
 
     private Label label = new Label();
 
@@ -87,23 +96,55 @@ public class DomainConfig {
         return type != null && type.size() > 1;
     }
 
-    public Map<String, String> getSchematronFile() {
+    public Map<String, ValidationArtifactInfo> getSchematronFile() {
         return schematronFile;
     }
 
-    public void setSchematronFile(Map<String, String> schematronFile) {
+    public void setSchematronFile(Map<String, ValidationArtifactInfo> schematronFile) {
         this.schematronFile = schematronFile;
     }
 
-    public Map<String, String> getSchemaFile() {
+    public Map<String, ValidationArtifactInfo> getSchemaFile() {
         return schemaFile;
     }
 
-    public void setSchemaFile(Map<String, String> schemaFile) {
+    public void setSchemaFile(Map<String, ValidationArtifactInfo> schemaFile) {
         this.schemaFile = schemaFile;
     }
 
-    public String getMailFrom() {
+    public Map<String, ExternalValidationArtifactInfo> getExternalSchemaFile() {
+        return externalSchemaFile;
+    }
+
+    public void setExternalSchemaFile(Map<String, ExternalValidationArtifactInfo> externalSchemaFile) {
+        this.externalSchemaFile = externalSchemaFile;
+    }
+
+    public Map<String, ExternalValidationArtifactInfo> getExternalSchematronFile() {
+        return externalSchematronFile;
+    }
+
+    public void setExternalSchematronFile(Map<String, ExternalValidationArtifactInfo> externalSchematronFile) {
+        this.externalSchematronFile = externalSchematronFile;
+    }
+
+    public Map<String, RemoteFileInfo> getRemoteSchemaFile() {
+        return remoteSchemaFile;
+    }
+
+    public void setRemoteSchemaFile(Map<String, RemoteFileInfo> remoteSchemaFile) {
+        this.remoteSchemaFile = remoteSchemaFile;
+    }
+
+    public Map<String, RemoteFileInfo> getRemoteSchematronFile() {
+        return remoteSchematronFile;
+    }
+
+    public void setRemoteSchematronFile(Map<String, RemoteFileInfo> remoteSchematronFile) {
+        this.remoteSchematronFile = remoteSchematronFile;
+    }
+
+	public String getMailFrom() {
         return mailFrom;
     }
 
@@ -291,6 +332,67 @@ public class DomainConfig {
 		this.supportMinimalUserInterface = supportMinimalUserInterface;
 	}
 
+	public static class RemoteFileInfo {
+    	List<ValidationArtifactInfo> remote;
+    	
+    	public List<ValidationArtifactInfo> getRemote() {
+    		return remote; 
+    	}
+    	void setRemote(List<ValidationArtifactInfo> remote) {
+    		this.remote = remote; 
+    	}
+    }
+
+    public static class ExternalValidationArtifactInfo {
+        private String supportForExternalArtifacts;
+        private String preProcessorPath;
+        private String preProcessorOutputExtension;
+
+        public String getSupportForExternalArtifacts() {
+            return supportForExternalArtifacts;
+        }
+        void setSupportForExternalArtifacts(String supportForExternalArtifacts) {
+            this.supportForExternalArtifacts = supportForExternalArtifacts;
+        }
+        public String getPreProcessorPath() {
+            return preProcessorPath;
+        }
+        void setPreProcessorPath(String preProcessorPath) {
+            this.preProcessorPath = preProcessorPath;
+        }
+        public String getPreProcessorOutputExtension() {
+            return preProcessorOutputExtension;
+        }
+        void setPreProcessorOutputExtension(String preProcessorOutputExtension) {
+            this.preProcessorOutputExtension = preProcessorOutputExtension;
+        }
+    }
+
+    public static class ValidationArtifactInfo {
+        private String path;
+        private String preProcessorPath;
+        private String preProcessorOutputExtension;
+
+        public String getPath() {
+            return path;
+        }
+        void setPath(String path) {
+            this.path = path;
+        }
+        public String getPreProcessorPath() {
+            return preProcessorPath;
+        }
+        void setPreProcessorPath(String preProcessorPath) {
+            this.preProcessorPath = preProcessorPath;
+        }
+        public String getPreProcessorOutputExtension() {
+            return preProcessorOutputExtension;
+        }
+        void setPreProcessorOutputExtension(String preProcessorOutputExtension) {
+            this.preProcessorOutputExtension = preProcessorOutputExtension;
+        }
+    }
+
 	public static class Label {
 
         private String resultSectionTitle;
@@ -316,6 +418,12 @@ public class DomainConfig {
         private String optionContentFile;
         private String optionContentURI;
         private String optionContentDirectInput;
+        private String includeExternalArtefacts;
+        private String externalArtefactsTooltip;
+        private String externalSchemaLabel;
+        private String externalSchematronLabel;
+        private String externalSchemaPlaceholder;
+        private String externalSchematronPlaceholder;
 
         public String getResultSectionTitle() {
             return resultSectionTitle;
@@ -499,6 +607,54 @@ public class DomainConfig {
 
         public void setOptionContentDirectInput(String optionContentDirectInput) {
             this.optionContentDirectInput = optionContentDirectInput;
+        }
+
+		public String getIncludeExternalArtefacts() {
+			return includeExternalArtefacts;
+		}
+
+		public void setIncludeExternalArtefacts(String includeExternalArtefacts) {
+			this.includeExternalArtefacts = includeExternalArtefacts;
+		}
+
+		public String getExternalArtefactsTooltip() {
+			return externalArtefactsTooltip;
+		}
+
+		public void setExternalArtefactsTooltip(String externalArtefactsTooltip) {
+			this.externalArtefactsTooltip = externalArtefactsTooltip;
+		}
+
+		public String getExternalSchemaLabel() {
+			return externalSchemaLabel;
+		}
+
+		public void setExternalSchemaLabel(String externalSchemaLabel) {
+			this.externalSchemaLabel = externalSchemaLabel;
+		}
+
+		public String getExternalSchematronLabel() {
+			return externalSchematronLabel;
+		}
+
+		public void setExternalSchematronLabel(String externalSchematronLabel) {
+			this.externalSchematronLabel = externalSchematronLabel;
+		}
+
+        public String getExternalSchemaPlaceholder() {
+            return externalSchemaPlaceholder;
+        }
+
+        public void setExternalSchemaPlaceholder(String externalSchemaPlaceholder) {
+            this.externalSchemaPlaceholder = externalSchemaPlaceholder;
+        }
+
+        public String getExternalSchematronPlaceholder() {
+            return externalSchematronPlaceholder;
+        }
+
+        public void setExternalSchematronPlaceholder(String externalSchematronPlaceholder) {
+            this.externalSchematronPlaceholder = externalSchematronPlaceholder;
         }
     }
 

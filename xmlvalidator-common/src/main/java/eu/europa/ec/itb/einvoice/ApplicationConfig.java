@@ -33,18 +33,33 @@ public class ApplicationConfig {
 
     private boolean standalone = false;
     private String resourceRoot;
+    private String tmpFolder;
     private File reportFolder;
     private String inputFilePrefix = "ITB-";
     private long minimumCachedInputFileAge = 600000L;
     private long minimumCachedReportFileAge = 600000L;
+    private long cleanupWebRate;
     private String reportFilePrefix = "TAR-";
     private Set<String> acceptedMimeTypes;
     private Set<String> acceptedSchematronExtensions;
+    private Set<String> acceptedSchemaExtensions;
     private Set<String> domain;
+    private Set<String> acceptedZipMimeType;
+    private Set<String> acceptedSchemaMimeType;
+    private Set<String> acceptedSchematronMimeType;
     private Map<String, String> domainIdToDomainName = new HashMap<>();
     private Map<String, String> domainNameToDomainId = new HashMap<>();
     private String startupTimestamp;
     private String resourceUpdateTimestamp;
+    private boolean disablePreprocessingCache = false;
+
+    public boolean isDisablePreprocessingCache() {
+        return disablePreprocessingCache;
+    }
+
+    public void setDisablePreprocessingCache(boolean disablePreprocessingCache) {
+        this.disablePreprocessingCache = disablePreprocessingCache;
+    }
 
     public File getReportFolder() {
         return reportFolder;
@@ -52,6 +67,14 @@ public class ApplicationConfig {
 
     public void setReportFolder(File reportFolder) {
         this.reportFolder = reportFolder;
+    }
+    
+    public String getTmpFolder() {
+        return tmpFolder;
+    }
+
+    public void setTmpFolder(String tmpFolder) {
+        this.tmpFolder = tmpFolder;
     }
 
     public String getInputFilePrefix() {
@@ -118,6 +141,22 @@ public class ApplicationConfig {
         this.acceptedSchematronExtensions = acceptedSchematronExtensions;
     }
 
+    public Set<String> getAcceptedSchemaExtensions() {
+        return acceptedSchemaExtensions;
+    }
+
+    public void setAcceptedSchemaExtensions(Set<String> acceptedSchemaExtensions) {
+        this.acceptedSchemaExtensions = acceptedSchemaExtensions;
+    }
+
+    public Set<String> getAcceptedSchematronMimeType() {
+        return acceptedSchematronMimeType;
+    }
+
+    public void setAcceptedSchematronMimeType(Set<String> acceptedSchematronMimeType) {
+        this.acceptedSchematronMimeType = acceptedSchematronMimeType;
+    }
+
     public Set<String> getDomain() {
         return domain;
     }
@@ -149,6 +188,30 @@ public class ApplicationConfig {
     public Map<String, String> getDomainNameToDomainId() {
         return domainNameToDomainId;
     }
+
+	public long getCleanupWebRate() {
+		return cleanupWebRate;
+	}
+
+	public void setCleanupWebRate(long cleanupWebRate) {
+		this.cleanupWebRate = cleanupWebRate;
+	}
+
+	public Set<String> getAcceptedZipMimeType() {
+		return acceptedZipMimeType;
+	}
+
+	public void setAcceptedZipMimeType(Set<String> acceptedZipMimeType) {
+		this.acceptedZipMimeType = acceptedZipMimeType;
+	}
+
+	public Set<String> getAcceptedSchemaMimeType() {
+		return acceptedSchemaMimeType;
+	}
+
+	public void setAcceptedSchemaMimeType(Set<String> acceptedSchemaMimeType) {
+		this.acceptedSchemaMimeType = acceptedSchemaMimeType;
+	}
 
     @PostConstruct
     public void init() {

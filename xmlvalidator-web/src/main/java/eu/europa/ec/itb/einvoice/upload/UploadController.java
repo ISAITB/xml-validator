@@ -6,7 +6,10 @@ import eu.europa.ec.itb.einvoice.DomainConfig;
 import eu.europa.ec.itb.einvoice.DomainConfigCache;
 import eu.europa.ec.itb.einvoice.ValidatorChannel;
 import eu.europa.ec.itb.einvoice.util.FileManager;
+import eu.europa.ec.itb.einvoice.validation.FileInfo;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
+
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +27,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -73,6 +77,8 @@ public class UploadController {
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("minimalUI", false);
         attributes.put("contentType", getContentType(config));
+        attributes.put("externalSchema", includeExternalArtefacts(config.getExternalSchemaFile()));
+        attributes.put("externalSchematron", includeExternalArtefacts(config.getExternalSchematronFile()));
         return new ModelAndView("uploadForm", attributes);
     }
 
@@ -83,6 +89,12 @@ public class UploadController {
     		@RequestParam(value = "text-editor", defaultValue = "") String string, 
     		@RequestParam(value = "validationType", defaultValue = "") String validationType,
     		@RequestParam(value = "contentType", defaultValue = "") String contentType, 
+    		@RequestParam(value = "contentType-externalSchema", required = false) String[] externalSchemaContentType,
+    		@RequestParam(value = "inputFile-externalSchema", required= false) MultipartFile[] externalSchemaFiles,
+    		@RequestParam(value = "uri-externalSchema", required = false) String[] externalSchemaUri,
+    		@RequestParam(value = "contentType-externalSch", required = false) String[] externalSchContentType,
+    		@RequestParam(value = "inputFile-externalSch", required= false) MultipartFile[] externalSchFiles,
+    		@RequestParam(value = "uri-externalSch", required = false) String[] externalSchUri,
     		RedirectAttributes redirectAttributes,
     		HttpServletRequest request) {
 		setMinimalUIFlag(request, false);
@@ -97,14 +109,17 @@ public class UploadController {
         attributes.put("config", config);
         attributes.put("minimalUI", false);
         attributes.put("contentType", getContentType(config));
+        attributes.put("externalSchema", includeExternalArtefacts(config.getExternalSchemaFile()));
+        attributes.put("externalSchematron", includeExternalArtefacts(config.getExternalSchematronFile()));
+        
         if (StringUtils.isNotBlank(validationType)) {
             attributes.put("validationTypeLabel", config.getTypeLabel().get(validationType));
         }
         attributes.put("appConfig", appConfig);
         try {
-        	InputStream fis = getInputFile(contentType, file.getInputStream(), uri, string);
+        	InputStream fis = getInputStream(contentType, file.getInputStream(), uri, string);
             if (fileManager.checkFileType(fis)) {
-                stream = getInputFile(contentType, file.getInputStream(), uri, string);
+                stream = getInputStream(contentType, file.getInputStream(), uri, string);
             } else {
                 attributes.put("message", "Provided input is not an XML document");
             }
@@ -113,36 +128,49 @@ public class UploadController {
             attributes.put("message", "Error in upload [" + e.getMessage() + "]");
         }
         if (StringUtils.isBlank(validationType)) {
-            validationType = null;
+            validationType = config.getType().get(0);
         }
         if (config.hasMultipleValidationTypes() && (validationType == null || !config.getType().contains(validationType))) {
-            // A invoice type is required.
+            // A validation type is required.
             attributes.put("message", "Provided validation type is not valid");
         }
         try {
             if (stream != null) {
-                XMLValidator validator = beans.getBean(XMLValidator.class, stream, validationType, config);
-                TAR report = validator.validateAll();
-                attributes.put("report", report);
-                attributes.put("date", report.getDate().toString());
-                
-                if(contentType.equals(contentType_file)) {
-					attributes.put("fileName", file.getOriginalFilename());
-				} else if(contentType.equals(contentType_uri)) {
-					attributes.put("fileName", uri);
-				} else {
-					attributes.put("fileName", "-");
-				}
-                
-                // Cache detailed report.
-                try {
-                    String xmlID = fileManager.writeXML(config.getDomainName(), report.getContext().getItem().get(0).getValue());
-                    attributes.put("xmlID", xmlID);
-                    fileManager.saveReport(report, xmlID);
-                } catch (IOException e) {
-                    logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
-                    attributes.put("message", "Error generating detailed report [" + e.getMessage() + "]");
+            	List<FileInfo> externalSchIS = new ArrayList<>();
+            	List<FileInfo> externalSchemaIS = new ArrayList<>();
+            	boolean proceedToValidate = true;
+            	try {
+            		externalSchemaIS = getExternalFiles(externalSchemaContentType, externalSchemaFiles, externalSchemaUri, config.getExternalSchemaFile(), validationType, true);
+            		externalSchIS = getExternalFiles(externalSchContentType, externalSchFiles, externalSchUri, config.getExternalSchematronFile(), validationType, false);
+            	} catch (Exception e) {
+                    logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
+                    attributes.put("message", "Error in upload [" + e.getMessage() + "]");
+					proceedToValidate = false;
                 }
+            	if (proceedToValidate) {
+					XMLValidator validator = beans.getBean(XMLValidator.class, stream, validationType, externalSchemaIS, externalSchIS, config);
+					TAR report = validator.validateAll();
+					attributes.put("report", report);
+					attributes.put("date", report.getDate().toString());
+
+					if(contentType.equals(contentType_file)) {
+						attributes.put("fileName", file.getOriginalFilename());
+					} else if(contentType.equals(contentType_uri)) {
+						attributes.put("fileName", uri);
+					} else {
+						attributes.put("fileName", "-");
+					}
+
+					// Cache detailed report.
+					try {
+						String xmlID = fileManager.writeXML(config.getDomainName(), report.getContext().getItem().get(0).getValue());
+						attributes.put("xmlID", xmlID);
+						fileManager.saveReport(report, xmlID);
+					} catch (IOException e) {
+						logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
+						attributes.put("message", "Error generating detailed report [" + e.getMessage() + "]");
+					}
+				}
             }
         } catch (Exception e) {
             logger.error("An error occurred during the validation [" + e.getMessage() + "]", e);
@@ -172,6 +200,8 @@ public class UploadController {
         attributes.put("validationTypes", getValidationTypes(config));
         attributes.put("minimalUI", true);
         attributes.put("contentType", getContentType(config));
+        attributes.put("externalSchema", includeExternalArtefacts(config.getExternalSchemaFile()));
+        attributes.put("externalSchematron", includeExternalArtefacts(config.getExternalSchematronFile()));
         return new ModelAndView("uploadForm", attributes);
     }
     
@@ -183,11 +213,17 @@ public class UploadController {
     		@RequestParam(value = "text-editor", defaultValue = "") String string, 
     		@RequestParam(value = "validationType", defaultValue = "") String validationType, 
     		@RequestParam(value = "contentType", defaultValue = "") String contentType, 
+    		@RequestParam(value = "contentType-externalSchema", required = false) String[] externalSchema,
+    		@RequestParam(value = "inputFile-externalSchema", required= false) MultipartFile[] externalSchemaFiles,
+    		@RequestParam(value = "uriToValidate-externalSchema", required = false) String[] externalSchemaUri,
+    		@RequestParam(value = "contentType-externalSch", required = false) String[] externalSch,
+    		@RequestParam(value = "inputFile-externalSch", required= false) MultipartFile[] externalSchFiles,
+    		@RequestParam(value = "uriToValidate-externalSch", required = false) String[] externalSchUri,
     		RedirectAttributes redirectAttributes,
     		HttpServletRequest request) {
     	
 		setMinimalUIFlag(request, true);
-		ModelAndView mv = handleUpload(domain, file, uri, string, validationType, contentType, redirectAttributes, request);
+		ModelAndView mv = handleUpload(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, redirectAttributes, request);
 				
 		Map<String, Object> attributes = mv.getModel();
         attributes.put("minimalUI", true);
@@ -203,6 +239,16 @@ public class UploadController {
             }
         }
         return types;
+    }
+    
+	private List<ValidationType> includeExternalArtefacts(Map<String, DomainConfig.ExternalValidationArtifactInfo> externalArtefact){
+        List<ValidationType> types = new ArrayList<>();
+    	
+    	for(Map.Entry<String, DomainConfig.ExternalValidationArtifactInfo> entry : externalArtefact.entrySet()) {
+    		types.add(new ValidationType(entry.getKey(), entry.getValue().getSupportForExternalArtifacts()));
+    	}
+    	
+    	return types;
     }
 
 	private void setMinimalUIFlag(HttpServletRequest request, boolean isMinimal) {
@@ -221,7 +267,124 @@ public class UploadController {
 		return types;        
     }
     
-	private InputStream getInputFile(String contentType, InputStream inputStream, String uri, String string) {
+    private List<FileInfo> getExternalFiles(String[] externalContentType, MultipartFile[] externalFiles, String[] externalUri,
+											Map<String, DomainConfig.ExternalValidationArtifactInfo> externalProperties, String validationType,
+											boolean isSchema) throws Exception {
+    	List<FileInfo> lis = new ArrayList<>();
+    	
+    	if(externalContentType != null) {
+	    	for(int i=0; i<externalContentType.length; i++) {
+				File inputFile = null;
+				MultipartFile currentExtFile = null;
+				String currentExtUri = "";
+				
+				if(externalFiles!=null && externalFiles.length>i) {
+					currentExtFile = externalFiles[i];
+				}
+				if(externalUri!=null && externalUri.length>i) {
+					currentExtUri = externalUri[i];
+				}
+				
+				inputFile = getInputFile(externalContentType[i], currentExtFile, currentExtUri, isSchema);
+
+				if(inputFile != null) {
+					File rootFile = this.fileManager.unzipFile(inputFile);
+					if(rootFile == null) {
+						FileInfo fi = new FileInfo(inputFile, FilenameUtils.getExtension(inputFile.getName()));		    		
+			    		lis.add(fi);
+					}else {
+						//ZIP File
+						boolean isValid = false;
+						if(isSchema) {
+							isValid = validateSchemaZip(rootFile);
+						}
+						
+						if(!isSchema || (isSchema && isValid)) {
+							FileInfo fi = new FileInfo(rootFile, FilenameUtils.getExtension(rootFile.getName()));		    		
+				    		lis.add(fi);
+						}else {
+				            logger.error("An error occurred during the validation of the external XSD ZIP File: XSD configuration needs to include a single XSD at its root (and any folders with sub-folders and other imported XSDs).");
+				    		throw new Exception("An error occurred during the validation of the external XSD ZIP File: XSD configuration needs to include a single XSD at its root (and any folders with sub-folders and other imported XSDs).");							
+						}
+					}
+				}
+	    	}
+    	}
+    	
+    	if (validateExternalFiles(lis, externalProperties, validationType) && ((isSchema && lis.size() <= 1) || !isSchema)) {
+        	return lis;
+    	}else { 
+            logger.error("An error occurred during the validation of the external Schema.");
+    		throw new Exception("An error occurred during the validation of the external Schema.");
+    	}
+    	
+    }
+    
+    private boolean validateSchemaZip(File rootFolder) {
+    	int iRootFiles = 0;
+    	
+    	//1 file as root, other files in a folder.
+		if (rootFolder.isFile()) {
+		     iRootFiles++;
+		} else {
+		     // List all files.
+		     File[] files = rootFolder.listFiles();
+		     if (files != null) {
+		         for (File aSchemaFile: files) {
+		             if (aSchemaFile.isFile()) {
+		                 iRootFiles++;
+		             }
+		         }
+		     }
+		}
+    	
+    	return (iRootFiles>1)? false : true;
+    }
+    
+    private boolean validateExternalFiles(List<FileInfo> lis, Map<String, DomainConfig.ExternalValidationArtifactInfo> externalArtefacts, String validationType) {
+    	String externalArtefactProperty = externalArtefacts.get(validationType).getSupportForExternalArtifacts();
+		
+    	boolean validated = false;
+    	
+    	switch(externalArtefactProperty) {
+    		case DomainConfig.externalFile_req:
+    			if(lis!=null && !lis.isEmpty()) {
+    				validated = true;
+    			}
+    			break;
+    		case DomainConfig.externalFile_opt:
+    			validated = true;
+    			break;
+    		case DomainConfig.externalFile_none:
+    			if(lis==null || lis.isEmpty()) {
+    				validated = true;
+    			}
+    			break;
+    	}
+    	
+		return validated;
+	}
+    
+    private File getInputFile(String contentType, MultipartFile inputFile, String inputUri, boolean isSchema) throws IOException {
+    	File f = null;
+    	
+    	switch(contentType) {
+			case contentType_file:
+				if(inputFile!=null && !inputFile.isEmpty()) {							
+		        	f = this.fileManager.getInputStreamFile(inputFile.getInputStream(), inputFile.getOriginalFilename());				
+				}
+				break;
+			case contentType_uri:					
+				if(!inputUri.isEmpty()) {
+					f = this.fileManager.getURLFile(inputUri, isSchema);
+				}
+				break;
+		}
+    	
+    	return f;
+    }
+    
+	private InputStream getInputStream(String contentType, InputStream inputStream, String uri, String string) {
 		InputStream is = null;
 		
 		switch(contentType) {
@@ -240,4 +403,5 @@ public class UploadController {
 
 		return is;
 	}
+    
 }

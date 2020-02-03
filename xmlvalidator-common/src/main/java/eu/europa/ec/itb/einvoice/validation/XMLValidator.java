@@ -7,7 +7,9 @@ import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
+import eu.europa.ec.itb.einvoice.util.FileManager;
 import eu.europa.ec.itb.einvoice.util.Utils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
@@ -40,7 +42,7 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.*;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,13 +59,20 @@ public class XMLValidator implements ApplicationContextAware {
 
     @Autowired
     private ApplicationConfig config;
-
+    @Autowired
+    private FileManager fileManager;
+    @Autowired
+    private ArtifactPreprocessor preprocessor;
+    
     private InputStream inputToValidate;
     private byte[] inputBytes;
     private ApplicationContext ctx;
     private final DomainConfig domainConfig;
     private String validationType;
     private ObjectFactory gitbTRObjectFactory = new ObjectFactory();
+    private List<FileInfo> externalSchema;
+    private List<FileInfo> externalSch;
+    private List<File> temporaryFilesToDelete = new ArrayList<>();
 
     static {
         try {
@@ -73,10 +82,12 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
-    public XMLValidator(InputStream inputToValidate, String validationType, DomainConfig domainConfig) {
+    public XMLValidator(InputStream inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig) {
         this.inputToValidate = inputToValidate;
         this.validationType = validationType;
         this.domainConfig = domainConfig;
+        this.externalSchema = externalSchema;
+        this.externalSch = externalSch;
         if (validationType == null) {
             this.validationType = domainConfig.getType().get(0);
         }
@@ -93,15 +104,15 @@ public class XMLValidator implements ApplicationContextAware {
         return new ByteArrayInputStream(inputBytes);
     }
 
-    private LSResourceResolver getXSDResolver() {
-        return ctx.getBean(XSDFileResolver.class, validationType, domainConfig);
+    private LSResourceResolver getXSDResolver(String xsdExternalPath) {
+        return ctx.getBean(XSDFileResolver.class, validationType, domainConfig, xsdExternalPath);
     }
 
     private javax.xml.transform.URIResolver getURIResolver(File schematronFile) {
         return ctx.getBean(URIResolver.class, validationType, schematronFile, domainConfig);
     }
 
-    public TAR validateAgainstSchema() {
+    private TAR validateAgainstSchema() {
         File schemaFile = getSchemaFile();
         List<TAR> reports = new ArrayList<>();
         List<File> schemaFiles = new ArrayList<>();
@@ -111,9 +122,12 @@ public class XMLValidator implements ApplicationContextAware {
                 schemaFiles.add(schemaFile);
             } else {
                 // All schemas are to be processed.
-                for (File aSchemaFile: schemaFile.listFiles()) {
-                    if (aSchemaFile.isFile()) {
-                        schemaFiles.add(aSchemaFile);
+                File[] files = schemaFile.listFiles();
+                if (files != null) {
+                    for (File aSchemaFile: files) {
+                        if (aSchemaFile.isFile()) {
+                            schemaFiles.add(aSchemaFile);
+                        }
                     }
                 }
             }
@@ -129,19 +143,17 @@ public class XMLValidator implements ApplicationContextAware {
                 reports.add(report);
                 logger.info("Validated against ["+aSchemaFile.getName()+"]");
             }
-            TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
-            completeReport(report);
-            return report;
+            return mergeReports(reports.toArray(new TAR[0]));
         }
     }
 
-    public TAR validateSchema(InputStream inputSource, File schemaFile) {
+    private TAR validateSchema(InputStream inputSource, File schemaFile) {
         // Create error handler.
         XSDReportHandler handler = new XSDReportHandler();
         // Resolve schema.
         SchemaFactory schemaFactory = XMLSchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         schemaFactory.setErrorHandler(handler);
-        schemaFactory.setResourceResolver(getXSDResolver());
+        schemaFactory.setResourceResolver(getXSDResolver(schemaFile.getParent()));
         Schema schema;
         try {
             schemaFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, false);
@@ -155,7 +167,7 @@ public class XMLValidator implements ApplicationContextAware {
         factory.setSchema(schema);
         Validator validator = schema.newValidator();
         validator.setErrorHandler(handler);
-        TAR report = null;
+        TAR report;
         try {
             // Use a StreamSource rather than a DomSource below to get the line & column number of possible errors.
             StreamSource source = new StreamSource(inputSource);
@@ -165,7 +177,6 @@ public class XMLValidator implements ApplicationContextAware {
             logger.warn("Error while validating XML ["+e.getMessage()+"]");
             report = createFailureReport();
         }
-        completeReport(report);
         return report;
     }
 
@@ -199,9 +210,9 @@ public class XMLValidator implements ApplicationContextAware {
             }
             if (report.getContext() == null) {
                 report.setContext(new AnyContent());
-                String inputXML = null;
+                String inputXML;
                 try {
-                    inputXML = StreamUtils.copyToString(getInputStreamForValidation(), Charset.forName("UTF-8"));
+                    inputXML = StreamUtils.copyToString(getInputStreamForValidation(), StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
@@ -218,11 +229,11 @@ public class XMLValidator implements ApplicationContextAware {
                 int errors = 0;
                 for (JAXBElement<TestAssertionReportType> item: report.getReports().getInfoOrWarningOrError()) {
                     String itemName = item.getName().getLocalPart();
-                    if (itemName == "info") {
+                    if ("info".equals(itemName)) {
                         infos += 1;
-                    } else if (itemName == "warning") {
+                    } else if ("warning".equals(itemName)) {
                         warnings += 1;
-                    } else if (itemName == "error") {
+                    } else if ("error".equals(itemName)) {
                         errors += 1;
                     }
                 }
@@ -232,12 +243,11 @@ public class XMLValidator implements ApplicationContextAware {
             }
         }
     }
-
-    public TAR validateAgainstSchematron() {
-        File schematronFile = getSchematronFile();
-        List<TAR> reports = new ArrayList<>();
-        List<File> schematronFiles = new ArrayList<>();
-        if (schematronFile != null && schematronFile.exists()) {
+    
+    private List<File> getAllSchematron(File schematronFile) {
+    	List<File> schematronFiles = new ArrayList<>();
+    	
+    	if (schematronFile != null && schematronFile.exists()) {
             if (schematronFile.isFile()) {
                 // We are pointing to a single master schematron file.
                 schematronFiles.add(schematronFile);
@@ -253,6 +263,24 @@ public class XMLValidator implements ApplicationContextAware {
                 }
             }
         }
+    	
+    	return schematronFiles;
+    }
+
+    private TAR validateAgainstSchematron() {
+        File schematronFile = getSchematronFile();
+        List<TAR> reports = new ArrayList<>();
+        List<File> externalFiles = getExternalSchematronFiles();
+        
+        List<File> schematronFiles = getAllSchematron(schematronFile);
+        List<File> remoteFiles = getAllSchematron(getRemoteSchematronFiles());
+        
+        schematronFiles.addAll(remoteFiles);
+        
+        for(File aSchematronFile: externalFiles) {
+        	schematronFiles.addAll(getAllSchematron(aSchematronFile));
+        }
+        
         if (schematronFiles.isEmpty()) {
             logger.info("No schematrons to validate against ["+schematronFile+"]");
             return null;
@@ -264,32 +292,125 @@ public class XMLValidator implements ApplicationContextAware {
                 reports.add(report);
                 logger.info("Validated against ["+aSchematronFile.getName()+"]");
             }
-            TAR report = mergeReports(reports.toArray(new TAR[reports.size()]));
-            completeReport(report);
-            return report;
+            return mergeReports(reports.toArray(new TAR[0]));
         }
+    }
+
+    private File preprocessFile(File fileToProcess, String preProcessorPath, String preProcessorOutputExtension) {
+        File preprocessorFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), preProcessorPath).toFile();
+        File processedFile = preprocessor.preprocessFile(fileToProcess, preprocessorFile, preProcessorOutputExtension);
+        temporaryFilesToDelete.add(processedFile);
+        return processedFile;
     }
 
     private File getSchematronFile() {
         File file = null;
         if (domainConfig.getSchematronFile() != null && domainConfig.getSchematronFile().containsKey(validationType)) {
-            file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronFile().get(validationType)).toFile();
+            file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronFile().get(validationType).getPath()).toFile();
+            if (domainConfig.getSchematronFile().get(validationType).getPreProcessorPath() != null) {
+                file = preprocessFile(file,
+                        domainConfig.getSchematronFile().get(validationType).getPreProcessorPath(),
+                        domainConfig.getSchematronFile().get(validationType).getPreProcessorOutputExtension()
+                );
+            }
         }
         return file;
+    }
+
+    private List<File> getExternalSchematronFiles() {
+        List<File> files = new ArrayList<>();
+    	if (!domainConfig.getExternalSchematronFile().get(validationType).getSupportForExternalArtifacts().equals(DomainConfig.externalFile_none) && externalSch != null && !externalSch.isEmpty()) {
+    		for (FileInfo fi: externalSch) {
+    		    if (domainConfig.getExternalSchematronFile().get(validationType).getPreProcessorPath() == null) {
+                    files.add(fi.getFile());
+                } else {
+                    files.add(preprocessFile(fi.getFile(),
+                            domainConfig.getExternalSchematronFile().get(validationType).getPreProcessorPath(),
+                            domainConfig.getExternalSchematronFile().get(validationType).getPreProcessorOutputExtension()
+                    ));
+                }
+    		}
+    	}
+        return files;
+    }
+
+	private File getRemoteSchematronFiles() {
+        // No need to check for pre-processing as this is already done at download time
+		File remoteConfigFolder = new File(new File(new File(fileManager.getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType), "sch");
+		if (remoteConfigFolder.exists()) {
+			return remoteConfigFolder;
+		} else {
+			return null;
+		}
+	}
+
+	private File getRemoteSchemaFiles() {
+        // No need to check for pre-processing as this is already done at download time
+		File remoteConfigFolder = new File(new File(new File(fileManager.getRemoteFileCacheFolder(), domainConfig.getDomainName()), validationType), "xsd");
+		if (remoteConfigFolder.exists()) {
+		    File[] files = remoteConfigFolder.listFiles();
+		    if (files != null && files.length > 0) {
+                return remoteConfigFolder;
+            }
+		}
+        return null;
     }
 
     private File getSchemaFile() {
         File file = null;
         if (domainConfig.getSchemaFile() != null && domainConfig.getSchemaFile().containsKey(validationType)) {
-            file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType)).toFile();
+            file = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType).getPath()).toFile();
+            if (domainConfig.getSchemaFile().get(validationType).getPreProcessorPath() != null) {
+                file = preprocessFile(file,
+                        domainConfig.getSchemaFile().get(validationType).getPreProcessorPath(),
+                        domainConfig.getSchemaFile().get(validationType).getPreProcessorOutputExtension());
+            }
+        } else {
+        	// Remote Schema file
+        	File remoteFile = getRemoteSchemaFiles();
+    		if (remoteFile!= null) {
+    		    File[] files = remoteFile.listFiles();
+    		    if (files != null) {
+                    file = getRootFile(files);
+                }
+    		} else {
+        		// External Schema file
+        		if(!domainConfig.getExternalSchemaFile().get(validationType).getSupportForExternalArtifacts().equals(DomainConfig.externalFile_none) && externalSchema != null && !externalSchema.isEmpty()) {
+            		File rootFolder = externalSchema.get(0).getFile();
+            		if (rootFolder.isFile()) {
+            			file = rootFolder;
+            		} else {
+            		    File[] files = rootFolder.listFiles();
+            		    if (files != null) {
+                            file = getRootFile(files);
+                        }
+            		}
+            		if (file != null && domainConfig.getExternalSchemaFile().get(validationType).getPreProcessorPath() != null) {
+                        file = preprocessFile(file,
+                                domainConfig.getExternalSchemaFile().get(validationType).getPreProcessorPath(),
+                                domainConfig.getExternalSchemaFile().get(validationType).getPreProcessorOutputExtension());
+                    }
+            	}
+        	}
         }
         return file;
+    }
+    
+    private File getRootFile(File[] listFiles) {
+    	File rootFile = null;
+		for(File f: listFiles) {
+			if (f.isFile()) {
+				rootFile = f;
+			}
+		}
+		
+		return rootFile;
     }
 
     private void logReport(TAR report, String name) {
         if (logger.isDebugEnabled()) {
             StringBuilder logOutput = new StringBuilder();
-            logOutput.append("["+name+"]\n Result: ").append(report.getResult());
+            logOutput.append("[").append(name).append("]\n Result: ").append(report.getResult());
             if (report.getCounters() != null) {
                 logOutput.append("\nOverview: total: ").append(report.getCounters().getNrOfAssertions())
                         .append(" errors: ").append(report.getCounters().getNrOfErrors())
@@ -308,24 +429,32 @@ public class XMLValidator implements ApplicationContextAware {
 
 
     public TAR validateAll() {
-        TAR overallResult;
-        TAR schemaResult = validateAgainstSchema();
-        if (schemaResult == null) {
-            // No schema.
-            schemaResult = createEmptyReport();
-        }
-        if (schemaResult.getResult() != TestResultType.SUCCESS) {
-            overallResult = schemaResult;
-        } else {
-            TAR schematronResult = validateAgainstSchematron();
-            if (schematronResult != null) {
-                overallResult = mergeReports(new TAR[] {schemaResult, schematronResult});
+        try {
+            TAR overallResult;
+            TAR schemaResult = validateAgainstSchema();
+            if (schemaResult == null) {
+                // No schema.
+                schemaResult = createEmptyReport();
+            }
+            if (schemaResult.getResult() != TestResultType.SUCCESS) {
+                overallResult = schemaResult;
             } else {
-                overallResult = mergeReports(new TAR[] {schemaResult});
+                TAR schematronResult = validateAgainstSchematron();
+                if (schematronResult != null) {
+                    overallResult = mergeReports(new TAR[] {schemaResult, schematronResult});
+                } else {
+                    overallResult = mergeReports(new TAR[] {schemaResult});
+                }
+            }
+            completeReport(overallResult);
+            return overallResult;
+        } finally {
+            if (!temporaryFilesToDelete.isEmpty()) {
+                for (File fileToDelete: temporaryFilesToDelete) {
+                    FileUtils.deleteQuietly(fileToDelete);
+                }
             }
         }
-        completeReport(overallResult);
-        return overallResult;
     }
 
     private TAR mergeReports(TAR[] reports) {
@@ -376,9 +505,9 @@ public class XMLValidator implements ApplicationContextAware {
         return mergedReport;
     }
 
-    public TAR validateSchematron(InputStream inputSource, File schematronFile) {
-        Document schematronInput = null;
-        SchematronOutputType svrlOutput = null;
+    private TAR validateSchematron(InputStream inputSource, File schematronFile) {
+        Document schematronInput;
+        SchematronOutputType svrlOutput;
         boolean convertXPathExpressions = false;
         String schematronFileName = schematronFile.getName().toLowerCase();
         if (schematronFileName.endsWith("xslt") || schematronFileName.endsWith("xsl")) {
@@ -410,10 +539,10 @@ public class XMLValidator implements ApplicationContextAware {
                     throw new IllegalStateException(e);
                 }
             } else {
-                throw new IllegalStateException("Schematron file ["+schematronFile.getAbsolutePath()+"] is invalid");
+                throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid");
             }
         }
-        //handle invoice report
+        //handle validation report
         SchematronReportHandler handler = new SchematronReportHandler(schematronInput, Utils.emptyDocument(), schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered());
         return handler.createReport();
     }

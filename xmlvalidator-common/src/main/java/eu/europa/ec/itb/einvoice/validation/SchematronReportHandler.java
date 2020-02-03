@@ -65,12 +65,6 @@ public class SchematronReportHandler {
         xmlAttachment.setEmbeddingMethod(ValueEmbeddingEnumeration.STRING);
         xmlAttachment.setValue(new String(Utils.serialize(xml)));
         attachment.getItem().add(xmlAttachment);
-        AnyContent schemaAttachment = new AnyContent();
-        schemaAttachment.setName("SCH");
-        schemaAttachment.setType("schema");
-        schemaAttachment.setEmbeddingMethod(ValueEmbeddingEnumeration.STRING);
-        schemaAttachment.setValue(new String(Utils.serialize(sch)));
-        attachment.getItem().add(schemaAttachment);
         this.report.setContext(attachment);
         this.convertXPathExpressions = convertXPathExpressions;
         this.includeTest = includeTest;

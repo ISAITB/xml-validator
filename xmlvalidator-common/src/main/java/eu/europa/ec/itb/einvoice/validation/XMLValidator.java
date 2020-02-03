@@ -143,9 +143,7 @@ public class XMLValidator implements ApplicationContextAware {
                 reports.add(report);
                 logger.info("Validated against ["+aSchemaFile.getName()+"]");
             }
-            TAR report = mergeReports(reports.toArray(new TAR[0]));
-            completeReport(report);
-            return report;
+            return mergeReports(reports.toArray(new TAR[0]));
         }
     }
 
@@ -179,7 +177,6 @@ public class XMLValidator implements ApplicationContextAware {
             logger.warn("Error while validating XML ["+e.getMessage()+"]");
             report = createFailureReport();
         }
-        completeReport(report);
         return report;
     }
 
@@ -295,9 +292,7 @@ public class XMLValidator implements ApplicationContextAware {
                 reports.add(report);
                 logger.info("Validated against ["+aSchematronFile.getName()+"]");
             }
-            TAR report = mergeReports(reports.toArray(new TAR[0]));
-            completeReport(report);
-            return report;
+            return mergeReports(reports.toArray(new TAR[0]));
         }
     }
 
@@ -547,7 +542,7 @@ public class XMLValidator implements ApplicationContextAware {
                 throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid");
             }
         }
-        //handle invoice report
+        //handle validation report
         SchematronReportHandler handler = new SchematronReportHandler(schematronInput, Utils.emptyDocument(), schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered());
         return handler.createReport();
     }

@@ -163,7 +163,7 @@ public class FileController {
         
 		File reportFolder = new File(config.getTmpFolder());
 		
-		if (reportFolder != null && reportFolder.exists()) {
+		if (reportFolder.exists()) {
             File[] files = reportFolder.listFiles();
             if (files != null) {
                 for (File file: files) {

@@ -3,6 +3,8 @@ package eu.europa.ec.itb.einvoice.validation;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,8 @@ import java.nio.file.Paths;
 @Scope("prototype")
 public class XSDFileResolver implements LSResourceResolver {
 
+    private final static Logger LOG = LoggerFactory.getLogger(XSDFileResolver.class);
+
     private final DomainConfig domainConfig;
     private final String validationType;
     private final String xsdExternalPath;
@@ -36,19 +40,22 @@ public class XSDFileResolver implements LSResourceResolver {
 
     @Override
     public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {
-        File baseURIFile = null;
+        File baseURIFile;
+        boolean systemIdSet = false;
         if (baseURI == null) {
         	if(domainConfig.getSchemaFile()!=null && !domainConfig.getSchemaFile().isEmpty()) {
         		baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType).getPath()).toFile().getParentFile();
-        	}else {
+        	} else {
         		if(!domainConfig.getRemoteSchemaFile().get(validationType).getRemote().isEmpty()) {
         			baseURIFile = Paths.get(config.getTmpFolder(), "remote_config", domainConfig.getDomainName(), validationType, "xsd").toFile();
         			systemId = "/import/" + new File(baseURIFile, systemId).getName();
-        		}else {
+                    systemIdSet = true;
+        		} else {
         			baseURIFile = Paths.get(xsdExternalPath).toFile();
         			File currentFile = new File(baseURIFile, systemId);
         			if(!currentFile.exists()) {
         				systemId = "/import/" + currentFile.getName();
+                        systemIdSet = true;
         			}
             	}
         	}
@@ -61,7 +68,18 @@ public class XSDFileResolver implements LSResourceResolver {
                 throw new IllegalStateException(e);
             }
         }
-        
+
+        if (!systemIdSet && (domainConfig.getSchemaFile() == null || domainConfig.getSchemaFile().isEmpty())) {
+            if (!domainConfig.getRemoteSchemaFile().get(validationType).getRemote().isEmpty()) {
+                systemId = new File(baseURIFile, systemId).getName();
+            } else {
+                File currentFile = new File(baseURIFile, systemId);
+                if (!currentFile.exists()) {
+                    systemId = currentFile.getName();
+                }
+            }
+        }
+
         File referencedSchemaFile = new File(baseURIFile, systemId);
         baseURI = referencedSchemaFile.getParentFile().toURI().toString();
         systemId = referencedSchemaFile.getName();
@@ -69,7 +87,8 @@ public class XSDFileResolver implements LSResourceResolver {
         try {
             return new LSInputImpl(publicId, systemId, baseURI, new InputStreamReader(new FileInputStream(referencedSchemaFile)));
         } catch (FileNotFoundException e) {
-            throw new IllegalStateException("The referenced schema with system ID ["+systemId+"] could not be located at ["+referencedSchemaFile.getAbsolutePath()+"].", e);
+            LOG.error("The referenced schema with system ID ["+systemId+"] could not be located at ["+referencedSchemaFile.getAbsolutePath()+"].", e);
+            throw new IllegalStateException("The referenced schema with system ID ["+systemId+"] could not be located.", e);
         }
     }
 

@@ -51,6 +51,15 @@ public class ApplicationConfig {
     private Map<String, String> domainNameToDomainId = new HashMap<>();
     private String startupTimestamp;
     private String resourceUpdateTimestamp;
+    private boolean disablePreprocessingCache = false;
+
+    public boolean isDisablePreprocessingCache() {
+        return disablePreprocessingCache;
+    }
+
+    public void setDisablePreprocessingCache(boolean disablePreprocessingCache) {
+        this.disablePreprocessingCache = disablePreprocessingCache;
+    }
 
     public File getReportFolder() {
         return reportFolder;

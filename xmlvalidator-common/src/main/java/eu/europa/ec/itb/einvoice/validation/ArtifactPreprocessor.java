@@ -1,7 +1,9 @@
 package eu.europa.ec.itb.einvoice.validation;
 
+import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.xml.transform.*;
@@ -15,6 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ArtifactPreprocessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(ArtifactPreprocessor.class);
+
+    @Autowired
+    private ApplicationConfig config;
 
     private ConcurrentHashMap<String, Templates> templateCache = new ConcurrentHashMap<>();
 
@@ -44,7 +49,9 @@ public class ArtifactPreprocessor {
         if (template == null) {
             TransformerFactory factory = TransformerFactory.newInstance();
             template = factory.newTemplates(new StreamSource(xsltFile));
-            templateCache.put(fullPath, template);
+            if (!config.isDisablePreprocessingCache()) {
+                templateCache.put(fullPath, template);
+            }
         }
         return template.newTransformer();
     }

@@ -40,19 +40,22 @@ public class XSDFileResolver implements LSResourceResolver {
 
     @Override
     public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {
-        File baseURIFile = null;
+        File baseURIFile;
+        boolean systemIdSet = false;
         if (baseURI == null) {
         	if(domainConfig.getSchemaFile()!=null && !domainConfig.getSchemaFile().isEmpty()) {
         		baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchemaFile().get(validationType).getPath()).toFile().getParentFile();
-        	}else {
+        	} else {
         		if(!domainConfig.getRemoteSchemaFile().get(validationType).getRemote().isEmpty()) {
         			baseURIFile = Paths.get(config.getTmpFolder(), "remote_config", domainConfig.getDomainName(), validationType, "xsd").toFile();
         			systemId = "/import/" + new File(baseURIFile, systemId).getName();
-        		}else {
+                    systemIdSet = true;
+        		} else {
         			baseURIFile = Paths.get(xsdExternalPath).toFile();
         			File currentFile = new File(baseURIFile, systemId);
         			if(!currentFile.exists()) {
         				systemId = "/import/" + currentFile.getName();
+                        systemIdSet = true;
         			}
             	}
         	}
@@ -65,7 +68,18 @@ public class XSDFileResolver implements LSResourceResolver {
                 throw new IllegalStateException(e);
             }
         }
-        
+
+        if (!systemIdSet && (domainConfig.getSchemaFile() == null || domainConfig.getSchemaFile().isEmpty())) {
+            if (!domainConfig.getRemoteSchemaFile().get(validationType).getRemote().isEmpty()) {
+                systemId = new File(baseURIFile, systemId).getName();
+            } else {
+                File currentFile = new File(baseURIFile, systemId);
+                if (!currentFile.exists()) {
+                    systemId = currentFile.getName();
+                }
+            }
+        }
+
         File referencedSchemaFile = new File(baseURIFile, systemId);
         baseURI = referencedSchemaFile.getParentFile().toURI().toString();
         systemId = referencedSchemaFile.getName();

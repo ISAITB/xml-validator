@@ -46,7 +46,8 @@ public class URIResolver implements javax.xml.transform.URIResolver {
                 return baseFile.getParentFile();
             }
         } else {
-            throw new IllegalStateException("The root Schematron file could not be loaded ["+baseFile.getAbsolutePath()+"]");
+            LOG.error("The root Schematron file could not be loaded ["+baseFile.getAbsolutePath()+"]");
+            throw new IllegalStateException("The root Schematron file could not be loaded");
         }
     }
 

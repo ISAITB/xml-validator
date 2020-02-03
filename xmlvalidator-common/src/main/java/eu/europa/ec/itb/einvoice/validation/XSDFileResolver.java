@@ -3,6 +3,8 @@ package eu.europa.ec.itb.einvoice.validation;
 import eu.europa.ec.itb.einvoice.ApplicationConfig;
 import eu.europa.ec.itb.einvoice.DomainConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -20,6 +22,8 @@ import java.nio.file.Paths;
 @Component
 @Scope("prototype")
 public class XSDFileResolver implements LSResourceResolver {
+
+    private final static Logger LOG = LoggerFactory.getLogger(XSDFileResolver.class);
 
     private final DomainConfig domainConfig;
     private final String validationType;
@@ -69,7 +73,8 @@ public class XSDFileResolver implements LSResourceResolver {
         try {
             return new LSInputImpl(publicId, systemId, baseURI, new InputStreamReader(new FileInputStream(referencedSchemaFile)));
         } catch (FileNotFoundException e) {
-            throw new IllegalStateException("The referenced schema with system ID ["+systemId+"] could not be located at ["+referencedSchemaFile.getAbsolutePath()+"].", e);
+            LOG.error("The referenced schema with system ID ["+systemId+"] could not be located at ["+referencedSchemaFile.getAbsolutePath()+"].", e);
+            throw new IllegalStateException("The referenced schema with system ID ["+systemId+"] could not be located.", e);
         }
     }
 

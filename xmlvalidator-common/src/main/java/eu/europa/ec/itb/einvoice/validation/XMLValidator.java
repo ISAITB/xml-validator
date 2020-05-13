@@ -430,6 +430,7 @@ public class XMLValidator implements ApplicationContextAware {
 
     public TAR validateAll() {
         try {
+            fileManager.signalValidationStart(domainConfig.getDomainName());
             TAR overallResult;
             TAR schemaResult = validateAgainstSchema();
             if (schemaResult == null) {
@@ -454,6 +455,7 @@ public class XMLValidator implements ApplicationContextAware {
                     FileUtils.deleteQuietly(fileToDelete);
                 }
             }
+            fileManager.signalValidationEnd(domainConfig.getDomainName());
         }
     }
 

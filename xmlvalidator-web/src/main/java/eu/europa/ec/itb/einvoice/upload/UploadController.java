@@ -9,6 +9,7 @@ import eu.europa.ec.itb.einvoice.util.FileManager;
 import eu.europa.ec.itb.einvoice.validation.FileInfo;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -30,10 +31,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -134,14 +132,15 @@ public class UploadController {
             // A validation type is required.
             attributes.put("message", "Provided validation type is not valid");
         }
+		File tempFolderForRequest = fileManager.createTemporaryFolderPath();
         try {
             if (stream != null) {
             	List<FileInfo> externalSchIS = new ArrayList<>();
             	List<FileInfo> externalSchemaIS = new ArrayList<>();
             	boolean proceedToValidate = true;
             	try {
-            		externalSchemaIS = getExternalFiles(externalSchemaContentType, externalSchemaFiles, externalSchemaUri, config.getExternalSchemaFile(), validationType, true);
-            		externalSchIS = getExternalFiles(externalSchContentType, externalSchFiles, externalSchUri, config.getExternalSchematronFile(), validationType, false);
+            		externalSchemaIS = getExternalFiles(externalSchemaContentType, externalSchemaFiles, externalSchemaUri, config.getExternalSchemaFile(), validationType, true, tempFolderForRequest);
+            		externalSchIS = getExternalFiles(externalSchContentType, externalSchFiles, externalSchUri, config.getExternalSchematronFile(), validationType, false, tempFolderForRequest);
             	} catch (Exception e) {
                     logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
                     attributes.put("message", "Error in upload [" + e.getMessage() + "]");
@@ -175,7 +174,12 @@ public class UploadController {
         } catch (Exception e) {
             logger.error("An error occurred during the validation [" + e.getMessage() + "]", e);
             attributes.put("message", "An error occurred during the validation [" + e.getMessage() + "]");
-        }
+        } finally {
+        	// Cleanup temporary resources for request.
+        	if (tempFolderForRequest.exists()) {
+				FileUtils.deleteQuietly(tempFolderForRequest);
+			}
+		}
         return new ModelAndView("uploadForm", attributes);
     }
 
@@ -269,7 +273,7 @@ public class UploadController {
     
     private List<FileInfo> getExternalFiles(String[] externalContentType, MultipartFile[] externalFiles, String[] externalUri,
 											Map<String, DomainConfig.ExternalValidationArtifactInfo> externalProperties, String validationType,
-											boolean isSchema) throws Exception {
+											boolean isSchema, File parentFolder) throws Exception {
     	List<FileInfo> lis = new ArrayList<>();
     	
     	if(externalContentType != null) {
@@ -285,10 +289,10 @@ public class UploadController {
 					currentExtUri = externalUri[i];
 				}
 				
-				inputFile = getInputFile(externalContentType[i], currentExtFile, currentExtUri, isSchema);
+				inputFile = getInputFile(externalContentType[i], currentExtFile, currentExtUri, isSchema, parentFolder);
 
-				if(inputFile != null) {
-					File rootFile = this.fileManager.unzipFile(inputFile);
+				if (inputFile != null) {
+					File rootFile = this.fileManager.unzipFile(parentFolder, inputFile);
 					if(rootFile == null) {
 						FileInfo fi = new FileInfo(inputFile, FilenameUtils.getExtension(inputFile.getName()));		    		
 			    		lis.add(fi);
@@ -299,7 +303,7 @@ public class UploadController {
 							isValid = validateSchemaZip(rootFile);
 						}
 						
-						if(!isSchema || (isSchema && isValid)) {
+						if(!isSchema || isValid) {
 							FileInfo fi = new FileInfo(rootFile, FilenameUtils.getExtension(rootFile.getName()));		    		
 				    		lis.add(fi);
 						}else {
@@ -311,7 +315,7 @@ public class UploadController {
 	    	}
     	}
     	
-    	if (validateExternalFiles(lis, externalProperties, validationType) && ((isSchema && lis.size() <= 1) || !isSchema)) {
+    	if (validateExternalFiles(lis, externalProperties, validationType) && (!isSchema || lis.size() <= 1)) {
         	return lis;
     	}else { 
             logger.error("An error occurred during the validation of the external Schema.");
@@ -365,18 +369,18 @@ public class UploadController {
 		return validated;
 	}
     
-    private File getInputFile(String contentType, MultipartFile inputFile, String inputUri, boolean isSchema) throws IOException {
+    private File getInputFile(String contentType, MultipartFile inputFile, String inputUri, boolean isSchema, File parentFolder) throws IOException {
     	File f = null;
     	
     	switch(contentType) {
 			case contentType_file:
 				if(inputFile!=null && !inputFile.isEmpty()) {							
-		        	f = this.fileManager.getInputStreamFile(inputFile.getInputStream(), inputFile.getOriginalFilename());				
+		        	f = this.fileManager.getInputStreamFile(parentFolder, inputFile.getInputStream(), inputFile.getOriginalFilename());
 				}
 				break;
 			case contentType_uri:					
 				if(!inputUri.isEmpty()) {
-					f = this.fileManager.getURLFile(inputUri, isSchema);
+					f = this.fileManager.getURLFile(parentFolder, inputUri, isSchema);
 				}
 				break;
 		}

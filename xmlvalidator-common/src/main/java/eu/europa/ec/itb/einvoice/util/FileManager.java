@@ -184,24 +184,15 @@ public class FileManager {
         }
         
 	}
-    
-    public File getInputStreamFile(InputStream stream, String filename) throws IOException {
-    	return getInputStreamFile(config.getTmpFolder(), stream, filename);
-    }
-	
-	private File getInputStreamFile(String targetFolder, InputStream stream, String fileName) throws IOException {
-		Path tmpPath = getFilePathFilename(targetFolder, fileName);
-		
-		Files.copy(stream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
 
+	public File getInputStreamFile(File targetFolder, InputStream stream, String fileName) throws IOException {
+		Path tmpPath = getFilePathFilename(targetFolder.getAbsolutePath(), fileName);
+		Files.copy(stream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
 		return tmpPath.toFile();
 	}
 
-    public File getURLFile(String url, boolean isSchema) throws IOException {
-        UUID folderUUID = UUID.randomUUID();
-		Path tmpFolder = Paths.get(config.getTmpFolder(), folderUUID.toString());
-		
-    	return getURLFile(tmpFolder.toString(), url, isSchema, null, null);
+    public File getURLFile(File targetFolder, String url, boolean isSchema) throws IOException {
+    	return getURLFile(targetFolder.getAbsolutePath(), url, isSchema, null, null);
     }
 
     /**
@@ -242,7 +233,6 @@ public class FileManager {
 	private Path getFilePathFilename(String folder, String fileName) {
 		Path tmpPath = Paths.get(folder, fileName);
 		tmpPath.toFile().getParentFile().mkdirs();
-
 		return tmpPath;
 	}
 	
@@ -286,14 +276,13 @@ public class FileManager {
 		return tmpPath;
 	}
 	
-	public File getStringFile(String content, String extension) throws IOException {
-		File tmpFolder = getTempFolder();
+	public File getStringFile(String content, String extension, File parentFolder) throws IOException {
 		Path tempPath;
 		
 		if (extension.isEmpty()) {
-			tempPath = getFilePath(tmpFolder.getAbsolutePath());
+			tempPath = getFilePath(parentFolder.getAbsolutePath());
 		} else {
-			tempPath = getFilePath(tmpFolder.getAbsolutePath(), extension);
+			tempPath = getFilePath(parentFolder.getAbsolutePath(), extension);
 		}
 
 		try (InputStream in = new ByteArrayInputStream(content.getBytes())){
@@ -333,18 +322,15 @@ public class FileManager {
         return true;
 	}
 
-	public File unzipFile(byte[] zipContent){
-		File unzipFiles = null;
-		boolean isZip = false;
-		UUID folderUUID = UUID.randomUUID();
-		Path tmpFolder = Paths.get(config.getTmpFolder(), folderUUID.toString());
-
+	public File unzipFile(File parentFolder, byte[] zipContent){
+		File unzipFiles;
+		boolean isZip;
 		try {
 			ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipContent));
-			File rootFolder = tmpFolder.toFile();
+			File rootFolder = createTemporaryFolderPath(parentFolder);
 			rootFolder.mkdirs();
 
-			isZip = getZipFiles(zis, tmpFolder.toString());
+			isZip = getZipFiles(zis, rootFolder.getAbsolutePath());
 
 			unzipFiles = rootFolder;
 
@@ -361,30 +347,33 @@ public class FileManager {
 		}
 	}
 
-	public File unzipFile(File zipFile){
-		File unzipFiles = null;		
-		boolean isZip = false;
-        UUID folderUUID = UUID.randomUUID();
-		Path tmpFolder = Paths.get(config.getTmpFolder(), folderUUID.toString());
-		
+	public File createTemporaryFolderPath() {
+		return createTemporaryFolderPath(new File(config.getTmpFolder()));
+	}
+
+	private File createTemporaryFolderPath(File parentFolder) {
+		UUID folderUUID = UUID.randomUUID();
+		Path tmpFolder = Paths.get(parentFolder.getAbsolutePath(), folderUUID.toString());
+		return tmpFolder.toFile();
+	}
+
+	public File unzipFile(File parentFolder, File zipFile){
+		File unzipFiles;
+		boolean isZip;
 		try {
-	        ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));	        
-	        File rootFolder = tmpFolder.toFile();
-	        rootFolder.mkdirs();
-	        
-	        isZip = getZipFiles(zis, tmpFolder.toString());
-	        
+	        ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));
+			File rootFolder = createTemporaryFolderPath(parentFolder);
+			rootFolder.mkdirs();
+	        isZip = getZipFiles(zis, rootFolder.getAbsolutePath());
 	        unzipFiles = rootFolder;
-        	
 	        zis.closeEntry();
 	        zis.close();
-		}catch(Exception e) {
+		} catch (Exception e) {
 			return null;
 		}
-        
-		if(isZip) {
+		if (isZip) {
 			return unzipFiles;
-		}else {
+		} else {
 			return null;
 		}
 	}
@@ -406,7 +395,19 @@ public class FileManager {
 		FileUtils.deleteQuietly(getRemoteFileCacheFolder());
 		resetRemoteFileCache();
 	}
-	
+
+	public void signalValidationStart(String domainName) {
+		logger.debug("Signalling validation start for ["+domainName+"]");
+		externalDomainFileCacheLocks.get(domainName).readLock().lock();
+		logger.debug("Signalled validation start for ["+domainName+"]");
+	}
+
+	public void signalValidationEnd(String domainName) {
+		logger.debug("Signalling validation end for ["+domainName+"]");
+		externalDomainFileCacheLocks.get(domainName).readLock().unlock();
+		logger.debug("Signalled validation end for ["+domainName+"]");
+	}
+
 	@Scheduled(fixedDelayString = "${validator.cleanupRate}")
 	public void resetRemoteFileCache() {
 		logger.debug("Resetting remote SCHEMATRON and SCHEMA files cache");

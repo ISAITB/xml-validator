@@ -13,6 +13,7 @@ import eu.europa.ec.itb.einvoice.validation.FileInfo;
 import eu.europa.ec.itb.einvoice.validation.ValidationConstants;
 import eu.europa.ec.itb.einvoice.validation.XMLValidator;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -137,15 +138,23 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not read provided input", e);
         }
-        // Get and validate any externally provided validation artifacts
-        List<FileInfo> externalSchema = getExternalFiles(validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMA, validationType, "xsd");
-        List<FileInfo> externalSch = getExternalFiles(validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, validationType, "sch");
-        // Proceed with the validation.
-        XMLValidator validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(contentToValidate.getBytes(StandardCharsets.UTF_8)), validationType, externalSchema, externalSch, domainConfig);
-        TAR report = validator.validateAll();
-        ValidationResponse result = new ValidationResponse();
-        result.setReport(report);
-        return result;
+        File tempFolderForRequest = fileManager.createTemporaryFolderPath();
+        try {
+            // Get and validate any externally provided validation artifacts
+            List<FileInfo> externalSchema = getExternalFiles(validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMA, validationType, "xsd", tempFolderForRequest);
+            List<FileInfo> externalSch = getExternalFiles(validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, validationType, "sch", tempFolderForRequest);
+            // Proceed with the validation.
+            XMLValidator validator = ctx.getBean(XMLValidator.class, new ByteArrayInputStream(contentToValidate.getBytes(StandardCharsets.UTF_8)), validationType, externalSchema, externalSch, domainConfig);
+            TAR report = validator.validateAll();
+            ValidationResponse result = new ValidationResponse();
+            result.setReport(report);
+            return result;
+        } finally {
+            // Cleanup temporary resources for request.
+            if (tempFolderForRequest.exists()) {
+                FileUtils.deleteQuietly(tempFolderForRequest);
+            }
+        }
     }
 
     private List<AnyContent> getXMLInput(ValidateRequest validateRequest) {
@@ -193,7 +202,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         return inputs;
     }
 
-    private List<FileInfo> getExternalFiles(ValidateRequest validateRequest, String name, String validationType, String defaultContentType) {
+    private List<FileInfo> getExternalFiles(ValidateRequest validateRequest, String name, String validationType, String defaultContentType, File parentFolder) {
     	List<FileInfo> filesContent = new ArrayList<>();
     	List<AnyContent> listInput = getInputFor(validateRequest, name);
         List<AnyContent> listInputContent;
@@ -237,7 +246,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
                 throw new IllegalArgumentException("Invalid type value for provided schematron ["+type+"]");
             }
             try {
-                FileInfo fileContent = getExternalFileInfo(contentInput.get(0), type, name, method);
+                FileInfo fileContent = getExternalFileInfo(contentInput.get(0), type, name, method, parentFolder);
                 if (fileContent.getFile() != null) {
                     filesContent.add(fileContent);
                 }
@@ -248,7 +257,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
     	return filesContent;
     }
 
-    private FileInfo getExternalFileInfo(AnyContent content, String type, String name, ValueEmbeddingEnumeration method) throws IOException, URISyntaxException {
+    private FileInfo getExternalFileInfo(AnyContent content, String type, String name, ValueEmbeddingEnumeration method, File parentFolder) throws IOException, URISyntaxException {
     	FileInfo fileContent = new FileInfo();
         if (ValidationConstants.INPUT_EXTERNAL_SCHEMATRON.equals(name)) {
             String stringContent = extractContent(content, method);
@@ -256,7 +265,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
             if (!config.getAcceptedSchematronMimeType().contains(mimeType)) {
                 throw new IllegalArgumentException("Unsupported mime type ["+mimeType+"] for provided schematron");
             }
-            fileContent.setFile(fileManager.getStringFile(stringContent, type));
+            fileContent.setFile(fileManager.getStringFile(stringContent, type, parentFolder));
         } else {
             if ("xsd".equals(type)) {
                 String stringContent = extractContent(content, method);
@@ -264,7 +273,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
                 if (!config.getAcceptedSchemaMimeType().contains(mimeType)) {
                     throw new IllegalArgumentException("Unsupported mime type ["+mimeType+"] for provided schema");
                 }
-                fileContent.setFile(fileManager.getStringFile(stringContent, type));
+                fileContent.setFile(fileManager.getStringFile(stringContent, type, parentFolder));
             } else {
                 // zip - can only be provided as URI or BASE64
                 ValueEmbeddingEnumeration contentType = (method!=null)?method:content.getEmbeddingMethod();
@@ -278,13 +287,13 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
                         if (config.getAcceptedZipMimeType().contains(mimeType)) {
                             throw new IllegalArgumentException("Unexpected mime type ["+mimeType+"] for XSD zip archive");
                         }
-                        zipFile = fileManager.unzipFile(contentBytes);
+                        zipFile = fileManager.unzipFile(parentFolder, contentBytes);
                     } else {
                         String mimeType = fileManager.checkContentTypeUrl(content.getValue());
                         if (config.getAcceptedZipMimeType().contains(mimeType)) {
                             throw new IllegalArgumentException("Unexpected mime type ["+mimeType+"] for XSD zip archive");
                         }
-                        zipFile = fileManager.unzipFile(fileManager.getURLFile(content.getValue(), false));
+                        zipFile = fileManager.unzipFile(parentFolder, fileManager.getURLFile(parentFolder, content.getValue(), false));
                     }
                     if (validateSchemaZip(zipFile)) {
                         fileContent.setFile(zipFile);

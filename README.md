@@ -231,7 +231,7 @@ To override labels on the web UI you can use the following properties:
 
 # Plugin development
 
-The SHACL validator supports custom plugins to extend the validation report. Plugins are implementations of the GITB validation service API for which the following
+The XML validator supports custom plugins to extend the validation report. Plugins are implementations of the GITB validation service API for which the following
 applies. Note that plugin JAR files need to be built as "all-in-one" JARs.
 
 ## Input to plugins

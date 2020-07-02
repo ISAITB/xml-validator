@@ -35,7 +35,6 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -306,7 +305,8 @@ public class XMLValidator implements ApplicationContextAware {
                 for (ValidationPlugin plugin: plugins) {
                     String pluginName = plugin.getName();
                     ValidationResponse response = plugin.validate(pluginInput);
-                    if (response != null && response.getReport() != null) {
+                    if (response != null && response.getReport() != null && response.getReport().getReports() != null) {
+                        logger.info("Plugin [{}] produced [{}] report item(s).", pluginName, response.getReport().getReports().getInfoOrWarningOrError().size());
                         if (pluginReport == null) {
                             pluginReport = response.getReport();
                         } else {

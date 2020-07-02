@@ -3,12 +3,18 @@ package eu.europa.ec.itb.xml.validation;
 import com.gitb.core.AnyContent;
 import com.gitb.core.ValueEmbeddingEnumeration;
 import com.gitb.tr.*;
+import com.gitb.vs.ValidateRequest;
+import com.gitb.vs.ValidationResponse;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
-import eu.europa.ec.itb.xml.DomainConfig;
-import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.validation.commons.FileInfo;
 import eu.europa.ec.itb.validation.commons.Utils;
+import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
+import eu.europa.ec.itb.validation.plugin.PluginManager;
+import eu.europa.ec.itb.validation.plugin.ValidationPlugin;
+import eu.europa.ec.itb.xml.DomainConfig;
+import eu.europa.ec.itb.xml.util.FileManager;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.oclc.purl.dsdl.svrl.SchematronOutputType;
@@ -45,6 +51,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by simatosc on 26/02/2016.
@@ -58,6 +65,10 @@ public class XMLValidator implements ApplicationContextAware {
 
     @Autowired
     private FileManager fileManager;
+    @Autowired
+    private PluginManager pluginManager;
+    @Autowired
+    private DomainPluginConfigProvider pluginConfigProvider;
 
     private File inputToValidate;
     private ApplicationContext ctx;
@@ -117,7 +128,7 @@ public class XMLValidator implements ApplicationContextAware {
                 reports.add(report);
                 logger.info("Validated against ["+aSchemaFile.getFile().getName()+"]");
             }
-            return mergeReports(reports.toArray(new TAR[0]));
+            return Utils.mergeReports(reports);
         }
     }
 
@@ -176,11 +187,7 @@ public class XMLValidator implements ApplicationContextAware {
     private void completeReport(TAR report) {
         if (report != null) {
             if (report.getDate() == null) {
-                try {
-                    report.setDate(Utils.getXMLGregorianCalendarDateTime());
-                } catch (DatatypeConfigurationException e) {
-                    logger.error("Exception while creating XMLGregorianCalendar", e);
-                }
+                report.setDate(Utils.getXMLGregorianCalendarDateTime());
             }
             if (report.getContext() == null) {
                 report.setContext(new AnyContent());
@@ -233,7 +240,7 @@ public class XMLValidator implements ApplicationContextAware {
                 reports.add(report);
                 logger.info("Validated against ["+aSchematronFile.getFile().getName()+"]");
             }
-            return mergeReports(reports.toArray(new TAR[0]));
+            return Utils.mergeReports(reports);
         }
     }
 
@@ -259,9 +266,9 @@ public class XMLValidator implements ApplicationContextAware {
 
 
     public TAR validateAll() {
+        TAR overallResult;
         try {
             fileManager.signalValidationStart(domainConfig.getDomainName());
-            TAR overallResult;
             TAR schemaResult = validateAgainstSchema();
             if (schemaResult == null) {
                 // No schema.
@@ -272,64 +279,62 @@ public class XMLValidator implements ApplicationContextAware {
             } else {
                 TAR schematronResult = validateAgainstSchematron();
                 if (schematronResult != null) {
-                    overallResult = mergeReports(new TAR[] {schemaResult, schematronResult});
+                    overallResult = Utils.mergeReports(new TAR[] {schemaResult, schematronResult});
                 } else {
-                    overallResult = mergeReports(new TAR[] {schemaResult});
+                    overallResult = Utils.mergeReports(new TAR[] {schemaResult});
                 }
             }
             completeReport(overallResult);
-            return overallResult;
         } finally {
             fileManager.signalValidationEnd(domainConfig.getDomainName());
         }
+        TAR pluginResult = validateAgainstPlugins();
+        if (pluginResult != null) {
+            overallResult = Utils.mergeReports(new TAR[] {overallResult, pluginResult});
+        }
+        return overallResult;
     }
 
-    private TAR mergeReports(TAR[] reports) {
-        TAR mergedReport = reports[0];
-        if (reports.length > 1) {
-            for (int i=1; i < reports.length; i++) {
-                TAR report = reports[i];
-                if (report != null) {
-                    if (report.getCounters() != null) {
-                        if (mergedReport.getCounters() == null) {
-                            mergedReport.setCounters(new ValidationCounters());
-                            mergedReport.getCounters().setNrOfAssertions(BigInteger.ZERO);
-                            mergedReport.getCounters().setNrOfWarnings(BigInteger.ZERO);
-                            mergedReport.getCounters().setNrOfErrors(BigInteger.ZERO);
+    private TAR validateAgainstPlugins() {
+        TAR pluginReport = null;
+        ValidationPlugin[] plugins = pluginManager.getPlugins(pluginConfigProvider.getPluginClassifier(domainConfig, validationType));
+        if (plugins != null && plugins.length > 0) {
+            File pluginTmpFolder = new File(inputToValidate.getParentFile(), UUID.randomUUID().toString());
+            try {
+                pluginTmpFolder.mkdirs();
+                ValidateRequest pluginInput = preparePluginInput(pluginTmpFolder);
+                for (ValidationPlugin plugin: plugins) {
+                    String pluginName = plugin.getName();
+                    ValidationResponse response = plugin.validate(pluginInput);
+                    if (response != null && response.getReport() != null) {
+                        if (pluginReport == null) {
+                            pluginReport = response.getReport();
+                        } else {
+                            pluginReport = Utils.mergeReports(new TAR[] {pluginReport, response.getReport()});
                         }
-                        if (report.getCounters().getNrOfAssertions() != null) {
-                            mergedReport.getCounters().setNrOfAssertions(mergedReport.getCounters().getNrOfAssertions().add(report.getCounters().getNrOfAssertions()));
-                        }
-                        if (report.getCounters().getNrOfWarnings() != null) {
-                            mergedReport.getCounters().setNrOfWarnings(mergedReport.getCounters().getNrOfWarnings().add(report.getCounters().getNrOfWarnings()));
-                        }
-                        if (report.getCounters().getNrOfErrors() != null) {
-                            mergedReport.getCounters().setNrOfErrors(mergedReport.getCounters().getNrOfErrors().add(report.getCounters().getNrOfErrors()));
-                        }
-                    }
-                    if (report.getReports() != null) {
-                        if (mergedReport.getReports() == null) {
-                            mergedReport.setReports(new TestAssertionGroupReportsType());
-                        }
-                        mergedReport.getReports().getInfoOrWarningOrError().addAll(report.getReports().getInfoOrWarningOrError());
-                    }
-                    if (mergedReport.getResult() == null) {
-                        mergedReport.setResult(TestResultType.UNDEFINED);
-                    }
-                    if (report.getResult() != null) {
-                        if (mergedReport.getResult() == TestResultType.UNDEFINED || mergedReport.getResult() == TestResultType.SUCCESS) {
-                            if (report.getResult() != TestResultType.UNDEFINED) {
-                                mergedReport.setResult(report.getResult());
-                            }
-                        }
-                    }
-                    if (report.getContext() != null && mergedReport.getContext() == null) {
-                        mergedReport.setContext(report.getContext());
                     }
                 }
+            } finally {
+                // Cleanup plugin tmp folder.
+                FileUtils.deleteQuietly(pluginTmpFolder);
             }
         }
-        return mergedReport;
+        return pluginReport;
+    }
+
+    private ValidateRequest preparePluginInput(File pluginTmpFolder) {
+        File pluginInputFile = new File(pluginTmpFolder, UUID.randomUUID().toString()+".xml");
+        try {
+            FileUtils.copyFile(inputToValidate, pluginInputFile);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to copy input file for plugin", e);
+        }
+        ValidateRequest request = new ValidateRequest();
+        request.getInput().add(Utils.createInputItem("contentToValidate", pluginInputFile.getAbsolutePath()));
+        request.getInput().add(Utils.createInputItem("domain", domainConfig.getDomainName()));
+        request.getInput().add(Utils.createInputItem("validationType", validationType));
+        request.getInput().add(Utils.createInputItem("tempFolder", pluginTmpFolder.getAbsolutePath()));
+        return request;
     }
 
     private TAR validateSchematron(InputStream inputSource, File schematronFile) {

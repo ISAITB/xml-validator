@@ -228,3 +228,24 @@ To override labels on the web UI you can use the following properties:
 | `validator.label.popupTitle` | Label | String | `XML content`
 | `validator.label.popupCloseButton` | Label | String | `Close`
 | `validator.label.resultValidationTypeLabel` | Label | String | `Validation type:`
+
+# Plugin development
+
+The SHACL validator supports custom plugins to extend the validation report. Plugins are implementations of the GITB validation service API for which the following
+applies. Note that plugin JAR files need to be built as "all-in-one" JARs.
+
+## Input to plugins
+
+The XML validator calls plugins in sequence passing in the following input:
+
+| Input name | Type | Description |
+| --- | --- | --- |
+| `contentToValidate` | `String` | The absolute and full path to the input provided to the validator. |
+| `domain` | `String` | The validation domain relevant to the specific validation call. |
+| `validationType` | `String` | The validation type of the domain that is selected for the specific validation call. |
+| `tempFolder` | `String` | The absolute and full path to a temporary folder for plugins. This will be automatically deleted after all plugins complete validation. |
+
+## Output from plugins
+
+The output of plugins is essentially a GITB `ValidationResponse` that wraps a `TAR` instance. The report items within this `TAR` instance are merged
+with any reports produced by XSD and Schematron validation.

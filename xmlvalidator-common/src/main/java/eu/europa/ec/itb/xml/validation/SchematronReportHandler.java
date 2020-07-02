@@ -18,7 +18,6 @@ import org.w3c.dom.Node;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBElement;
-import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -50,11 +49,7 @@ public class SchematronReportHandler {
         this.svrlReport = svrl;
         report = new TAR();
         report.setResult(TestResultType.SUCCESS);
-        try {
-            report.setDate(Utils.getXMLGregorianCalendarDateTime());
-        } catch (DatatypeConfigurationException e) {
-            throw new IllegalStateException("Exception while creating XMLGregorianCalendar", e);
-        }
+        report.setDate(Utils.getXMLGregorianCalendarDateTime());
         this.report.setName("Schematron Validation");
         this.report.setReports(new TestAssertionGroupReportsType());
         AnyContent attachment = new AnyContent();

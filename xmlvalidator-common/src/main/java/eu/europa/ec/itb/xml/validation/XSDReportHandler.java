@@ -27,11 +27,7 @@ public class XSDReportHandler implements ErrorHandler {
         report = new TAR();
         report.setReports(new TestAssertionGroupReportsType());
         report.setResult(TestResultType.SUCCESS);
-        try {
-            report.setDate(Utils.getXMLGregorianCalendarDateTime());
-        } catch (DatatypeConfigurationException e) {
-            throw new IllegalStateException(e);
-        }
+        report.setDate(Utils.getXMLGregorianCalendarDateTime());
     }
 
     @Override

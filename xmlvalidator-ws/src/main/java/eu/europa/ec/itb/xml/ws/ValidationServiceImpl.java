@@ -85,8 +85,8 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
             ValueEmbeddingEnumeration contentEmbeddingMethod = inputHelper.validateContentEmbeddingMethod(validateRequest, ValidationConstants.INPUT_EMBEDDING_METHOD);
             File contentToValidate = inputHelper.validateContentToValidate(validateRequest, ValidationConstants.INPUT_XML, contentEmbeddingMethod, tempFolderPath);
             String validationType = inputHelper.validateValidationType(domainConfig, validateRequest, ValidationConstants.INPUT_TYPE);
-            List<FileInfo> externalSchemas = inputHelper.validateExternalArtifacts(domainConfig, validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMA, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_TYPE, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, tempFolderPath);
-            List<FileInfo> externalSchematron = inputHelper.validateExternalArtifacts(domainConfig, validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_TYPE, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, tempFolderPath);
+            List<FileInfo> externalSchemas = inputHelper.validateExternalArtifacts(domainConfig, validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMA, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EMBEDDING_METHOD, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, tempFolderPath);
+            List<FileInfo> externalSchematron = inputHelper.validateExternalArtifacts(domainConfig, validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EMBEDDING_METHOD, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, tempFolderPath);
             // Proceed with the validation.
             XMLValidator validator = ctx.getBean(XMLValidator.class, contentToValidate, validationType, externalSchemas, externalSchematron, domainConfig);
             TAR report = validator.validateAll();

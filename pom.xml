@@ -20,13 +20,13 @@
         <validatorTimestamp>${maven.build.timestamp}</validatorTimestamp>
         <validatorBuild.resourceJar>validator-resources</validatorBuild.resourceJar>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss (XXX)</maven.build.timestamp.format>
-        <version.springBoot>2.3.1.RELEASE</version.springBoot>
+        <version.springBoot>2.3.3.RELEASE</version.springBoot>
         <version.itbCommons>1.0.0-SNAPSHOT</version.itbCommons>
-        <version.cxf>3.3.6</version.cxf>
+        <version.cxf>3.3.7</version.cxf>
         <version.commonsIo>2.7</version.commonsIo>
         <version.jaxb>2.3.1</version.jaxb>
         <version.commonsLang>3.10</version.commonsLang>
-        <version.gitbTypes>1.9.1</version.gitbTypes>
+        <version.gitbTypes>1.10.0</version.gitbTypes>
         <version.xerces>2.12.0</version.xerces>
         <version.saxon>9.8.0-12</version.saxon>
         <version.tika>1.24.1</version.tika>

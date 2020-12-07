@@ -1,4 +1,4 @@
-package eu.europa.ec.itb.xml.validation;
+package eu.europa.ec.itb.xml.email;
 
 import com.gitb.tr.TAR;
 

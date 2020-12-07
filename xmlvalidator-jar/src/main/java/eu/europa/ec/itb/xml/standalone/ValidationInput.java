@@ -8,18 +8,18 @@ import java.io.File;
 public class ValidationInput {
 
     private File inputFile;
-    private String validationType;
+    private String fileName;
 
     public ValidationInput(File inputFile, String validationType) {
         this.inputFile = inputFile;
-        this.validationType = validationType;
+        this.fileName = validationType;
     }
 
     public File getInputFile() {
         return inputFile;
     }
 
-    public String getValidationType() {
-        return validationType;
+    public String getFileName() {
+        return fileName;
     }
 }

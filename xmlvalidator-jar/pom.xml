@@ -35,6 +35,14 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
         </plugins>
         <finalName>validator</finalName>
     </build>
@@ -43,6 +51,10 @@
         <dependency>
             <groupId>eu.europa.ec.itb.xml</groupId>
             <artifactId>xmlvalidator-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.itb.commons</groupId>
+            <artifactId>validation-commons-report</artifactId>
         </dependency>
         <dependency>
             <groupId>eu.europa.ec.itb</groupId>

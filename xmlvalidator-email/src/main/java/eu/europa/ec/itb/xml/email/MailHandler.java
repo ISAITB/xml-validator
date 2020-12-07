@@ -1,14 +1,13 @@
 package eu.europa.ec.itb.xml.email;
 
 import com.gitb.tr.TAR;
+import eu.europa.ec.itb.validation.commons.ValidatorChannel;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.DomainConfigCache;
 import eu.europa.ec.itb.xml.upload.FileController;
 import eu.europa.ec.itb.xml.util.FileManager;
-import eu.europa.ec.itb.xml.validation.FileReport;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
-import eu.europa.ec.itb.validation.commons.ValidatorChannel;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.Tika;

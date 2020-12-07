@@ -1,5 +1,7 @@
 package eu.europa.ec.itb.xml;
 
+import eu.europa.ec.itb.validation.commons.artifact.ExternalArtifactSupport;
+import eu.europa.ec.itb.validation.commons.artifact.TypedValidationArtifactInfo;
 import eu.europa.ec.itb.validation.commons.artifact.ValidationArtifactInfo;
 import eu.europa.ec.itb.validation.commons.config.WebDomainConfig;
 
@@ -24,6 +26,24 @@ public class DomainConfig extends WebDomainConfig<DomainConfig.LabelConfig> {
     private String mailInboundFolder = "INBOX";
     private boolean includeTestDefinition;
     private boolean reportsOrdered;
+
+    public boolean definesTypeWithExternalXsd() {
+        for (TypedValidationArtifactInfo info : getArtifactInfo().values()) {
+            if (info.get(ARTIFACT_TYPE_SCHEMA).getExternalArtifactSupport() != ExternalArtifactSupport.NONE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean definesTypeWithExternalSchematrons() {
+        for (TypedValidationArtifactInfo info : getArtifactInfo().values()) {
+            if (info.get(ARTIFACT_TYPE_SCHEMATRON).getExternalArtifactSupport() != ExternalArtifactSupport.NONE) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     protected LabelConfig newLabelConfig() {

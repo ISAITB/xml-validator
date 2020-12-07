@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.Enumeration;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -24,6 +26,7 @@ import java.util.jar.JarFile;
 public class Application {
 
     public static void main(String[] args) throws IOException {
+        System.out.print("Starting validator ...");
         File tempFolder = Files.createTempDirectory("xmlvalidator").toFile();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> FileUtils.deleteQuietly(tempFolder)));
         // Set the resource root so that it can be used. This is done before app startup to avoid PostConstruct issues.
@@ -38,23 +41,30 @@ public class Application {
         // Post process config.
         ApplicationConfig config = ctx.getBean(ApplicationConfig.class);
         config.setStandalone(true);
+        // Set report folder for use as a temp file generation target.
+        config.setTmpFolder(tempFolder.getAbsolutePath());
         // Disabling System.err because Saxon by default writes errors to it.
         System.setErr(new PrintStream(new OutputStream() {
             public void write(int b) {
             }
         }));
-        ValidationRunner runner = ctx.getBean(ValidationRunner.class);
-        runner.bootstrap(args);
+        System.out.println(" Done.");
+        try {
+            ValidationRunner runner = ctx.getBean(ValidationRunner.class);
+            runner.bootstrap(args, new File(config.getTmpFolder(), UUID.randomUUID().toString()));
+        } catch (Exception e) {
+            // Ignore errors here.
+        }
     }
 
     private static void prepareConfigForStandalone(File tempFolder) throws IOException {
         // Explode invoice resources to temp folder
         File tempJarFile = new File(tempFolder, "validator-resources.jar");
-        FileUtils.copyInputStreamToFile(Thread.currentThread().getContextClassLoader().getResourceAsStream("validator-resources.jar"), tempJarFile);
+        FileUtils.copyInputStreamToFile(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResourceAsStream("validator-resources.jar")), tempJarFile);
         JarFile resourcesJar = new JarFile(tempJarFile);
-        Enumeration entries = resourcesJar.entries();
+        Enumeration<JarEntry> entries = resourcesJar.entries();
         while (entries.hasMoreElements()) {
-            JarEntry entry = (JarEntry)entries.nextElement();
+            JarEntry entry = entries.nextElement();
             File f = new File(tempFolder, entry.getName());
             if (entry.isDirectory()) { // if its a directory, create it
                 f.mkdir();

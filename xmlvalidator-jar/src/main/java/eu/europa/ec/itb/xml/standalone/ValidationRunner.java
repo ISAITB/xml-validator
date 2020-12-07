@@ -109,7 +109,7 @@ public class ValidationRunner {
                     FileReport reporter = new FileReport(input.getInputFile().getAbsolutePath(), report, !noReports, false);
                     if (!noReports) {
                         // Serialize report.
-                        fileManager.saveReport(report, new File(reporter.getReportXmlFileName()));
+                        fileManager.saveReport(report, new File(reporter.getReportXmlFileName()), domainConfig);
                     }
                     summary.append("\n").append(reporter.toString()).append("\n");
                 } catch (Exception e) {

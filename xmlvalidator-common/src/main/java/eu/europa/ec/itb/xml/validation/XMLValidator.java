@@ -7,7 +7,9 @@ import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
+import com.helger.schematron.svrl.SVRLMarshaller;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
+import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.validation.commons.FileInfo;
 import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
@@ -31,20 +33,17 @@ import org.w3c.dom.Document;
 import org.w3c.dom.ls.LSResourceResolver;
 
 import javax.xml.XMLConstants;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -60,7 +59,6 @@ import java.util.UUID;
 public class XMLValidator implements ApplicationContextAware {
 
     private static final Logger logger = LoggerFactory.getLogger(XMLValidator.class);
-    private static JAXBContext SVRL_JAXB_CONTEXT;
 
     @Autowired
     private FileManager fileManager;
@@ -76,14 +74,6 @@ public class XMLValidator implements ApplicationContextAware {
     private final ObjectFactory gitbTRObjectFactory = new ObjectFactory();
     private final List<FileInfo> externalSchema;
     private final List<FileInfo> externalSch;
-
-    static {
-        try {
-            SVRL_JAXB_CONTEXT = JAXBContext.newInstance(SchematronOutputType.class);
-        } catch (JAXBException e) {
-            throw new IllegalStateException("Unable to create JAXB content for SchematronOutputType", e);
-        }
-    }
 
     public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig) {
         this.inputToValidate = inputToValidate;
@@ -342,37 +332,30 @@ public class XMLValidator implements ApplicationContextAware {
         SchematronOutputType svrlOutput;
         boolean convertXPathExpressions = false;
         String schematronFileName = schematronFile.getName().toLowerCase();
+        ISchematronResource schematron;
         if (schematronFileName.endsWith("xslt") || schematronFileName.endsWith("xsl")) {
             // Validate as XSLT.
-            try {
-                schematronInput = Utils.readXMLWithLineNumbers(inputSource);
-                TransformerFactory factory = TransformerFactory.newInstance();
-                factory.setURIResolver(getURIResolver(schematronFile));
-                Transformer transformer = factory.newTransformer(new StreamSource(new FileInputStream(schematronFile)));
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                transformer.setURIResolver(factory.getURIResolver());
-                transformer.transform(new DOMSource(schematronInput), new StreamResult(bos));
-                bos.flush();
-                Unmarshaller jaxbUnmarshaller = SVRL_JAXB_CONTEXT.createUnmarshaller();
-                JAXBElement<SchematronOutputType> root = jaxbUnmarshaller.unmarshal(new StreamSource(new ByteArrayInputStream(bos.toByteArray())), SchematronOutputType.class);
-                svrlOutput = root.getValue();
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
+            schematron = SchematronResourceXSLT.fromFile(schematronFile);
+            ((SchematronResourceXSLT) schematron).setURIResolver(getURIResolver(schematronFile));
         } else {
             // Validate as raw schematron.
             convertXPathExpressions = true;
-            ISchematronResource schematron = SchematronResourcePure.fromFile(schematronFile);
-            if(schematron.isValidSchematron()) {
-                try {
-                    schematronInput = Utils.readXMLWithLineNumbers(inputSource);
-                    svrlOutput = schematron.applySchematronValidationToSVRL(new DOMSource(schematronInput));
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
-            } else {
-                throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid");
+            schematron = SchematronResourcePure.fromFile(schematronFile);
+        }
+        try {
+            schematronInput = Utils.readXMLWithLineNumbers(inputSource);
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to parse input file.", e);
+        }
+        try {
+            Document svrlDocument = schematron.applySchematronValidation(new DOMSource(schematronInput));
+            if (svrlDocument == null) {
+                throw new IllegalStateException("SVRL output was null");
             }
+            SVRLMarshaller marshaller = new SVRLMarshaller(false);
+            svrlOutput = marshaller.read(svrlDocument);
+        } catch (Exception e) {
+            throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
         }
         //handle validation report
         String xmlContent;

@@ -9,7 +9,6 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import javax.xml.bind.JAXBElement;
-import javax.xml.datatype.DatatypeConfigurationException;
 
 /**
  * Created by simatosc on 07/03/2016.
@@ -17,10 +16,10 @@ import javax.xml.datatype.DatatypeConfigurationException;
 public class XSDReportHandler implements ErrorHandler {
 
     private static final String XML_ITEM_NAME = "XML";
-    private static Logger logger = LoggerFactory.getLogger(XSDReportHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(XSDReportHandler.class);
 
-    private TAR report;
-    private ObjectFactory objectFactory;
+    private final TAR report;
+    private final ObjectFactory objectFactory;
 
     public XSDReportHandler() {
         objectFactory = new ObjectFactory();

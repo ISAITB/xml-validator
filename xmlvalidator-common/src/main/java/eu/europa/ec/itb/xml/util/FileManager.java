@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -49,7 +50,7 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
         String xmlID = domain+"_"+fileUUID.toString();
         File outputFile = new File(getReportFolder(), getInputFileName(xmlID));
         outputFile.getParentFile().mkdirs();
-        FileUtils.writeStringToFile(outputFile, xml);
+        FileUtils.writeStringToFile(outputFile, xml, Charset.defaultCharset());
         return xmlID;
     }
 

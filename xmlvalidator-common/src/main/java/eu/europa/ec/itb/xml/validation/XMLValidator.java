@@ -7,6 +7,7 @@ import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.pure.SchematronResourcePure;
+import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import eu.europa.ec.itb.validation.commons.FileInfo;
 import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
@@ -17,7 +18,6 @@ import eu.europa.ec.itb.xml.util.FileManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
-import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -69,13 +69,13 @@ public class XMLValidator implements ApplicationContextAware {
     @Autowired
     private DomainPluginConfigProvider pluginConfigProvider;
 
-    private File inputToValidate;
+    private final File inputToValidate;
     private ApplicationContext ctx;
     private final DomainConfig domainConfig;
     private String validationType;
-    private ObjectFactory gitbTRObjectFactory = new ObjectFactory();
-    private List<FileInfo> externalSchema;
-    private List<FileInfo> externalSch;
+    private final ObjectFactory gitbTRObjectFactory = new ObjectFactory();
+    private final List<FileInfo> externalSchema;
+    private final List<FileInfo> externalSch;
 
     static {
         try {

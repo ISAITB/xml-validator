@@ -8,8 +8,8 @@ import com.helger.schematron.svrl.AbstractSVRLMessage;
 import com.helger.schematron.svrl.SVRLFailedAssert;
 import com.helger.schematron.svrl.SVRLHelper;
 import com.helger.schematron.svrl.SVRLSuccessfulReport;
+import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import eu.europa.ec.itb.validation.commons.Utils;
-import org.oclc.purl.dsdl.svrl.SchematronOutputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -31,18 +31,18 @@ import java.util.regex.Pattern;
  */
 public class SchematronReportHandler {
 
-    private static Pattern ARRAY_PATTERN = Pattern.compile("\\[\\d+\\]");
-    private static Pattern DEFAULTNS_PATTERN = Pattern.compile("\\/[\\w]+:?");
+    private static final Pattern ARRAY_PATTERN = Pattern.compile("\\[\\d+\\]");
+    private static final Pattern DEFAULTNS_PATTERN = Pattern.compile("\\/[\\w]+:?");
     private static final Logger logger = LoggerFactory.getLogger(SchematronReportHandler.class);
-    private Document node;
-    private SchematronOutputType svrlReport;
+    private final Document node;
+    private final SchematronOutputType svrlReport;
     private NamespaceContext namespaceContext;
     private Boolean hasDefaultNamespace;
-    private boolean convertXPathExpressions;
-    private boolean includeTest;
-    private boolean reportsOrdered;
-    private TAR report;
-    private ObjectFactory objectFactory = new ObjectFactory();
+    private final boolean convertXPathExpressions;
+    private final boolean includeTest;
+    private final boolean reportsOrdered;
+    private final TAR report;
+    private final ObjectFactory objectFactory = new ObjectFactory();
 
     public SchematronReportHandler(String xmlContentForReport, Node sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered) {
         this.node = node;

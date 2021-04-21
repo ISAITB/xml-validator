@@ -26,7 +26,7 @@
         <validatorBuild.resourceJar>validator-resources</validatorBuild.resourceJar>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss (XXX)</maven.build.timestamp.format>
         <version.springBoot>2.4.2</version.springBoot>
-        <version.itbCommons>1.0.0-SNAPSHOT</version.itbCommons>
+        <version.itbCommons>1.0.0</version.itbCommons>
         <version.cxf>3.4.2</version.cxf>
         <version.commonsIo>2.7</version.commonsIo>
         <version.jaxb>2.3.1</version.jaxb>
@@ -237,6 +237,31 @@
                             <Build-Timestamp>${validatorTimestamp}</Build-Timestamp>
                         </manifestEntries>
                     </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.8.1</version>
+                <configuration>
+                    <processAllModules>true</processAllModules>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.0.0-M3</version>
+                <configuration>
+                    <rules>
+                        <requireReleaseDeps>
+                            <failWhenParentIsSnapshot>false</failWhenParentIsSnapshot>
+                            <excludes>
+                                <exclude>eu.europa.ec.itb.xml:*</exclude>
+                            </excludes>
+                            <message>No snapshot dependencies are allowed.</message>
+                        </requireReleaseDeps>
+                    </rules>
+                    <fail>true</fail>
                 </configuration>
             </plugin>
         </plugins>

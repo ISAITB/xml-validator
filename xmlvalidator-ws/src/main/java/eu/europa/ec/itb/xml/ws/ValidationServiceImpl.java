@@ -23,7 +23,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import javax.jws.WebParam;
+import javax.xml.ws.WebServiceContext;
+
 import java.io.File;
 import java.util.List;
 
@@ -43,6 +46,8 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
     ApplicationContext ctx;
     @Autowired
 	FileManager fileManager;
+    @Resource
+    WebServiceContext wsContext;
 
     public ValidationServiceImpl(DomainConfig domainConfig) {
         this.domainConfig = domainConfig;
@@ -106,6 +111,10 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
             }
         }
 
+    }
+
+    public WebServiceContext getWebServiceContext() {
+        return this.wsContext;
     }
 
 }

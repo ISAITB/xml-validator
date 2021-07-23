@@ -60,6 +60,7 @@
         <version.javaxAnnotation>1.3.2</version.javaxAnnotation>
         <version.hibernateValidator>5.0.2.Final</version.hibernateValidator>
         <version.commonsBeanutils>1.9.4</version.commonsBeanutils>
+        <version.aspectjWeaver>1.9.6</version.aspectjWeaver>
     </properties>
     <repositories>
         <repository>
@@ -152,6 +153,11 @@
                 <artifactId>spring-boot-starter-security</artifactId>
                 <version>${version.springBoot}</version>
             </dependency>
+            <dependency>
+			    <groupId>org.springframework.boot</groupId>
+    			<artifactId>spring-boot-starter-aop</artifactId>
+    			<version>${version.springBoot}</version>
+    		</dependency>
             <!-- Other -->
             <dependency>
                 <groupId>xerces</groupId>
@@ -237,6 +243,11 @@
                 <groupId>commons-beanutils</groupId>
                 <artifactId>commons-beanutils</artifactId>
                 <version>${version.commonsBeanutils}</version>
+            </dependency>
+            <dependency>
+            	<groupId>org.aspectj</groupId>
+            	<artifactId>aspectjweaver</artifactId>
+            	<version>${version.aspectjWeaver}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

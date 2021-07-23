@@ -102,6 +102,14 @@ public class XMLValidator implements ApplicationContextAware {
         return ctx.getBean(URIResolver.class, validationType, schematronFile, domainConfig);
     }
 
+    public String getDomain(){
+        return this.domainConfig.getDomain();
+    }
+
+    public String getValidationType(){
+        return this.validationType;
+    }
+
     private TAR validateAgainstSchema() {
         List<FileInfo> schemaFiles = fileManager.getPreconfiguredValidationArtifacts(domainConfig, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA);
         schemaFiles.addAll(externalSchema);

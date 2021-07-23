@@ -122,6 +122,14 @@
                 <artifactId>validation-commons-war</artifactId>
                 <version>${version.itbCommons}</version>
             </dependency>
+            <dependency>
+                <groupId>eu.europa.ec.itb.commons</groupId>
+                <artifactId>validation-commons</artifactId>
+                <version>${version.itbCommons}</version>
+                <type>test-jar</type>
+                <classifier>tests</classifier>
+                <scope>test</scope>
+            </dependency>
             <!-- Spring Boot starters -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -158,6 +166,12 @@
     			<artifactId>spring-boot-starter-aop</artifactId>
     			<version>${version.springBoot}</version>
     		</dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <scope>test</scope>
+                <version>${version.springBoot}</version>
+            </dependency>
             <!-- Other -->
             <dependency>
                 <groupId>xerces</groupId>
@@ -255,6 +269,15 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.2.0</version>
                 <configuration>
@@ -289,6 +312,25 @@
                     </rules>
                     <fail>true</fail>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.7</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -1,237 +1,116 @@
-# Introduction
+![BuildStatus](https://github.com/ISAITB/xml-validator/actions/workflows/main.yml/badge.svg)
+[![licence](https://img.shields.io/github/license/ISAITB/xml-validator.svg?color=blue)](https://github.com/ISAITB/xml-validator/blob/master/LICENCE.txt)
+[![docs](https://img.shields.io/static/v1?label=docs&message=Test%20Bed%20guides&color=blue)](https://www.itb.ec.europa.eu/docs/guides/latest/validatingXML/)
+[![docker](https://img.shields.io/docker/pulls/isaitb/xmlvalidator?color=blue&logo=docker&logoColor=white)](https://hub.docker.com/r/isaitb/xml-validator)
 
-Application used for the validation of XML documents by means of:
+# XML validator
 
-* A GITB-compliance validation service (SOAP web service).
-* A simple web form that can receive an XML file.
+The **XML validator** is a web application to validate XML data against [XML Schema](https://www.w3.org/standards/xml/schema) and [Schematron](https://schematron.com/).
+The application provides a fully reusable core that requires only configuration to determine the supported specifications,
+configured validation types and other validator customisations. The web application allows validation via:
+
+* A SOAP web service API for machine-machine integrations.
+* A web form for validation via user interface.
 * Polling of an email address.
-* Standalone validator.
 
-The validator can be used with a single or multiple validation domains, i.e. validation cases that should be considered
-as distinct. Note that each such domain can still contain within it multiple validation types - the validation domain
-is used more to split distinct user groups, whereas the validation type is used for different types of validation within
-a specific user group.
+The SOAP web service API conforms to the [GITB validation service API](https://www.itb.ec.europa.eu/docs/services/latest/validation/)
+which makes it usable as a building block in [GITB Test Description Language (TDL)](https://www.itb.ec.europa.eu/docs/tdl/latest/)
+conformance test cases for the verification of content (as a [verify step](https://www.itb.ec.europa.eu/docs/tdl/latest/constructs/index.html#verify)
+handler). Note additionally that the validator can also be used to build a command-line tool as an executable JAR with
+pre-packaged or provided configuration.
 
-Configuration of each domain's validation is via a property file contained within the domain's subfolder under the 
-configured resource root. 
+This validator is maintained by the **European Commission's DIGIT** and specifically the **Interoperability Test Bed**,
+a conformance testing service for projects involved in the delivery of cross-border public services. Find out more
+[here](https://joinup.ec.europa.eu/collection/interoperability-test-bed-repository/solution/interoperability-test-bed).
 
-The different application modes (above) can be disabled/enabled as configuration properties in this domain 
-configuration.
+# Usage
 
-The application is built using Spring-Boot. The project includes a sample definition of UBL invoices to work out of 
-the box. This however should be replaced with the actual implementation depending on the installation. 
+Usage and configuration of this validator is documented as a step-by-step tutorial in the Test Bed's
+[XML validation guide](https://www.itb.ec.europa.eu/docs/guides/latest/validatingXML/).
+
+The validator's key principle is that the software is built as a generic core that can be configured to validate any
+supported specifications. Configuration is organised in **domains** which represent logically separate setups supported
+by the same application instance. Each such domain defines the offered **validation types** and their **options** along
+with the validation artefacts needed to carry out validation (local, remote or user-provided). A domain's configuration
+is grouped in a folder that contains a [configuration property file](https://www.itb.ec.europa.eu/docs/guides/latest/validatingXML/index.html#step-3-prepare-validator-configuration)
+along with any other necessary resources.
+
+When built from source, the simplest way to get started using the validator is to use the **all-in-one executable JAR**
+built from the `xmlvalidator-war` module. You can use and configure this as described in the
+[validator installation guide](https://www.itb.ec.europa.eu/docs/guides/latest/installingValidatorProduction/index.html#approach-1-using-jar-file).
+
+If you do not plan on modifying the validator's source you can reuse the Test Bed's provided packages. Specifically:
+
+* Via **Docker**, using the [isaitb/xml-validator](https://hub.docker.com/r/isaitb/xml-validator) image from the Docker Hub.
+* Via **JAR file**, using the [generic web application package](https://www.itb.ec.europa.eu/xml-jar/any/validator.zip).
+* Via **command line tool**, using the [generic command line tool package](https://www.itb.ec.europa.eu/xml-offline/any/validator.zip).
+
+It is interesting to note that the second option (executable web application JAR) matches what you would build from this
+repository. The command line package is produced from the `xmlvalidator-jar` although this requires an additional step
+of JAR post-processing to configure the validator's domain(s).
+
+Once the validator's web application is up you can use it as follows:
+
+* SOAP-API: http://localhost:8080/api/DOMAIN/validation?wsdl
+* Web form: http://localhost:8080/DOMAIN/upload
+
+Note that the `DOMAIN` placeholder in the above URLs is the name of a domain configuration folder beneath your configured `validator.resourceRoot`.
+This can be adapted by providing `validator.domainName.DOMAIN` mapping(s) for your domain(s). These are [application-level configuration properties](https://www.itb.ec.europa.eu/docs/guides/latest/validatingXML/index.html#application-level-configuration)
+that can be set in the default [application.properties](xmlvalidator-common/src/main/resources/application.properties)
+or via environment variables and system properties.
 
 # Building
 
-Issue `mvn clean install`
+The validator is a multi-module Maven project from which the artefact to use is the web application package, produced
+from module `xmlvalidator-war`. This is an all-in-one Spring Boot web application. To build issue `mvn clean install`.
 
-The resulting artefacts can then be retrieved from:
-- `xmlvalidator-war` when running as a web app
-- `xmlvalidator-jar` when running as a command line tool
+## Prerequisites
 
-## For development
+To build this project's libraries you require:
+* A JDK installation (11+).
+* Maven (3+)
+* Locally installed [itb-commons](https://github.com/ISAITB/itb-commons) dependencies (see below).
 
-An `application-dev.properties` configuration file is present in the `xmlvalidator-common` module. This can be adapted
-to easily run from an IDE or a completely separate configuration file can be provided from an external config location.
+Building this validator from source depends on libraries that are available on public repositories. The exception is
+currently the set of [itb-commons](https://github.com/ISAITB/itb-commons) dependencies, common libraries that are shared
+by all Test Bed validators. To be able to build you need to first clone [itb-commons](https://github.com/ISAITB/itb-commons)
+and install its artefacts in your local Maven repository.
 
-To run change first to the required module:
-- `xmlvalidator-war` to run as a web app
-- `xmlvalidator-jar` to run as a command line tool
+## Configuration for development
 
-Then, from this directory do
+When building for development you will need to provide the validator's basic configuration to allow it to bootstrap.
+The simplest approach to do this is to use environment variables that set the validator's
+[configuration properties](https://www.itb.ec.europa.eu/docs/guides/latest/validatingXML/index.html#validator-configuration-properties).
 
-```
-mvn spring-boot:run
-```
+The minimum properties you should define this way are:
 
-# Running the applications
+* `validator.resourceRoot`: The root folder from which all domain configurations will be loaded.
+* `logging.file.path`: The validator’s log output folder.
+* `validator.tmpFolder`: The validator’s temporary work folder.
 
-Both web and standalone versions require at least Java 8 to run.
+In addition, you should include within the `validator.resourceRoot` folder additional folder(s) for your configuration domains,
+each with its configuration property file and any other needed resources. A simple example of such configuration that you
+can also download and reuse, is provided in the XML validation guide's [configuration step](https://www.itb.ec.europa.eu/docs/guides/latest/validatingXML/index.html#step-3-prepare-validator-configuration).
 
-## Web application
+## Using Docker
 
-The application is accessible at:
-
-* Web form: http://localhost:8080/DOMAIN/upload
-* GITB-compliant WS: http://localhost:8080/api/DOMAIN/validation?wsdl
-
-Note that all configuration properties in `application.properties` can be overriden by means of environment variables
-(e.g. set in a downstream Dockerfile). 
-
-## Standalone
-
-The standalone mode loads the validation resources from the jar file produced from the the resources' module that is
-copied as an entry to the standalone jar's contents. Because of this however, the standalone version can't be ran from
-within the IDE.
-
-To build the standalone validator issue
+If you choose Docker to run your validator you can use the [sample Dockerfile](etc/docker/xml-validator/Dockerfile)
+as a starting point. To use this:
+1. Create a folder and copy within it the Dockerfile and JAR produced from the `xmlvalidator-war` module.
+2. Create a sub-folder (e.g. `resources`) as your resource root within which you place your domain configuration folder(s).
+3. Adapt the Dockerfile to also copy the `resources` folder and set its path within the image as the `validator.resourceRoot`:
 
 ```
-mvn clean install
-```
-
-And get `validator.jar` from the jar module's target folder. To run this issue:
-
-```
-java -jar validator.jar
-```
-
-# Configuration and use
-
-The key point to consider when using this validator is the validation domains it will consider. This is defined through
-the **mandatory configuration property** `validator.resourceRoot` which needs to point to a folder that contains for 
-each supported domain, a sub-folder with the validation artefacts (that can be arbitrarily organised) and a property
-file (e.g. `config.properties`) that defines the configuration for that specific domain. This property can be defined
-either in a separate `application.properties` file, or more simply, passed as a system property or environment variable
-(using an environment variable a particularly easy approach when creating a downstream docker image).
-
-The name of the domain sub-folder will be used as the domain name. In addition, if the `validator.resourceRoot` parent
-folder contains also directories that should not be considered, the specific domains (i.e. sub-folder named) to be 
-considered can be specified explicitly through the `validator.domain` property, a comma-separate listing of the domain
-folder named to consider.
-
-## Use as a standalone application
-
-To use as a standalone application the simplest approach is as follows:
-1. Copy `validator.war` in a target folder.
-2. Create a folder (e.g. `resources`) in the target folder.
-3. Place into the `resources` folder a sub-folder for each supported validation domain.
-4. Launch the application using `java -jar validator.war` passing it the following system properties:
-..* `validator.resourceRoot` with the full path to the target folder.
-..* `logging.path` the folder to hold the application's log output.
-..* `validator.reportFolder` the folder to hold temporarily created report files.
-
-## Use via docker
-
-To use as a docker container do the following:
-1. Create a folder `my-app`.
-2. In this folder copy create a folder named e.g. `domain`.
-3. Copy in the `domain` folder the validation artefacts and domain configuration property file.
-4. Create a Dockerfile as follows:
-```
-FROM isaitb/xml-validator:latest
-
-ENV validator.resourceRoot /validator/
-COPY domain /validator/domain/
+...
+COPY resources /validator/resources/
+ENV validator.resourceRoot /validator/resources/
+...
 ```  
-5. Build the docker image and proceed to use it.
-
-**Important:** The naming of the `domain` folder in the above example is important as it will be used for the 
-request paths for both the web UI (e.g. http://localhost:8080/domain/upload) and also for the web service endpoints
-(e.g. http://localhost:8080/api/domain/validation?wsdl). 
-
-## Configuration property reference
-
-The tool supports configuration at two levels:
-* The overall application.
-* Each configured validation domain.
-
-## Application-level configuration
-
-The properties defined here can be specified in a separate Spring Boot `application.properties` file or passed in via
-system properties or environment variables. Apart from what is listed, any Spring Boot configuration property can be
-defined.
-
-| Property | Description | Type | Default value |
-| --- | --- | --- | --- |
-| `validator.resourceRoot` | The root folder under which domain sub-folders will be loaded. | String | - |
-| `validator.domain` | The names of the domain sub-folders to consider. | Comma-separated Strings | - |  
-| `validator.domainName.XYZ` | The name to display for a given domain folder. | String | The folder name is used |  
-| `logging.path` | Logging path. | String | `/validator/logs` |
-| `validator.reportFolder` | Report path. | String | `/validator/reports` |
-| `validator.cleanupPollingRate` | The rate at which the temp reports folder is polled for cleanup (in ms). | Integer | `60000` |
-| `validator.mailPollingRate` | The rate at which the configured email addresses (if configured) are polled for received input files (in ms). | Integer | `60000` |
-| `validator.inputFilePrefix` | Prefix of input files in the report folder. | String | `ITB-` |
-| `validator.minimumCachedInputFileAge` | Time to keep XML input files in milliseconds (600000 = 10 minutes). | Integer | `600000` |
-| `validator.reportFilePrefix` | Prefix of report files in the report folder. | String | `TAR-` |
-| `validator.acceptedMimeTypes` | Accepted mime-types for input files.  | Comma-separated Strings | `application/xml, text/xml, text/plain` |
-| `validator.acceptedSchematronExtensions` | Accepted schematron extensions.  | Comma-separated Strings | `xsl,xslt,sch` |
-| `validator.disablePreprocessingCache` | Whether to disable caching for pre-processing XSLTs. | Boolean | `false` |
-
-## Domain-level configuration
-
-The properties here define how a specific validation domain is configured. They need to be placed in a property file
-(any file name ending with `.properties`) within a domain sub-folder under the configured `validator.resourceRoot`.
-
-| Property | Description | Type | Default value |
-| --- | --- | --- | --- |
-| `validator.channels` | Comma separated list of features to have enabled. Possible values are (`form`, `email`, `webservice`). | Comma-separated Strings | `form,webservice` |
-| `validator.type` | A comma-separated list of supported invoice types. Values need to be reflected in properties `validator.typeLabel`, `validator.schemaFile`, `validator.schematronFolder`. | Comma-separated Strings | - |
-| `validator.typeLabel.XYZ` | Label to display in the web form for a given invoice type (added as a postfix of validator.typeLabel). Only displayed if there are multiple types. | String | - |
-| `validator.webServiceId` | The ID of the web service. | String | `ValidatorService` |
-| `validator.webServiceDescription.xml` | The description of the web service for element "xml". | String | - |
-| `validator.webServiceDescription.type` | The description of the web service for element "type". Only displayed if there are multiple types. | String | - |
-| `validator.schemaFile.XYZ` | The XSD files loaded for a given invoice type (added as a postfix). This can be a file or folder (must never start with a '/'). | String | - |
-| `validator.schemaFile.XYZ.preprocessor` | The relative path to a XSLT file that will be used for XSD pre-processing. | String | - |
-| `validator.schemaFile.XYZ.preprocessor.output` | The file extension for the XSD pre-processing. | String | `xsd` |
-| `validator.schematronFile.XYZ` | The schematron files loaded for a given invoice type (added as a postfix). This can be a file or folder (must never start with a '/'). | String | - |
-| `validator.schematronFile.XYZ.preprocessor` | The relative path to a XSLT file that will be used for Schematron pre-processing. | String | - |
-| `validator.schematronFile.XYZ.preprocessor.output` | The file extension for the Schematron pre-processing. | String | `sch` |
-| `validator.schemaFile.XYZ.remote.A.url` | The Schema (XSD) files loaded for a given validation type (added as a postfix) as URL. | String | - |
-| `validator.schemaFile.XYZ.remote.A.preprocessor` | The relative path to a XSLT file that will be used for XSD pre-processing. | String | - |
-| `validator.schemaFile.XYZ.remote.A.preprocessor.output` | The file extension for the XSD pre-processing. | String | `xsd` |
-| `validator.schematronFile.XYZ.remote.A.url` | The Schematron files loaded for a given validation type (added as a postfix) as URL. | String | - |
-| `validator.schematronFile.XYZ.remote.A.url.preprocessor` | The relative path to a XSLT file that will be used for Schematron pre-processing. | String | - |
-| `validator.schematronFile.XYZ.remote.A.url.preprocessor.output` | The file extension for the Schematron pre-processing. | String | `sch` |` | The Schematron files loaded for a given validation type (added as a postfix) as URL. | String | - |
-| `validator.externalSchemaFile.XYZ` | External Schema (XSD) are allowed for a given validation type (added as a postfix). Possible values are (`required`, `optional`, `none`). | String | `optional` |
-| `validator.externalSchemaFile.preprocessor` | The relative path to a XSLT file that will be used for XSD pre-processing. | String | - |
-| `validator.externalSchemaFile.preprocessor.output` | The file extension for the XSD pre-processing. | String | `xsd` |
-| `validator.externalSchematronFile.XYZ` | External Schematron are allowed for a given validation type (added as a postfix). Possible values are (`required`, `optional`, `none`). | String | `optional` |
-| `validator.externalSchematronFile.XYZ.preprocessor` | The relative path to a XSLT file that will be used for Schematron pre-processing. | String | - |
-| `validator.externalSchematronFile.XYZ.preprocessor.output` | The file extension for the Schematron pre-processing. | String | `sch` |
-| `validator.includeTestDefinition` | Whether tests should be included in the resulting reports. | Boolean | `true` |
-| `validator.reportsOrdered` | Whether the reports are ordered. | Boolean | `false` |
-| `validator.showAbout` | Whether or not to show the about panel on the web UI. | Boolean | `true` | 
-| `validator.supportMinimalUserInterface` | A minimal UI is available if this is enabled. | Boolean | `false` |
-| `validator.bannerHtml` | Configurable HTML banner replacing the text title. | String | - |
-| `validator.footerHtml` | Configurable HTML banner replacing the footer. | String | - |
-
-In case the email channel is enabled the following properties need to be provided:
-
-| Property | Description | Type | Default value |
-| --- | --- | --- | --- |
-| `validator.mailFrom` | The FROM address to use. | String | - |
-| `validator.mailAuthEnable` | Whether authentication is needed. | Boolean | `false` |
-| `validator.mailAuthUsername` | The username to authenticate with. | String | - |
-| `validator.mailAuthPassword` | The password to authenticate with. | String | - |
-| `validator.mailOutboundHost` | The SMTP server's host to send emails with. | String | - |
-| `validator.mailOutboundPort` | The SMTP server's port to send emails with. | Integer | - |
-| `validator.mailOutboundSSLEnable` | Whether SSL is needed to connect to the SMTP server. | Boolean | `false` |
-| `validator.mailInboundHost` | The server's host name to read emails from. | String | - |
-| `validator.mailInboundPort` | The server's port to read emails from. | String | - |
-| `validator.mailInboundSSLEnable` | Whether SSL is needed to connect to the inbound service. | Boolean | `false` |
-| `validator.mailInboundFolder` | The folder to read emails from. | String | `INBOX` |
-
-To override labels on the web UI you can use the following properties:
-
-| Property | Description | Type | Default value |
-| --- | --- | --- | --- |
-| `validator.uploadTitle` | Title for the validator web form. | String | `Validator` |
-| `validator.reportTitle` | The title for the produced validation report. | String | `Validation report` |
-| `validator.label.resultSectionTitle` | Label | String | `Validation result`
-| `validator.label.fileInputLabel` | Label | String | `File to validate`
-| `validator.label.fileInputPlaceholder` | Label | String | `Select file...`
-| `validator.label.typeLabel` | Label | String | `Validate as`
-| `validator.label.uploadButton` | Label | String | `Upload`
-| `validator.label.resultSubSectionOverviewTitle` | Label | String | `Overview`
-| `validator.label.resultDateLabel` | Label | String | `Date:`
-| `validator.label.resultFileNameLabel` | Label | String | `File name:`
-| `validator.label.resultResultLabel` | Label | String | `Result:`
-| `validator.label.resultErrorsLabel` | Label | String | `Errors:`
-| `validator.label.resultWarningsLabel` | Label | String | `Warnings:`
-| `validator.label.resultMessagesLabel` | Label | String | `Messages:`
-| `validator.label.viewAnnotatedInputButton` | Label | String | `View annotated input`
-| `validator.label.downloadXMLReportButton` | Label | String | `Download XML report`
-| `validator.label.downloadPDFReportButton` | Label | String | `Download PDF report`
-| `validator.label.resultSubSectionDetailsTitle` | Label | String | `Details`
-| `validator.label.resultTestLabel` | Label | String | `Test:`
-| `validator.label.popupTitle` | Label | String | `XML content`
-| `validator.label.popupCloseButton` | Label | String | `Close`
-| `validator.label.resultValidationTypeLabel` | Label | String | `Validation type:`
 
 # Plugin development
 
-The XML validator supports custom plugins to extend the validation report. Plugins are implementations of the GITB validation service API for which the following
+The XML validator supports custom plugins to extend the validation report. Plugins are implementations of the
+[GITB validation service API](https://www.itb.ec.europa.eu/docs/services/latest/validation/) for which the following
 applies. Note that plugin JAR files need to be built as "all-in-one" JARs.
 
 ## Input to plugins
@@ -248,4 +127,34 @@ The XML validator calls plugins in sequence passing in the following input:
 ## Output from plugins
 
 The output of plugins is essentially a GITB `ValidationResponse` that wraps a `TAR` instance. The report items within this `TAR` instance are merged
-with any reports produced by XSD and Schematron validation.
+with any reports produced by XML Schema and Schematron validation.
+
+## Plugin configuration
+
+Plugin configuration for a validator instance is part of its [domain configuration](https://www.itb.ec.europa.eu/docs/guides/latest/validatingXML/index.html#domain-level-configuration).
+Once you have your plugins implemented you can configure them using the `validator.defaultPlugins`
+and `validator.plugins` properties where you list each plugin by providing:
+
+* The path to its JAR file.
+* The fully qualified class name of the plugin entry point.
+
+# Licence
+
+This software is shared using the [European Union Public Licence (EUPL) version 1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12).
+
+# Legal notice
+
+The authors of this library waive any and all liability linked to its usage or the interpretation of results produced
+by its downstream validators.
+
+# Contact
+
+For feedback or questions regarding this library you are invited to post issues in the current repository. In addition,
+feel free to contact the Test Bed team via email at [DIGIT-ITB@ec.europa.eu](mailto:DIGIT-ITB@ec.europa.eu).
+
+# See also
+
+The Test Bed provides similar validators for other content types. Check these out for more information:
+* The **RDF validator**: see [overview](https://joinup.ec.europa.eu/collection/interoperability-test-bed-repository/solution/rdf-validator), [source](https://github.com/ISAITB/shacl-validator), [detailed guide](https://www.itb.ec.europa.eu/docs/guides/latest/validatingRDF/) and [Docker Hub image](https://hub.docker.com/r/isaitb/shacl-validator).
+* The **JSON validator**: see [overview](https://joinup.ec.europa.eu/collection/interoperability-test-bed-repository/solution/json-validator), [source](https://github.com/ISAITB/json-validator), [detailed guide](https://www.itb.ec.europa.eu/docs/guides/latest/validatingJSON/) and [Docker Hub image](https://hub.docker.com/r/isaitb/json-validator).
+* The **CSV validator**: see [overview](https://joinup.ec.europa.eu/collection/interoperability-test-bed-repository/solution/csv-validator), [source](https://github.com/ISAITB/csv-validator), [detailed guide](https://www.itb.ec.europa.eu/docs/guides/latest/validatingCSV/) and [Docker Hub image](https://hub.docker.com/r/isaitb/csv-validator).

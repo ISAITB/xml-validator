@@ -1,7 +1,7 @@
 ![BuildStatus](https://github.com/ISAITB/xml-validator/actions/workflows/main.yml/badge.svg)
 [![licence](https://img.shields.io/github/license/ISAITB/xml-validator.svg?color=blue)](https://github.com/ISAITB/xml-validator/blob/master/LICENCE.txt)
 [![docs](https://img.shields.io/static/v1?label=docs&message=Test%20Bed%20guides&color=blue)](https://www.itb.ec.europa.eu/docs/guides/latest/validatingXML/)
-[![docker](https://img.shields.io/docker/pulls/isaitb/xmlvalidator?color=blue&logo=docker&logoColor=white)](https://hub.docker.com/r/isaitb/xml-validator)
+[![docker](https://img.shields.io/docker/pulls/isaitb/xml-validator?color=blue&logo=docker&logoColor=white)](https://hub.docker.com/r/isaitb/xml-validator)
 
 # XML validator
 

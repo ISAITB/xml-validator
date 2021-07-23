@@ -5,7 +5,24 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>eu.europa.ec.itb.xml</groupId>
     <artifactId>xmlvalidator</artifactId>
+    <packaging>pom</packaging>
     <version>1.1.0-SNAPSHOT</version>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Web and command-line application for the validation of XML data.</description>
+    <licenses>
+        <license>
+            <name>European Union Public Licence (EUPL) Version 1.2</name>
+            <url>https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>European Commission, DIGIT, ISA2 Unit</name>
+            <email>DIGIT-ITB@ec.europa.eu</email>
+            <organization>European Commission</organization>
+            <organizationUrl>https://ec.europa.eu/isa2/</organizationUrl>
+        </developer>
+    </developers>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -45,8 +62,6 @@
         <version.commonsBeanutils>1.9.4</version.commonsBeanutils>
         <version.aspectjWeaver>1.9.6</version.aspectjWeaver>
     </properties>
-    <packaging>pom</packaging>
-
     <repositories>
         <repository>
             <id>central</id>
@@ -107,6 +122,14 @@
                 <artifactId>validation-commons-war</artifactId>
                 <version>${version.itbCommons}</version>
             </dependency>
+            <dependency>
+                <groupId>eu.europa.ec.itb.commons</groupId>
+                <artifactId>validation-commons</artifactId>
+                <version>${version.itbCommons}</version>
+                <type>test-jar</type>
+                <classifier>tests</classifier>
+                <scope>test</scope>
+            </dependency>
             <!-- Spring Boot starters -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -143,6 +166,12 @@
     			<artifactId>spring-boot-starter-aop</artifactId>
     			<version>${version.springBoot}</version>
     		</dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <scope>test</scope>
+                <version>${version.springBoot}</version>
+            </dependency>
             <!-- Other -->
             <dependency>
                 <groupId>xerces</groupId>
@@ -240,6 +269,15 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.2.0</version>
                 <configuration>
@@ -274,6 +312,25 @@
                     </rules>
                     <fail>true</fail>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.7</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -10,9 +10,25 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Component to facilitate the validation and preparation of inputs.
+ */
 @Component
 public class InputHelper extends BaseInputHelper<FileManager, DomainConfig, ApplicationConfig> {
 
+    /**
+     * Validate, store and return the user-provided validation artifacts.
+     *
+     * @param domainConfig The domain configuration.
+     * @param validateRequest The input parameters.
+     * @param artifactContainerInputName The input name for a user-provided artifact.
+     * @param artifactContentInputName The input name for the artifact's content.
+     * @param artifactEmbeddingMethodInputName The input name for the embedding method of the artifact's content.
+     * @param validationType The validation type.
+     * @param artifactType The expected artifact type.
+     * @param parentFolder The temp folder to use for storage.
+     * @return The list of user-provided artifacts to consider.
+     */
     public List<FileInfo> validateExternalArtifacts(DomainConfig domainConfig, ValidateRequest validateRequest, String artifactContainerInputName, String artifactContentInputName, String artifactEmbeddingMethodInputName, String validationType, String artifactType, File parentFolder) {
         List<FileInfo> artifactContents = super.validateExternalArtifacts(domainConfig, validateRequest, artifactContainerInputName, artifactContentInputName, artifactEmbeddingMethodInputName, validationType, artifactType, parentFolder);
         List<FileInfo> artifactsToReturn = new ArrayList<>();
@@ -40,6 +56,12 @@ public class InputHelper extends BaseInputHelper<FileManager, DomainConfig, Appl
         return artifactsToReturn;
     }
 
+    /**
+     * Validate the provided folder as a root folder resulting from ZIP extraction.
+     *
+     * @param rootFolder The folder to check.
+     * @return True if there is a single root file defined.
+     */
     public boolean validateSchemaZip(File rootFolder) {
         int iRootFiles = 0;
         //1 file as root, other files in a folder.

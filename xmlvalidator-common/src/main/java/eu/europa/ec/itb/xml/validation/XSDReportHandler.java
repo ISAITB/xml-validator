@@ -11,7 +11,7 @@ import org.xml.sax.SAXParseException;
 import javax.xml.bind.JAXBElement;
 
 /**
- * Created by simatosc on 07/03/2016.
+ * Class to handle the generation of a XSD validation report as a TAR report.
  */
 public class XSDReportHandler implements ErrorHandler {
 
@@ -21,6 +21,9 @@ public class XSDReportHandler implements ErrorHandler {
     private final TAR report;
     private final ObjectFactory objectFactory;
 
+    /**
+     * Constructor.
+     */
     public XSDReportHandler() {
         objectFactory = new ObjectFactory();
         report = new TAR();
@@ -29,6 +32,12 @@ public class XSDReportHandler implements ErrorHandler {
         report.setDate(Utils.getXMLGregorianCalendarDateTime());
     }
 
+    /**
+     * @see ErrorHandler#warning(SAXParseException)
+     *
+     * @param exception The parse exception.
+     * @throws SAXException If a parsing error occurs.
+     */
     @Override
     public void warning(SAXParseException exception) throws SAXException {
         if (logger.isDebugEnabled()) {
@@ -42,6 +51,12 @@ public class XSDReportHandler implements ErrorHandler {
         report.getReports().getInfoOrWarningOrError().add(element);
     }
 
+    /**
+     * @see ErrorHandler#error(SAXParseException)
+     *
+     * @param exception The parse exception.
+     * @throws SAXException If a parsing error occurs.
+     */
     @Override
     public void error(SAXParseException exception) throws SAXException {
         if (logger.isDebugEnabled()) {
@@ -56,6 +71,12 @@ public class XSDReportHandler implements ErrorHandler {
         report.getReports().getInfoOrWarningOrError().add(element);
     }
 
+    /**
+     * @see ErrorHandler#fatalError(SAXParseException)
+     *
+     * @param exception The parse exception.
+     * @throws SAXException If a parsing error occurs.
+     */
     @Override
     public void fatalError(SAXParseException exception) throws SAXException {
         if (logger.isDebugEnabled()) {
@@ -70,6 +91,11 @@ public class XSDReportHandler implements ErrorHandler {
         report.getReports().getInfoOrWarningOrError().add(element);
     }
 
+    /**
+     * Return the TAR report.
+     *
+     * @return The report.
+     */
     public TAR createReport() {
         return report;
     }

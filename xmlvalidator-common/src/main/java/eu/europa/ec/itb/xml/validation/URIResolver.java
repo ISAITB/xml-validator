@@ -19,6 +19,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 
+/**
+ * URI resolver to lookup references resources from the local file system during Schematron processing.
+ */
 @Component
 @Scope("prototype")
 public class URIResolver implements javax.xml.transform.URIResolver {
@@ -28,15 +31,27 @@ public class URIResolver implements javax.xml.transform.URIResolver {
     private final String validationType;
     private final File schematronFile;
 
+    @Autowired
+    ApplicationConfig config;
+
+    /**
+     * Constructor.
+     *
+     * @param validationType The current validation type.
+     * @param schematronFile The root Schematron file.
+     * @param domainConfig The domain configuration.
+     */
     public URIResolver(String validationType, File schematronFile, DomainConfig domainConfig) {
         this.validationType = validationType;
         this.schematronFile = schematronFile;
         this.domainConfig = domainConfig;
     }
 
-    @Autowired
-    ApplicationConfig config;
-
+    /**
+     * Get the root Schematron file.
+     *
+     * @return The root file.
+     */
     private File getBaseFile() {
         File baseFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronInfo(validationType).getLocalPath()).toFile();
         if (baseFile.exists()) {
@@ -51,6 +66,14 @@ public class URIResolver implements javax.xml.transform.URIResolver {
         }
     }
 
+    /**
+     * @see URIResolver#resolve(String, String)
+     *
+     * @param href The href value.
+     * @param base The base.
+     * @return The loaded resource.
+     * @throws TransformerException If an error occurs.
+     */
     @Override
     public Source resolve(String href, String base) throws TransformerException {
         if (StringUtils.isBlank(base) && StringUtils.isBlank(href)) {

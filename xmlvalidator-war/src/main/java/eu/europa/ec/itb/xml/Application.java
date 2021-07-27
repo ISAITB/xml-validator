@@ -7,7 +7,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Created by simatosc on 25/02/2016.
+ * Entry point to bootstrap the application.
  */
 @SpringBootApplication
 @EnableScheduling
@@ -15,6 +15,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAspectJAutoProxy
 public class Application  {
 
+    /**
+     * Main method.
+     *
+     * @param args The command line arguments.
+     */
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }

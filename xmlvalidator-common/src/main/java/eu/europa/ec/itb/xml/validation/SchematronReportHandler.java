@@ -27,7 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created by simatosc on 26/02/2016.
+ * Class to handle the generation of a Schematron validation report as a TAR report.
  */
 public class SchematronReportHandler {
 
@@ -44,6 +44,17 @@ public class SchematronReportHandler {
     private final TAR report;
     private final ObjectFactory objectFactory = new ObjectFactory();
 
+    /**
+     * Constructor.
+     *
+     * @param xmlContentForReport The XML content to include in the TAR report.
+     * @param sch The Schematron node.
+     * @param node The Schematron document.
+     * @param svrl The raw Schamtron output.
+     * @param convertXPathExpressions True if XPath expressions should be converted between SCH and XSLT.
+     * @param includeTest True if the test per report item should be included.
+     * @param reportsOrdered True is reports should be ordered based on severity.
+     */
     public SchematronReportHandler(String xmlContentForReport, Node sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered) {
         this.node = node;
         this.svrlReport = svrl;
@@ -66,6 +77,11 @@ public class SchematronReportHandler {
         this.reportsOrdered = reportsOrdered;
     }
 
+    /**
+     * Get or initialise the namespace content to be used for namespace resolution during parsing.
+     *
+     * @return The context.
+     */
     private NamespaceContext getNamespaceContext() {
         if (namespaceContext == null) {
             namespaceContext = new DocumentNamespaceContext(node, false);
@@ -73,6 +89,13 @@ public class SchematronReportHandler {
         return namespaceContext;
     }
 
+    /**
+     * Return the overall report result from the recorded messages.
+     *
+     * @param messages The messages to check.
+     * @param <T> The class of report message.
+     * @return The overall validation result.
+     */
     private <T extends AbstractSVRLMessage> TestResultType getErrorLevel(List<T> messages) {
         for (AbstractSVRLMessage item: messages) {
             if (item.getFlag() != null) {
@@ -85,6 +108,11 @@ public class SchematronReportHandler {
         return TestResultType.SUCCESS;
     }
 
+    /**
+     * Create the TAR report based on the provided input.
+     *
+     * @return The TAR report.
+     */
     public TAR createReport() {
         if (this.svrlReport != null) {
             List<SVRLFailedAssert> error = SVRLHelper.getAllFailedAssertions(this.svrlReport);
@@ -116,6 +144,14 @@ public class SchematronReportHandler {
         return this.report;
     }
 
+    /**
+     * Convert the Schematron SVRL messages to report items to include in the TAR report.
+     *
+     * @param svrlMessages The SVRL messages.
+     * @param failure Whether the validation is overall a failure.
+     * @param <T> The SVRL message type.
+     * @return The items for the TAR report.
+     */
     private <T extends AbstractSVRLMessage> List<JAXBElement<TestAssertionReportType>> traverseSVRLMessages(List<T> svrlMessages, boolean failure) {
         ArrayList reports = new ArrayList();
         JAXBElement element;
@@ -125,7 +161,7 @@ public class SchematronReportHandler {
             if (message.getText() != null) {
                 error.setDescription(message.getText().trim());
             }
-            error.setLocation(ValidationConstants.INPUT_XML+":" + this.getLineNumbeFromXPath(message.getLocation()) + ":0");
+            error.setLocation(ValidationConstants.INPUT_XML+":" + this.getLineNumberFromXPath(message.getLocation()) + ":0");
             if (message.getTest() != null && includeTest) {
                 error.setTest(message.getTest().trim());
             }
@@ -143,11 +179,22 @@ public class SchematronReportHandler {
         return reports;
     }
 
+    /**
+     * Construct the specific XPath factory to use (force it to be a Saxon implementation).
+     *
+     * @return The factory.
+     */
     private XPathFactory getXPathFactory() {
         return new net.sf.saxon.xpath.XPathFactoryImpl();
     }
 
-    private String getLineNumbeFromXPath(String xpathExpression) {
+    /**
+     * Extract the line number corresponding to the input XML node referred to by this XPath expression.
+     *
+     * @param xpathExpression The expression.
+     * @return The line number.
+     */
+    private String getLineNumberFromXPath(String xpathExpression) {
         String xpathExpressionConverted = convertToXPathExpression(xpathExpression);
         XPath xPath = getXPathFactory().newXPath();
         xPath.setNamespaceContext(getNamespaceContext());
@@ -161,17 +208,20 @@ public class SchematronReportHandler {
         }
     }
 
+    /**
+     * Convert the expression to ensure it is correct. This is because Schematron reports arrays as 0-based whereas xpath
+     * has 1-based arrays. This is used to increment each array index by one.
+     *
+     * @param xpathExpression The Schematron expression.
+     * @return The expression to use via normal XPath lookup.
+     */
     private String convertToXPathExpression(String xpathExpression) {
-        /*
-        Schematron reports arrays as 0-based whereas xpath has 1-based arrays.
-        This is used to increment each array index by one.
-         */
         if (isXPathConversionNeeded()) {
             try {
-                StringBuffer s = new StringBuffer();
+                StringBuilder s = new StringBuilder();
                 Matcher m = ARRAY_PATTERN.matcher(xpathExpression);
                 while (m.find()) {
-                    m.appendReplacement(s, "["+String.valueOf(1 + Integer.parseInt(m.group(0).substring(1, m.group(0).length()-1)))+"]");
+                    m.appendReplacement(s, "["+ (1 + Integer.parseInt(m.group(0).substring(1, m.group(0).length() - 1))) +"]");
                 }
                 m.appendTail(s);
                 if (documentHasDefaultNamespace(node)) {
@@ -196,10 +246,21 @@ public class SchematronReportHandler {
         }
     }
 
+    /**
+     * Check to see if XPath expressions need to be converted (which is the case for raw Schematron output).
+     *
+     * @return True if yes.
+     */
     private boolean isXPathConversionNeeded() {
         return convertXPathExpressions;
     }
 
+    /**
+     * Check to see if the provided document has a default namespace definition.
+     *
+     * @param node The document to check.
+     * @return The check result.
+     */
     private boolean documentHasDefaultNamespace(Document node) {
         if (hasDefaultNamespace == null) {
             NamedNodeMap attributes = node.getFirstChild().getAttributes();
@@ -214,11 +275,23 @@ public class SchematronReportHandler {
                 hasDefaultNamespace = Boolean.FALSE;
             }
         }
-        return hasDefaultNamespace.booleanValue();
+        return hasDefaultNamespace;
     }
 
+    /**
+     * Comparator for TAR report items to allow their sorting.
+     */
     private static class ReportItemComparator implements Comparator<JAXBElement<TestAssertionReportType>> {
 
+        /**
+         * @see Comparator#compare(Object, Object)
+         *
+         * Errors come before warnings which come before information messages.
+         *
+         * @param o1 Object 1.
+         * @param o2 Object 2.
+         * @return The compare result.
+         */
         @Override
         public int compare(JAXBElement<TestAssertionReportType> o1, JAXBElement<TestAssertionReportType> o2) {
             if (o1 == null && o2 == null) {

@@ -14,6 +14,9 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Component used to preprocess validation artifacts using XSLT transformations.
+ */
 @Component
 public class XSLTPreprocessor implements ArtifactPreprocessor {
 
@@ -24,6 +27,14 @@ public class XSLTPreprocessor implements ArtifactPreprocessor {
 
     private ConcurrentHashMap<String, Templates> templateCache = new ConcurrentHashMap<>();
 
+    /**
+     * @see ArtifactPreprocessor#preprocessFile(File, File, String)
+     *
+     * @param fileToProcess The file to process.
+     * @param preProcessorFile The XSLT file to use.
+     * @param outputFileExtension The file extension to set.
+     * @return The resulting processed file.
+     */
     @Override
     public File preprocessFile(File fileToProcess, File preProcessorFile, String outputFileExtension) {
         Source inputSource = new StreamSource(fileToProcess);
@@ -37,6 +48,13 @@ public class XSLTPreprocessor implements ArtifactPreprocessor {
         return outputFile;
     }
 
+    /**
+     * Create an XSLT transformer for the provided XSLT file.
+     *
+     * @param xsltFile The XSLT file to consider.
+     * @return The transformer to use.
+     * @throws TransformerConfigurationException If an error occurs.
+     */
     private Transformer getTransformer(File xsltFile) throws TransformerConfigurationException {
         String fullPath = xsltFile.getAbsolutePath();
         Templates template = templateCache.get(fullPath);

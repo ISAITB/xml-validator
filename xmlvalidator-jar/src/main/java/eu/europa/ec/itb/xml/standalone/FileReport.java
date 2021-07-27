@@ -2,6 +2,9 @@ package eu.europa.ec.itb.xml.standalone;
 
 import com.gitb.tr.TAR;
 
+/**
+ * Class used to summarise a TAR validation report.
+ */
 public class FileReport {
 
     private final String fileName;
@@ -9,10 +12,24 @@ public class FileReport {
     private final boolean requireType;
     private final String validationType;
 
+    /**
+     * Constructor.
+     *
+     * @param fileName The report file name.
+     * @param report The report contents.
+     */
     public FileReport(String fileName, TAR report) {
         this(fileName, report, false, null);
     }
 
+    /**
+     * Constructor.
+     *
+     * @param fileName The report file name.
+     * @param report The report contents.
+     * @param requireType True to include the validation type in messages.
+     * @param type The validation type.
+     */
     public FileReport(String fileName, TAR report, boolean requireType, String type) {
         this.fileName = fileName;
         this.report = report;
@@ -20,6 +37,11 @@ public class FileReport {
         this.validationType = type;
     }
 
+    /**
+     * Convert the provided report to a command-line message.
+     *
+     * @return The text.
+     */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

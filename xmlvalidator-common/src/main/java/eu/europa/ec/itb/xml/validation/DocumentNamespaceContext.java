@@ -9,24 +9,22 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * Implementation based on source found here: http://www.ibm.com/developerworks/library/x-nmspccontext/
+ * A namespace context to lookup and map namespaces based on prefix and URI.
  *
- * Created by simatosc on 09/08/2016.
+ * Implementation based on source found here: http://www.ibm.com/developerworks/library/x-nmspccontext/
  */
 public class DocumentNamespaceContext implements NamespaceContext {
 
     public static final String DEFAULT_NS = "default";
-    private Map<String, String> prefix2Uri = new HashMap<>();
-    private Map<String, String> uri2Prefix = new HashMap<>();
+    private final Map<String, String> prefix2Uri = new HashMap<>();
+    private final Map<String, String> uri2Prefix = new HashMap<>();
 
     /**
      * This constructor parses the document and stores all namespaces it can
      * find. If toplevelOnly is true, only namespaces in the root are used.
      *
-     * @param document
-     *            source document
-     * @param toplevelOnly
-     *            restriction of the search to enhance performance
+     * @param document Source document.
+     * @param toplevelOnly Restriction of the search to enhance performance.
      */
     public DocumentNamespaceContext(Document document, boolean toplevelOnly) {
         examineNode(document.getFirstChild(), toplevelOnly);
@@ -35,10 +33,8 @@ public class DocumentNamespaceContext implements NamespaceContext {
     /**
      * A single node is read, the namespace attributes are extracted and stored.
      *
-     * @param node
-     *            to examine
-     * @param attributesOnly,
-     *            if true no recursion happens
+     * @param node To examine.
+     * @param attributesOnly If true no recursion happens.
      */
     private void examineNode(Node node, boolean attributesOnly) {
         NamedNodeMap attributes = node.getAttributes();
@@ -57,11 +53,9 @@ public class DocumentNamespaceContext implements NamespaceContext {
     }
 
     /**
-     * This method looks at an attribute and stores it, if it is a namespace
-     * attribute.
+     * This method looks at an attribute and stores it, if it is a namespace attribute.
      *
-     * @param attribute
-     *            to examine
+     * @param attribute To examine.
      */
     private void storeAttribute(Attr attribute) {
         // examine the attributes in namespace xmlns
@@ -80,18 +74,22 @@ public class DocumentNamespaceContext implements NamespaceContext {
         }
     }
 
+    /**
+     * Cache a prefix-URI mapping.
+     *
+     * @param prefix The prefix.
+     * @param uri The URI.
+     */
     private void putInCache(String prefix, String uri) {
         prefix2Uri.put(prefix, uri);
         uri2Prefix.put(uri, prefix);
     }
 
     /**
-     * This method is called by XPath. It returns the default namespace, if the
-     * prefix is null or "".
+     * This method is called by XPath. It returns the default namespace, if the prefix is null or "".
      *
-     * @param prefix
-     *            to search for
-     * @return uri
+     * @param prefix To search for.
+     * @return uri The URI.
      */
     public String getNamespaceURI(String prefix) {
         if (prefix == null || prefix.equals(XMLConstants.DEFAULT_NS_PREFIX) || prefix.equals(DEFAULT_NS)) {
@@ -102,13 +100,21 @@ public class DocumentNamespaceContext implements NamespaceContext {
     }
 
     /**
-     * This method is not needed in this context, but can be implemented in a
-     * similar way.
+     * This method is not needed in this context, but can be implemented in a similar way.
+     *
+     * @param namespaceURI To search for.
+     * @return The prefix.
      */
     public String getPrefix(String namespaceURI) {
         return uri2Prefix.get(namespaceURI);
     }
 
+    /**
+     * Iterate prefixes (not implemented).
+     *
+     * @param namespaceURI The URI.
+     * @return Always null.
+     */
     public Iterator getPrefixes(String namespaceURI) {
         // Not implemented
         return null;

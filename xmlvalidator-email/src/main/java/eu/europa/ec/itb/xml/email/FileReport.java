@@ -3,7 +3,7 @@ package eu.europa.ec.itb.xml.email;
 import com.gitb.tr.TAR;
 
 /**
- * Created by simatosc on 12/08/2016.
+ * Class used to summarise a TAR validation report.
  */
 public class FileReport {
 
@@ -12,10 +12,24 @@ public class FileReport {
     private final boolean xmlReportSaved;
     private final boolean pdfReportSaved;
 
+    /**
+     * Constructor.
+     *
+     * @param fileName The filename to quote.
+     * @param report The TAR report.
+     */
     public FileReport(String fileName, TAR report) {
         this(fileName, report, true, true);
     }
 
+    /**
+     * Constructor.
+     *
+     * @param fileName The filename to quote.
+     * @param report The TAR report.
+     * @param xmlReportSaved True if the XML report was generated.
+     * @param pdfReportSaved True if the PDF report was generated.
+     */
     public FileReport(String fileName, TAR report, boolean xmlReportSaved, boolean pdfReportSaved) {
         this.fileName = fileName;
         this.report = report;
@@ -23,22 +37,39 @@ public class FileReport {
         this.pdfReportSaved = pdfReportSaved;
     }
 
+    /**
+     * @return The file name.
+     */
     public String getFileName() {
         return fileName;
     }
 
+    /**
+     * @return The wrapped report.
+     */
     public TAR getReport() {
         return report;
     }
 
+    /**
+     * @return The name of the XML report file.
+     */
     public String getReportXmlFileName() {
         return fileName.substring(0, fileName.lastIndexOf('.'))+".report.xml";
     }
 
+    /**
+     * @return The name of the PDF report file.
+     */
     public String getReportPdfFileName() {
         return fileName.substring(0, fileName.lastIndexOf('.'))+".report.pdf";
     }
 
+    /**
+     * Convert the provided report to a message for inclusion in email responses.
+     *
+     * @return The text.
+     */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

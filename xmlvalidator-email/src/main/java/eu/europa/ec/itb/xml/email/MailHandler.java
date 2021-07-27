@@ -32,14 +32,14 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Created by simatosc on 16/03/2016.
+ * Component for the triggering of validation based on received emails.
  */
 @Component
 public class MailHandler {
 
-    private static Logger logger = LoggerFactory.getLogger(MailHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(MailHandler.class);
 
-    private Map<String, JavaMailSender> mailSenders = new ConcurrentHashMap<>();
+    private final Map<String, JavaMailSender> mailSenders = new ConcurrentHashMap<>();
 
     @Autowired
     FileManager fileManager;
@@ -52,9 +52,11 @@ public class MailHandler {
     @Autowired
     ApplicationConfig appConfig;
 
+    /**
+     * Initialize email-specific configuration.
+     */
     @PostConstruct
     public void init() {
-        // Initialize email-specific configuration.
         for (DomainConfig domainConfig: domainConfigCache.getAllDomainConfigurations()) {
             if (domainConfig.getChannels().contains(ValidatorChannel.EMAIL)) {
                 mailSenders.put(domainConfig.getDomain(), createJavaMailSender(domainConfig));
@@ -66,6 +68,12 @@ public class MailHandler {
         }
     }
 
+    /**
+     * Create an email sender using the current configuration properties.
+     *
+     * @param domainConfig The domain configuration.
+     * @return The sender.
+     */
     private JavaMailSender createJavaMailSender(DomainConfig domainConfig) {
         JavaMailSenderImpl impl = new JavaMailSenderImpl();
         impl.setHost(domainConfig.getMailOutboundHost());
@@ -83,7 +91,11 @@ public class MailHandler {
         return impl;
     }
 
-
+    /**
+     * Check for new emails.
+     *
+     * This method can be triggered manually but is otherwise fired at fixed intervals.
+     */
     @Scheduled(fixedDelayString = "${validator.mailPollingRate}")
     public void receiveEmail() {
         for (DomainConfig config: domainConfigCache.getAllDomainConfigurations()) {
@@ -200,13 +212,19 @@ public class MailHandler {
         }
     }
 
+    /**
+     * Get the validation type to considered based on the provided attachment name.
+     *
+     * The validation type is determined from the file name's prefix. The format of the filename is
+     * as follows: [VALIDATION_TYPE].[NAME].[EXT]
+     * If wanting to target validation type "abc" the file name would e.g. be "abc.originalName.xml".
+     * If there is only one type of validation supported then the prefix can be omitted.
+     *
+     * @param fileName The name of the attachment to validate.
+     * @param domainConfig The domain configuration.
+     * @return The validation type.
+     */
     private String getValidationType(String fileName, DomainConfig domainConfig) {
-        /*
-         The invoice type is determined from the file name's prefix. The format of the filename
-         is as follows: [VALIDATION_TYPE].[NAME].[EXT]
-         If wanting to target invoice type "abc" the file name would e.g. be "abc.originalName.xml".
-         If there is only one type of invoice supported then the prefix can be omitted.
-         */
         String validationType;
         if (domainConfig.hasMultipleValidationTypes()) {
             String prefix = fileName.substring(0, fileName.indexOf('.'));
@@ -221,6 +239,15 @@ public class MailHandler {
         return validationType;
     }
 
+    /**
+     * Send the email response with the produced validation reports as attachments.
+     *
+     * @param inputMessage The message content.
+     * @param reports The validation reports to include.
+     * @param messageAdditionalText The additional text to add to the email's body.
+     * @param domainConfig The domain configuration.
+     * @throws MessagingException If an error occurs while sending the response.
+     */
     public void sendEmail(Message inputMessage, Collection<FileReport> reports, String messageAdditionalText, DomainConfig domainConfig) throws MessagingException {
         JavaMailSender mailSender = mailSenders.get(domainConfig.getDomain());
         MimeMessage message = mailSender.createMimeMessage();
@@ -240,7 +267,7 @@ public class MailHandler {
                 fileManager.saveReport(report.getReport(), fileID, domainConfig);
                 helper.addAttachment(report.getReportXmlFileName(), fileController.getReportXml(domainConfig.getDomainName(), fileID));
                 helper.addAttachment(report.getReportPdfFileName(), fileController.getReportPdf(domainConfig.getDomainName(), fileID));
-                sb.append(report.toString()).append("\n\n");
+                sb.append(report).append("\n\n");
             }
             helper.setText(sb.toString());
             mailSender.send(message);
@@ -252,6 +279,13 @@ public class MailHandler {
         idsToDelete.parallelStream().forEach(id -> fileController.deleteReport(domainConfig.getDomainName(), id));
     }
 
+    /**
+     * Check to see if the provided attachment is of acceptable type for processing.
+     *
+     * @param is The attachment's input stream.
+     * @return The check result.
+     * @throws IOException If an error occurs during the check.
+     */
     boolean checkFileType(InputStream is) throws IOException {
         Tika tika = new Tika();
         String type = tika.detect(is);

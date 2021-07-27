@@ -22,10 +22,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
@@ -52,11 +50,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Created by simatosc on 26/02/2016.
+ * Component used to validate XML against XML Schema and Schematron files.
  */
 @Component
 @Scope("prototype")
-public class XMLValidator implements ApplicationContextAware {
+public class XMLValidator {
 
     private static final Logger logger = LoggerFactory.getLogger(XMLValidator.class);
 
@@ -66,15 +64,25 @@ public class XMLValidator implements ApplicationContextAware {
     private PluginManager pluginManager;
     @Autowired
     private DomainPluginConfigProvider pluginConfigProvider;
+    @Autowired
+    private ApplicationContext ctx;
 
     private final File inputToValidate;
-    private ApplicationContext ctx;
     private final DomainConfig domainConfig;
     private String validationType;
     private final ObjectFactory gitbTRObjectFactory = new ObjectFactory();
     private final List<FileInfo> externalSchema;
     private final List<FileInfo> externalSch;
 
+    /**
+     * Constructor.
+     *
+     * @param inputToValidate The input content to validate.
+     * @param validationType The validation type.
+     * @param externalSchema User-provided XSDs.
+     * @param externalSch User-provided Schematron files.
+     * @param domainConfig The domain configuration.
+     */
     public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig) {
         this.inputToValidate = inputToValidate;
         this.validationType = validationType;
@@ -86,6 +94,11 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
+    /**
+     * Open a stream to read the input content.
+     *
+     * @return The stream to read.
+     */
     private InputStream getInputStreamForValidation() {
         try {
             return Files.newInputStream(inputToValidate.toPath());
@@ -94,22 +107,45 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
+    /**
+     * Create an XSD resolver.
+     *
+     * @param xsdExternalPath The string absolute file system path to the location where externally loaded XSDs are placed.
+     * @return The resolver.
+     */
     private LSResourceResolver getXSDResolver(String xsdExternalPath) {
         return ctx.getBean(XSDFileResolver.class, validationType, domainConfig, xsdExternalPath);
     }
 
+    /**
+     * Create a URI resolver for Schematron files.
+     *
+     * @param schematronFile The Schematron file.
+     * @return The resolver.
+     */
     private javax.xml.transform.URIResolver getURIResolver(File schematronFile) {
         return ctx.getBean(URIResolver.class, validationType, schematronFile, domainConfig);
     }
 
+    /**
+     * @return The current domain identifier.
+     */
     public String getDomain(){
         return this.domainConfig.getDomain();
     }
 
+    /**
+     * @return The current validation type.
+     */
     public String getValidationType(){
         return this.validationType;
     }
 
+    /**
+     * Validate the input against the configured and provided XSDs.
+     *
+     * @return The TAR validation report.
+     */
     private TAR validateAgainstSchema() {
         List<FileInfo> schemaFiles = fileManager.getPreconfiguredValidationArtifacts(domainConfig, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA);
         schemaFiles.addAll(externalSchema);
@@ -129,6 +165,14 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
+    /**
+     * Validate the input against a single XSD.
+     *
+     * @param inputSource The input to validate.
+     * @param schemaFile The XSD to use.
+     *
+     * @return The TAR validation report.
+     */
     private TAR validateSchema(InputStream inputSource, File schemaFile) {
         // Create error handler.
         XSDReportHandler handler = new XSDReportHandler();
@@ -162,6 +206,11 @@ public class XMLValidator implements ApplicationContextAware {
         return report;
     }
 
+    /**
+     * Create an empty TAR report.
+     *
+     * @return The report.
+     */
     private TAR createEmptyReport() {
         TAR report = new TAR();
         report.setReports(new TestAssertionGroupReportsType());
@@ -169,6 +218,11 @@ public class XMLValidator implements ApplicationContextAware {
         return report;
     }
 
+    /**
+     * Create a basic error TAR report for a core XML parsing problem.
+     *
+     * @return The TAR report.
+     */
     private TAR createFailureReport() {
         TAR report = new TAR();
         report.setReports(new TestAssertionGroupReportsType());
@@ -181,6 +235,11 @@ public class XMLValidator implements ApplicationContextAware {
         return report;
     }
 
+    /**
+     * Complete the metadata of the provided report.
+     *
+     * @param report The report to complete.
+     */
     private void completeReport(TAR report) {
         if (report != null) {
             if (report.getDate() == null) {
@@ -222,6 +281,11 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
+    /**
+     * Validate the input against the configured and provided Schematron files.
+     *
+     * @return The TAR validation report.
+     */
     private TAR validateAgainstSchematron() {
         List<TAR> reports = new ArrayList<>();
         List<FileInfo> schematronFiles = fileManager.getPreconfiguredValidationArtifacts(domainConfig, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON);
@@ -241,6 +305,12 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
+    /**
+     * Log the validation output (if at debug level).
+     *
+     * @param report The report.
+     * @param name The input file name.
+     */
     private void logReport(TAR report, String name) {
         if (logger.isDebugEnabled()) {
             StringBuilder logOutput = new StringBuilder();
@@ -261,7 +331,12 @@ public class XMLValidator implements ApplicationContextAware {
         }
     }
 
-
+    /**
+     * Validate the input XML against all configured and provided XSDs, Schematron files as well as custom
+     * validator plugins.
+     *
+     * @return The TAR validation report.
+     */
     public TAR validateAll() {
         TAR overallResult;
         try {
@@ -292,6 +367,11 @@ public class XMLValidator implements ApplicationContextAware {
         return overallResult;
     }
 
+    /**
+     * Validate the input against any configured custom plugins.
+     *
+     * @return The plugin validation report.
+     */
     private TAR validateAgainstPlugins() {
         TAR pluginReport = null;
         ValidationPlugin[] plugins = pluginManager.getPlugins(pluginConfigProvider.getPluginClassifier(domainConfig, validationType));
@@ -320,6 +400,12 @@ public class XMLValidator implements ApplicationContextAware {
         return pluginReport;
     }
 
+    /**
+     * Prepare the input to provide for plugin validation.
+     *
+     * @param pluginTmpFolder A temporary folder to be used by the plugins for processing.
+     * @return The request to pass to each plugin.
+     */
     private ValidateRequest preparePluginInput(File pluginTmpFolder) {
         File pluginInputFile = new File(pluginTmpFolder, UUID.randomUUID().toString()+".xml");
         try {
@@ -335,6 +421,13 @@ public class XMLValidator implements ApplicationContextAware {
         return request;
     }
 
+    /**
+     * Validate the XML input against a single Schematron file.
+     *
+     * @param inputSource The input to validate.
+     * @param schematronFile The Schematron file.
+     * @return The validation report.
+     */
     private TAR validateSchematron(InputStream inputSource, File schematronFile) {
         Document schematronInput;
         SchematronOutputType svrlOutput;
@@ -376,8 +469,4 @@ public class XMLValidator implements ApplicationContextAware {
         return handler.createReport();
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext ctx) throws BeansException {
-        this.ctx = ctx;
-    }
 }

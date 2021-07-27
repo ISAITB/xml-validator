@@ -7,7 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Created by simatosc on 16/03/2016.
+ * REST controller used to trigger the checking of emails.
  */
 @RestController
 @Profile("email")
@@ -19,6 +19,11 @@ public class EmailController {
     @Autowired
     ApplicationConfig config;
 
+    /**
+     * Check for new emails.
+     *
+     * @return A confirmation text.
+     */
     @RequestMapping(value = "/email/read", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody
     public String readEmail() {

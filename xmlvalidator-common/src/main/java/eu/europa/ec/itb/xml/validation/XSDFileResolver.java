@@ -18,7 +18,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 
 /**
- * Created by simatosc on 07/03/2016.
+ * URI resolver for XSDs looking up resources from the local file system.
  */
 @Component
 @Scope("prototype")
@@ -33,15 +33,32 @@ public class XSDFileResolver implements LSResourceResolver {
     private final String validationType;
     private final String xsdExternalPath;
 
+    @Autowired
+    ApplicationConfig config;
+
+    /**
+     * Constructor.
+     *
+     * @param validationType The validation type.
+     * @param domainConfig The domain configuration.
+     * @param xsdExternalPath The path used to store externally loaded XSDs.
+     */
     public XSDFileResolver(String validationType, DomainConfig domainConfig, String xsdExternalPath) {
         this.validationType = validationType;
         this.domainConfig = domainConfig;
         this.xsdExternalPath = xsdExternalPath;
     }
 
-    @Autowired
-    ApplicationConfig config;
-
+    /**
+     * @see LSResourceResolver#resolveResource(String, String, String, String, String)
+     *
+     * @param type The resource type.
+     * @param namespaceURI The URI.
+     * @param publicId The public ID.
+     * @param systemId The system ID.
+     * @param baseURI The base URI.
+     * @return The resolved resource.
+     */
     @Override
     public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {
         File baseURIFile;
@@ -97,13 +114,26 @@ public class XSDFileResolver implements LSResourceResolver {
         }
     }
 
+    /**
+     * Resolved resource wrapper.
+     *
+     * @see LSInput
+     */
     public static class LSInputImpl implements LSInput {
 
         private String baseURI;
         private String publicId;
         private String systemId;
-        private Reader characterStream;
+        private final Reader characterStream;
 
+        /**
+         * Constructor.
+         *
+         * @param publicId The resource's public ID.
+         * @param systemId The resource's system ID.
+         * @param baseURI The resource's base URI.
+         * @param characterStream The stream to read the resource from.
+         */
         public LSInputImpl(String publicId, String systemId, String baseURI, Reader characterStream) {
             this.publicId = publicId;
             this.systemId = systemId;
@@ -111,77 +141,155 @@ public class XSDFileResolver implements LSResourceResolver {
             this.characterStream = characterStream;
         }
 
+        /**
+         * @see LSInput#getCharacterStream()
+         */
         @Override
         public Reader getCharacterStream() {
             return characterStream;
         }
 
+        /**
+         * @see LSInput#setCharacterStream(Reader)
+         *
+         * Does nothing.
+         */
         @Override
         public void setCharacterStream(Reader characterStream) {
         }
 
+        /**
+         * @see LSInput#getByteStream()
+         *
+         * @return Always null.
+         */
         @Override
         public InputStream getByteStream() {
             return null;
         }
 
+        /**
+         * @see LSInput#setByteStream(InputStream)
+         *
+         * Does nothing.
+         */
         @Override
         public void setByteStream(InputStream byteStream) {
         }
 
+        /**
+         * @see LSInput#getStringData()
+         *
+         * @return Always null.
+         */
         @Override
         public String getStringData() {
             return null;
         }
 
+        /**
+         * @see LSInput#setStringData(String)
+         *
+         * Does notning.
+         */
         @Override
         public void setStringData(String stringData) {
         }
 
+        /**
+         * @see LSInput#getSystemId()
+         *
+         * @return The system ID.
+         */
         @Override
         public String getSystemId() {
             return systemId;
         }
 
+        /**
+         * @see LSInput#setSystemId(String) (String)
+         *
+         * @param systemId The system ID.
+         */
         @Override
         public void setSystemId(String systemId) {
             this.systemId = systemId;
         }
 
+        /**
+         * @see LSInput#getPublicId()
+         *
+         * @return The public ID.
+         */
         @Override
         public String getPublicId() {
             return publicId;
         }
 
+        /**
+         * @see LSInput#setPublicId(String) (String)
+         *
+         * @param publicId The public ID.
+         */
         @Override
         public void setPublicId(String publicId) {
             this.publicId = publicId;
         }
 
+        /**
+         * @see LSInput#getBaseURI()
+         *
+         * @return The base URI.
+         */
         @Override
         public String getBaseURI() {
             return baseURI;
         }
 
+        /**
+         * @see LSInput#setBaseURI(String)
+         *
+         * @param baseURI The base URI.
+         */
         @Override
         public void setBaseURI(String baseURI) {
             this.baseURI = baseURI;
         }
 
+        /**
+         * @see LSInput#getEncoding()
+         *
+         * @return Always null.
+         */
         @Override
         public String getEncoding() {
             return null;
         }
 
+        /**
+         * @see LSInput#setEncoding(String)
+         *
+         * Does notning.
+         */
         @Override
         public void setEncoding(String encoding) {
         }
 
+        /**
+         * @see LSInput#getCertifiedText()
+         *
+         * @return False.
+         */
         @Override
         public boolean getCertifiedText() {
             return false;
         }
 
+        /**
+         * @see LSInput#setCertifiedText(boolean)
+         *
+         * Does notning.
+         */
         @Override
         public void setCertifiedText(boolean certifiedText) {
         }

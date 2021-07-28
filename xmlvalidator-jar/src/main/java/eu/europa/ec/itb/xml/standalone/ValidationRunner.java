@@ -8,22 +8,15 @@ import eu.europa.ec.itb.validation.commons.jar.FileReport;
 import eu.europa.ec.itb.validation.commons.jar.ValidationInput;
 import eu.europa.ec.itb.validation.commons.report.ReportGeneratorBean;
 import eu.europa.ec.itb.xml.DomainConfig;
-import eu.europa.ec.itb.xml.DomainConfigCache;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,7 +28,7 @@ import java.util.List;
  */
 @Component
 @Scope("prototype")
-public class ValidationRunner extends BaseValidationRunner<ValidationInput, DomainConfig> {
+public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
 
     private static final String FLAG__NO_REPORTS = "-noreports";
     private static final String FLAG__VALIDATION_TYPE = "-type";

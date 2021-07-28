@@ -124,6 +124,11 @@
             </dependency>
             <dependency>
                 <groupId>eu.europa.ec.itb.commons</groupId>
+                <artifactId>validation-commons-jar</artifactId>
+                <version>${version.itbCommons}</version>
+            </dependency>
+            <dependency>
+                <groupId>eu.europa.ec.itb.commons</groupId>
                 <artifactId>validation-commons</artifactId>
                 <version>${version.itbCommons}</version>
                 <type>test-jar</type>

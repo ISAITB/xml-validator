@@ -13,7 +13,6 @@ import java.util.Set;
 @ConfigurationProperties("validator")
 public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.config.ApplicationConfig {
 
-    private boolean standalone = false;
     private String inputFilePrefix = "ITB-";
     private String reportFilePrefix = "TAR-";
     private Set<String> acceptedMimeTypes;
@@ -78,20 +77,6 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
      */
     public void setAcceptedMimeTypes(Set<String> acceptedMimeTypes) {
         this.acceptedMimeTypes = acceptedMimeTypes;
-    }
-
-    /**
-     * @return True if the validator is running as a command-line application.
-     */
-    public boolean isStandalone() {
-        return standalone;
-    }
-
-    /**
-     * @param standalone True if the validator is running as a command-line application.
-     */
-    public void setStandalone(boolean standalone) {
-        this.standalone = standalone;
     }
 
     /**

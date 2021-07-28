@@ -49,6 +49,10 @@
             <artifactId>validation-commons-report</artifactId>
         </dependency>
         <dependency>
+            <groupId>eu.europa.ec.itb.commons</groupId>
+            <artifactId>validation-commons-jar</artifactId>
+        </dependency>
+        <dependency>
             <groupId>eu.europa.ec.itb</groupId>
             <artifactId>gitb-types</artifactId>
         </dependency>

@@ -48,7 +48,7 @@
         <version.commonsIo>2.7</version.commonsIo>
         <version.jaxb>2.3.1</version.jaxb>
         <version.commonsLang>3.10</version.commonsLang>
-        <version.gitbTypes>1.10.0</version.gitbTypes>
+        <version.gitbTypes>1.14.0</version.gitbTypes>
         <version.xerces>2.12.1</version.xerces>
         <version.saxon>10.3</version.saxon>
         <version.tika>1.24.1</version.tika>

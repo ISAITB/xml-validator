@@ -257,6 +257,7 @@ public class XMLValidator {
                 input.setValue(inputXML);
                 input.setName(ValidationConstants.INPUT_XML);
                 input.setEmbeddingMethod(ValueEmbeddingEnumeration.STRING);
+                input.setMimeType("application/xml");
                 report.getContext().getItem().add(input);
             }
             if (report.getCounters() == null) {

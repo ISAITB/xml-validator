@@ -31,7 +31,6 @@ import org.w3c.dom.ls.LSResourceResolver;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBElement;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -207,9 +206,6 @@ public class XMLValidator {
             throw new IllegalStateException(e);
         }
         // Validate XML content against given XSD schema.
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setSchema(schema);
         Validator validator = schema.newValidator();
         validator.setErrorHandler(handler);
         TAR report;

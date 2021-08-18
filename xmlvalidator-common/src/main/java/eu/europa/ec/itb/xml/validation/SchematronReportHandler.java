@@ -36,7 +36,9 @@ public class SchematronReportHandler {
     private static final Logger logger = LoggerFactory.getLogger(SchematronReportHandler.class);
     private final Document node;
     private final SchematronOutputType svrlReport;
+    private final boolean locationAsPath;
     private NamespaceContext namespaceContext;
+    private XPathFactory xpathFactory;
     private Boolean hasDefaultNamespace;
     private final boolean convertXPathExpressions;
     private final boolean includeTest;
@@ -47,15 +49,15 @@ public class SchematronReportHandler {
     /**
      * Constructor.
      *
-     * @param xmlContentForReport The XML content to include in the TAR report.
-     * @param sch The Schematron node.
      * @param node The Schematron document.
      * @param svrl The raw Schamtron output.
      * @param convertXPathExpressions True if XPath expressions should be converted between SCH and XSLT.
      * @param includeTest True if the test per report item should be included.
      * @param reportsOrdered True is reports should be ordered based on severity.
+     * @param locationAsPath True if report item locations should be XPath expressions. If not the line numbers will be
+     *                       calculated and recorded instead.
      */
-    public SchematronReportHandler(String xmlContentForReport, Node sch, Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered) {
+    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered, boolean locationAsPath) {
         this.node = node;
         this.svrlReport = svrl;
         report = new TAR();
@@ -63,18 +65,10 @@ public class SchematronReportHandler {
         report.setDate(Utils.getXMLGregorianCalendarDateTime());
         this.report.setName("Schematron Validation");
         this.report.setReports(new TestAssertionGroupReportsType());
-        AnyContent attachment = new AnyContent();
-        attachment.setType("map");
-        AnyContent xmlAttachment = new AnyContent();
-        xmlAttachment.setName("XML");
-        xmlAttachment.setType("object");
-        xmlAttachment.setEmbeddingMethod(ValueEmbeddingEnumeration.STRING);
-        xmlAttachment.setValue(xmlContentForReport);
-        attachment.getItem().add(xmlAttachment);
-        this.report.setContext(attachment);
         this.convertXPathExpressions = convertXPathExpressions;
         this.includeTest = includeTest;
         this.reportsOrdered = reportsOrdered;
+        this.locationAsPath = locationAsPath;
     }
 
     /**
@@ -153,15 +147,21 @@ public class SchematronReportHandler {
      * @return The items for the TAR report.
      */
     private <T extends AbstractSVRLMessage> List<JAXBElement<TestAssertionReportType>> traverseSVRLMessages(List<T> svrlMessages, boolean failure) {
-        ArrayList reports = new ArrayList();
-        JAXBElement element;
-        for(Iterator var4 = svrlMessages.iterator(); var4.hasNext(); reports.add(element)) {
-            AbstractSVRLMessage message = (AbstractSVRLMessage)var4.next();
+        ArrayList<JAXBElement<TestAssertionReportType>> reports = new ArrayList<>();
+        JAXBElement<TestAssertionReportType> element;
+        for(Iterator<T> var4 = svrlMessages.iterator(); var4.hasNext(); reports.add(element)) {
+            AbstractSVRLMessage message = var4.next();
             BAR error = new BAR();
             if (message.getText() != null) {
                 error.setDescription(message.getText().trim());
             }
-            error.setLocation(ValidationConstants.INPUT_XML+":" + this.getLineNumberFromXPath(message.getLocation()) + ":0");
+            if (message.getLocation() != null && !message.getLocation().isBlank()) {
+                if (locationAsPath) {
+                    error.setLocation(convertToXPathExpression(message.getLocation(), false));
+                } else {
+                    error.setLocation(ValidationConstants.INPUT_XML+":" + this.getLineNumberFromXPath(message.getLocation()) + ":0");
+                }
+            }
             if (message.getTest() != null && includeTest) {
                 error.setTest(message.getTest().trim());
             }
@@ -185,7 +185,10 @@ public class SchematronReportHandler {
      * @return The factory.
      */
     private XPathFactory getXPathFactory() {
-        return new net.sf.saxon.xpath.XPathFactoryImpl();
+        if (xpathFactory == null) {
+            xpathFactory = new net.sf.saxon.xpath.XPathFactoryImpl();
+        }
+        return xpathFactory;
     }
 
     /**
@@ -195,7 +198,7 @@ public class SchematronReportHandler {
      * @return The line number.
      */
     private String getLineNumberFromXPath(String xpathExpression) {
-        String xpathExpressionConverted = convertToXPathExpression(xpathExpression);
+        String xpathExpressionConverted = convertToXPathExpression(xpathExpression, true);
         XPath xPath = getXPathFactory().newXPath();
         xPath.setNamespaceContext(getNamespaceContext());
         Node node;
@@ -213,9 +216,10 @@ public class SchematronReportHandler {
      * has 1-based arrays. This is used to increment each array index by one.
      *
      * @param xpathExpression The Schematron expression.
+     * @param addDefaultNamespace True if the defaull namespace prefix should be added to elements.
      * @return The expression to use via normal XPath lookup.
      */
-    private String convertToXPathExpression(String xpathExpression) {
+    private String convertToXPathExpression(String xpathExpression, boolean addDefaultNamespace) {
         if (isXPathConversionNeeded()) {
             try {
                 StringBuilder s = new StringBuilder();
@@ -224,7 +228,7 @@ public class SchematronReportHandler {
                     m.appendReplacement(s, "["+ (1 + Integer.parseInt(m.group(0).substring(1, m.group(0).length() - 1))) +"]");
                 }
                 m.appendTail(s);
-                if (documentHasDefaultNamespace(node)) {
+                if (addDefaultNamespace && documentHasDefaultNamespace(node)) {
                     m = DEFAULTNS_PATTERN.matcher(s.toString());
                     s.delete(0, s.length());
                     while (m.find()) {

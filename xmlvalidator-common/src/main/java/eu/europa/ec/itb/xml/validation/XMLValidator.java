@@ -18,7 +18,6 @@ import eu.europa.ec.itb.validation.plugin.ValidationPlugin;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.util.FileManager;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +72,8 @@ public class XMLValidator {
     private final ObjectFactory gitbTRObjectFactory = new ObjectFactory();
     private final List<FileInfo> externalSchema;
     private final List<FileInfo> externalSch;
+    private final boolean locationAsPath;
+    private final boolean addInputToReport;
 
     /**
      * Constructor.
@@ -84,11 +85,29 @@ public class XMLValidator {
      * @param domainConfig The domain configuration.
      */
     public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig) {
+        this(inputToValidate, validationType, externalSchema, externalSch, domainConfig, false, true);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param inputToValidate The input content to validate.
+     * @param validationType The validation type.
+     * @param externalSchema User-provided XSDs.
+     * @param externalSch User-provided Schematron files.
+     * @param domainConfig The domain configuration.
+     * @param locationAsPath True if report item locations should be XPath expressions. If not the line numbers will be
+     *                       calculated and recorded instead.
+     * @param addInputToReport True if the provided input should be added as context to the produced TAR report.
+     */
+    public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig, boolean locationAsPath, boolean addInputToReport) {
         this.inputToValidate = inputToValidate;
         this.validationType = validationType;
         this.domainConfig = domainConfig;
         this.externalSchema = externalSchema;
         this.externalSch = externalSch;
+        this.locationAsPath = locationAsPath;
+        this.addInputToReport = addInputToReport;
         if (validationType == null) {
             this.validationType = domainConfig.getType().get(0);
         }
@@ -245,7 +264,7 @@ public class XMLValidator {
             if (report.getDate() == null) {
                 report.setDate(Utils.getXMLGregorianCalendarDateTime());
             }
-            if (report.getContext() == null) {
+            if (addInputToReport && report.getContext() == null) {
                 report.setContext(new AnyContent());
                 String inputXML;
                 try {
@@ -408,7 +427,7 @@ public class XMLValidator {
      * @return The request to pass to each plugin.
      */
     private ValidateRequest preparePluginInput(File pluginTmpFolder) {
-        File pluginInputFile = new File(pluginTmpFolder, UUID.randomUUID().toString()+".xml");
+        File pluginInputFile = new File(pluginTmpFolder, UUID.randomUUID() +".xml");
         try {
             FileUtils.copyFile(inputToValidate, pluginInputFile);
         } catch (IOException e) {
@@ -459,14 +478,7 @@ public class XMLValidator {
         } catch (Exception e) {
             throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
         }
-        //handle validation report
-        String xmlContent;
-        try (InputStream in = getInputStreamForValidation()) {
-            xmlContent = IOUtils.toString(in, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to read input file", e);
-        }
-        SchematronReportHandler handler = new SchematronReportHandler(xmlContent, Utils.emptyDocument(), schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered());
+        SchematronReportHandler handler = new SchematronReportHandler(schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered(), locationAsPath);
         return handler.createReport();
     }
 

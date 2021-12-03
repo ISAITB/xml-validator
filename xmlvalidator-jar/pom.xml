@@ -27,10 +27,10 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <copy file="${basedir}/../xmlvalidator-resources/target/${validatorBuild.resourceJar}.jar"
                                       tofile="${basedir}/target/classes/${validatorBuild.resourceJar}.jar" />
-                            </tasks>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>

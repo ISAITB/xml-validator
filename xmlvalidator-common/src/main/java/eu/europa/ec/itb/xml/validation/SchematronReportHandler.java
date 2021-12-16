@@ -9,6 +9,7 @@ import com.helger.schematron.svrl.SVRLFailedAssert;
 import com.helger.schematron.svrl.SVRLHelper;
 import com.helger.schematron.svrl.SVRLSuccessfulReport;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
+import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ public class SchematronReportHandler {
     private final Document node;
     private final SchematronOutputType svrlReport;
     private final boolean locationAsPath;
+    private final LocalisationHelper localiser;
     private NamespaceContext namespaceContext;
     private XPathFactory xpathFactory;
     private Boolean hasDefaultNamespace;
@@ -56,8 +58,9 @@ public class SchematronReportHandler {
      * @param reportsOrdered True is reports should be ordered based on severity.
      * @param locationAsPath True if report item locations should be XPath expressions. If not the line numbers will be
      *                       calculated and recorded instead.
+     * @param localiser Helper class for translations.
      */
-    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered, boolean locationAsPath) {
+    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered, boolean locationAsPath, LocalisationHelper localiser) {
         this.node = node;
         this.svrlReport = svrl;
         report = new TAR();
@@ -69,6 +72,7 @@ public class SchematronReportHandler {
         this.includeTest = includeTest;
         this.reportsOrdered = reportsOrdered;
         this.locationAsPath = locationAsPath;
+        this.localiser = localiser;
     }
 
     /**
@@ -127,7 +131,7 @@ public class SchematronReportHandler {
         } else {
             this.report.setResult(TestResultType.FAILURE);
             BAR error1 = new BAR();
-            error1.setDescription("An error occurred when generating Schematron output due to a problem in given XML content.");
+            error1.setDescription(localiser.localise("validator.label.exception.errorWithSchematronDueToProblemInXML"));
             error1.setLocation(ValidationConstants.INPUT_XML+":1:0");
             JAXBElement element1 = this.objectFactory.createTestAssertionGroupReportsTypeError(error1);
             this.report.getReports().getInfoOrWarningOrError().add(element1);

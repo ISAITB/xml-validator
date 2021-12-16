@@ -146,7 +146,7 @@ public class MailHandler {
                                                     String validationType = getValidationType(part.getFileName(), config);
                                                     logger.info("Processing file ["+part.getFileName()+"] of ["+message.getSubject()+"] for ["+validationType+"]");
                                                     try (InputStream is = part.getInputStream()) {
-                                                        XMLValidator validator = beans.getBean(XMLValidator.class, is, validationType, config);
+                                                        XMLValidator validator = beans.getBean(XMLValidator.class, is, validationType, config, new LocalisationHelper(config, Locale.ENGLISH));
                                                         TAR report = validator.validateAll();
                                                         reports.add(new FileReport(part.getFileName(), report));
                                                         logger.info("Processed message ["+message.getSubject()+"], file ["+part.getFileName()+"]");

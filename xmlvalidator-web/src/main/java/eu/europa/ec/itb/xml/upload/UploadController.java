@@ -75,6 +75,7 @@ public class UploadController {
      * @param domain The domain name.
      * @param model The UI model.
      * @param request The received request.
+     * @param response The HTTP response.
      * @return The model and view information.
      */
     @RequestMapping(method = RequestMethod.GET, value = "/{domain}/upload")
@@ -113,6 +114,7 @@ public class UploadController {
      * @param externalSchUri The user-provided Schematron files (those provided as URIs).
      * @param redirectAttributes Redirect attributes.
      * @param request The received request.
+     * @param response The HTTP response.
      * @return The model and view information.
      */
     @RequestMapping(method = RequestMethod.POST, value = "/{domain}/upload")
@@ -184,7 +186,7 @@ public class UploadController {
                         proceedToValidate = false;
                     }
                     if (proceedToValidate) {
-                        XMLValidator validator = beans.getBean(XMLValidator.class, inputFile, validationType, externalSchemaIS, externalSchIS, config);
+                        XMLValidator validator = beans.getBean(XMLValidator.class, inputFile, validationType, externalSchemaIS, externalSchIS, config, localisationHelper);
                         TAR report = validator.validateAll();
                         attributes.put("report", report);
                         attributes.put("date", report.getDate().toString());
@@ -232,6 +234,7 @@ public class UploadController {
      * @param domain The domain name.
      * @param model The UI model.
      * @param request The received request.
+     * @param response The HTTP response.
      * @return The model and view information.
      */
     @RequestMapping(method = RequestMethod.GET, value = "/{domain}/uploadm")
@@ -278,6 +281,7 @@ public class UploadController {
      * @param externalSchUri The user-provided Schematron files (those provided as URIs).
      * @param redirectAttributes Redirect attributes.
      * @param request The received request.
+     * @param response The HTTP response.
      * @return The model and view information.
      */
     @RequestMapping(method = RequestMethod.POST, value = "/{domain}/uploadm")

@@ -3,6 +3,7 @@ package eu.europa.ec.itb.xml;
 import com.gitb.vs.ValidateRequest;
 import eu.europa.ec.itb.validation.commons.BaseInputHelper;
 import eu.europa.ec.itb.validation.commons.FileInfo;
+import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.xml.util.FileManager;
 import org.springframework.stereotype.Component;
 
@@ -48,7 +49,7 @@ public class InputHelper extends BaseInputHelper<FileManager, DomainConfig, Appl
                     if (proceed) {
                         artifactsToReturn.addAll(fileManager.getLocalValidationArtifacts(rootFile, DomainConfig.ARTIFACT_TYPE_SCHEMA));
                     } else {
-                        throw new IllegalStateException("An error occurred during the validation of the external XSD ZIP File: XSD configuration needs to include a single XSD at its root (and any folders with sub-folders and other imported XSDs).");
+                        throw new ValidatorException("validator.label.exception.errorDuringExternalXSDValidation");
                     }
                 }
             }

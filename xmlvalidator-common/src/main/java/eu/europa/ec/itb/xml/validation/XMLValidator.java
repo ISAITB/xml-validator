@@ -11,6 +11,7 @@ import com.helger.schematron.svrl.SVRLMarshaller;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.validation.commons.FileInfo;
+import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
 import eu.europa.ec.itb.validation.plugin.PluginManager;
@@ -67,6 +68,7 @@ public class XMLValidator {
 
     private final File inputToValidate;
     private final DomainConfig domainConfig;
+    private final LocalisationHelper localiser;
     private String validationType;
     private final ObjectFactory gitbTRObjectFactory = new ObjectFactory();
     private final List<FileInfo> externalSchema;
@@ -82,9 +84,10 @@ public class XMLValidator {
      * @param externalSchema User-provided XSDs.
      * @param externalSch User-provided Schematron files.
      * @param domainConfig The domain configuration.
+     * @param localiser Helper class for translations.
      */
-    public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig) {
-        this(inputToValidate, validationType, externalSchema, externalSch, domainConfig, false, true);
+    public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig, LocalisationHelper localiser) {
+        this(inputToValidate, validationType, externalSchema, externalSch, domainConfig, false, true, localiser);
     }
 
     /**
@@ -98,8 +101,9 @@ public class XMLValidator {
      * @param locationAsPath True if report item locations should be XPath expressions. If not the line numbers will be
      *                       calculated and recorded instead.
      * @param addInputToReport True if the provided input should be added as context to the produced TAR report.
+     * @param localiser Helper class for translations.
      */
-    public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig, boolean locationAsPath, boolean addInputToReport) {
+    public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig, boolean locationAsPath, boolean addInputToReport, LocalisationHelper localiser) {
         this.inputToValidate = inputToValidate;
         this.validationType = validationType;
         this.domainConfig = domainConfig;
@@ -107,6 +111,7 @@ public class XMLValidator {
         this.externalSch = externalSch;
         this.locationAsPath = locationAsPath;
         this.addInputToReport = addInputToReport;
+        this.localiser = localiser;
         if (validationType == null) {
             this.validationType = domainConfig.getType().get(0);
         }
@@ -243,7 +248,7 @@ public class XMLValidator {
         report.setReports(new TestAssertionGroupReportsType());
         report.setResult(TestResultType.FAILURE);
         BAR error1 = new BAR();
-        error1.setDescription("An error occurred due to a problem in given XML content.");
+        error1.setDescription(localiser.localise("validator.label.exception.errorDueToProblemInXML"));
         error1.setLocation("XML:1:0");
         JAXBElement element1 = this.gitbTRObjectFactory.createTestAssertionGroupReportsTypeError(error1);
         report.getReports().getInfoOrWarningOrError().add(element1);
@@ -474,7 +479,7 @@ public class XMLValidator {
         } catch (Exception e) {
             throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
         }
-        SchematronReportHandler handler = new SchematronReportHandler(schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered(), locationAsPath);
+        SchematronReportHandler handler = new SchematronReportHandler(schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered(), locationAsPath, localiser);
         return handler.createReport();
     }
 

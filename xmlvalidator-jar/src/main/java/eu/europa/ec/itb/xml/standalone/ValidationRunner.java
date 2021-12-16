@@ -142,7 +142,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
             for (ValidationInput input: inputs) {
                 LOGGER_FEEDBACK.info(String.format("\nValidating %s of %s ...", i + 1, inputs.size()));
                 try {
-                    XMLValidator validator = ctx.getBean(XMLValidator.class, input.getInputFile(), validationType, externalXsdInfo, externalSchInfo, domainConfig);
+                    XMLValidator validator = ctx.getBean(XMLValidator.class, input.getInputFile(), validationType, externalXsdInfo, externalSchInfo, domainConfig, new LocalisationHelper(domainConfig, Locale.ENGLISH));
                     TAR report = validator.validateAll();
                     if (report == null) {
                         summary.append("\nNo validation report was produced.\n");

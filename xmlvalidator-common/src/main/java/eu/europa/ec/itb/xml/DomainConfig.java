@@ -8,7 +8,7 @@ import eu.europa.ec.itb.validation.commons.config.WebDomainConfig;
 /**
  * The configuration for a specific validation domain.
  */
-public class DomainConfig extends WebDomainConfig<DomainConfig.LabelConfig> {
+public class DomainConfig extends WebDomainConfig {
 
     public static final String ARTIFACT_TYPE_SCHEMA = "schema";
     public static final String ARTIFACT_TYPE_SCHEMATRON = "schematron";
@@ -51,15 +51,6 @@ public class DomainConfig extends WebDomainConfig<DomainConfig.LabelConfig> {
         return false;
     }
 
-    /**
-     * Create a new and empty label configuration object.
-     *
-     * @return The object.
-     */
-    @Override
-    protected LabelConfig newLabelConfig() {
-        return new LabelConfig();
-    }
 
     /**
      * Get the configuration information for XSDs for the provided validation type.
@@ -269,72 +260,4 @@ public class DomainConfig extends WebDomainConfig<DomainConfig.LabelConfig> {
     public void setMailInboundFolder(String mailInboundFolder) {
         this.mailInboundFolder = mailInboundFolder;
     }
-
-    /**
-     * Label configuration class.
-     */
-	public static class LabelConfig extends eu.europa.ec.itb.validation.commons.config.LabelConfig {
-
-        private String externalSchemaLabel;
-        private String externalSchematronLabel;
-        private String externalSchemaPlaceholder;
-        private String externalSchematronPlaceholder;
-
-        /**
-         * @return Label for user-provided XSDs.
-         */
-		public String getExternalSchemaLabel() {
-			return externalSchemaLabel;
-		}
-
-        /**
-         * @param externalSchemaLabel Label for user-provided XSDs.
-         */
-		public void setExternalSchemaLabel(String externalSchemaLabel) {
-			this.externalSchemaLabel = externalSchemaLabel;
-		}
-
-        /**
-         * @return Label for user-provided Schematron files.
-         */
-		public String getExternalSchematronLabel() {
-			return externalSchematronLabel;
-		}
-
-        /**
-         * @param externalSchematronLabel Label for user-provided Schematron files.
-         */
-		public void setExternalSchematronLabel(String externalSchematronLabel) {
-			this.externalSchematronLabel = externalSchematronLabel;
-		}
-
-        /**
-         * @return Placeholder text for user-provided XSD files.
-         */
-        public String getExternalSchemaPlaceholder() {
-            return externalSchemaPlaceholder;
-        }
-
-        /**
-         * @param externalSchemaPlaceholder Placeholder text for user-provided XSD files.
-         */
-        public void setExternalSchemaPlaceholder(String externalSchemaPlaceholder) {
-            this.externalSchemaPlaceholder = externalSchemaPlaceholder;
-        }
-
-        /**
-         * @return Placeholder text for user-provided Schematron files.
-         */
-        public String getExternalSchematronPlaceholder() {
-            return externalSchematronPlaceholder;
-        }
-
-        /**
-         * @param externalSchematronPlaceholder Placeholder text for user-provided Schematron files.
-         */
-        public void setExternalSchematronPlaceholder(String externalSchematronPlaceholder) {
-            this.externalSchematronPlaceholder = externalSchematronPlaceholder;
-        }
-    }
-
 }

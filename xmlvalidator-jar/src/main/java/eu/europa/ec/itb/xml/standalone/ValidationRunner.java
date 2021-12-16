@@ -2,6 +2,7 @@ package eu.europa.ec.itb.xml.standalone;
 
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.validation.commons.FileInfo;
+import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.validation.commons.jar.BaseValidationRunner;
 import eu.europa.ec.itb.validation.commons.jar.FileReport;
@@ -22,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Component that handles the actual triggering of validation and resulting reporting.
@@ -58,13 +60,13 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
             try {
                 fileToUse = fileManager.getFileFromURL(parentFolder, contentPath);
             } catch (IOException e) {
-                throw new IllegalArgumentException("Unable to read file from URL ["+contentPath+"]");
+                throw new ValidatorException("validator.label.exception.unableToReadFileFromURL", e, contentPath);
             }
         } else {
             // Value is a local file. Copy this in the tmp folder as we may later be changing it (e.g. encoding updates).
             Path inputFile = Paths.get(contentPath);
             if (!Files.exists(inputFile) || !Files.isRegularFile(inputFile) || !Files.isReadable(inputFile)) {
-                throw new IllegalArgumentException("Unable to read file ["+contentPath+"]");
+                throw new ValidatorException("validator.label.exception.unableToReadFile", contentPath);
             }
             Path finalInputFile = Paths.get(parentFolder.getAbsolutePath(), inputFile.getFileName().toString());
             Files.createDirectories(finalInputFile.getParent());
@@ -96,7 +98,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                 } else if (FLAG__VALIDATION_TYPE.equalsIgnoreCase(args[i])) {
                     validationType = argumentAsString(args, i);
                     if (validationType != null && !domainConfig.getType().contains(validationType)) {
-                        throw new IllegalArgumentException("Unknown validation type. One of [" + String.join("|", domainConfig.getType()) + "] is needed.");
+                        throw new ValidatorException("validator.label.exception.unknownValidationType", String.join("|", domainConfig.getType()));
                     }
                 } else if (FLAG__INPUT.equalsIgnoreCase(args[i])) {
                     if (args.length > i + 1) {
@@ -116,14 +118,14 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
             }
             if (validationType == null) {
                 if (typeRequired) {
-                    throw new IllegalArgumentException("Validation type is required. One of [" + String.join("|", domainConfig.getType()) + "] needs tp be provided.");
+                    throw new ValidatorException("validator.label.exception.requiredValidationType", String.join("|", domainConfig.getType()));
                 } else {
                     validationType = domainConfig.getType().get(0);
                 }
             }
-        } catch (IllegalArgumentException| ValidatorException e) {
-            LOGGER_FEEDBACK.info("\nInvalid arguments provided: "+e.getMessage()+"\n");
-            LOGGER.error("Invalid arguments provided: "+e.getMessage(), e);
+        } catch (ValidatorException e) {
+            LOGGER_FEEDBACK.info("\nInvalid arguments provided: "+e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))+"\n");
+            LOGGER.error("Invalid arguments provided: "+e.getMessageForLog(), e);
             inputs.clear();
         } catch (Exception e) {
             LOGGER_FEEDBACK.info("\nAn error occurred while processing the provided arguments.\n");
@@ -155,12 +157,15 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                             // Create XML report
                             fileManager.saveReport(report, xmlReportFile, domainConfig);
                             FileReport reportData = new FileReport(input.getFileName(), report, typeRequired, validationType);
-                            summary.append("\n").append(reportData.toString()).append("\n");
+                            summary.append("\n").append(reportData).append("\n");
                             if (itemCount <= domainConfig.getMaximumReportsForDetailedOutput()) {
                                 // Create PDF report
                                 File pdfReportFile = new File(xmlReportFile.getParentFile(), "report."+i+".pdf");
                                 Files.deleteIfExists(pdfReportFile.toPath());
-                                reportGenerator.writeReport(domainConfig, xmlReportFile, pdfReportFile);
+                                reportGenerator.writeReport(
+                                        xmlReportFile,
+                                        pdfReportFile,
+                                        (TARReport) -> reportGenerator.getReportLabels(new LocalisationHelper(Locale.ENGLISH), TARReport.getResult()));
                                 summary.append("- Detailed reports in [").append(xmlReportFile.getAbsolutePath()).append("] and [").append(pdfReportFile.getAbsolutePath()).append("] \n");
                             } else if (report.getCounters() != null && (report.getCounters().getNrOfAssertions().longValue() + report.getCounters().getNrOfErrors().longValue() + report.getCounters().getNrOfWarnings().longValue()) <= domainConfig.getMaximumReportsForXmlOutput()) {
                                 summary.append("- Detailed report in [").append(xmlReportFile.getAbsolutePath()).append("] (PDF report skipped due to large number of report items) \n");
@@ -170,8 +175,8 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                         }
                     }
                 } catch (ValidatorException e) {
-                    LOGGER_FEEDBACK.info("\nAn error occurred while executing the validation: "+e.getMessage());
-                    LOGGER.error("An error occurred while executing the validation: "+e.getMessage(), e);
+                    LOGGER_FEEDBACK.info("\nAn error occurred while executing the validation: "+e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH)));
+                    LOGGER.error("An error occurred while executing the validation: "+e.getMessageForLog(), e);
                     break;
 
                 } catch (Exception e) {

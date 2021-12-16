@@ -18,15 +18,15 @@
                 [/]
             [/]
             configure({
-                externalArtifactFileLabel: [[${config.label.optionContentFile}]],
-                externalArtifactURILabel: [[${config.label.optionContentURI}]],
+                externalArtifactFileLabel: [[${localiser.localise('validator.label.optionContentFile')}]],
+                externalArtifactURILabel: [[${localiser.localise('validator.label.optionContentURI')}]],
                 externalArtifactSettings: {
                     schema: {
-                        filePlaceholder: [[${config.label.externalSchemaPlaceholder}]],
+                        filePlaceholder: [[${localiser.localise('validator.label.externalSchemaPlaceholder')}]],
                         maxCount: 1
                     },
                     schematron: {
-                        filePlaceholder: [[${config.label.externalSchematronPlaceholder}]]
+                        filePlaceholder: [[${localiser.localise('validator.label.externalSchematronPlaceholder')}]]
                     }
                 },
                 codeTypeObj: "xml",
@@ -45,9 +45,9 @@
                         <div th:replace="fragments/input :: formHeader(${config}, ${minimalUI})"/>
                         <div th:class="${minimalUI} ? panel-body : ''">
                             <div th:replace="fragments/input :: mainForm(${config})"/>
-                            <div th:replace="fragments/input :: externalArtifactCheck(${config.label.includeExternalArtefacts}, ${config.label.externalArtefactsTooltip})"/>
-                            <div th:replace="fragments/input :: externalArtifactControl('schema', ${config.label.externalSchemaLabel})"/>
-                            <div th:replace="fragments/input :: externalArtifactControl('schematron', ${config.label.externalSchematronLabel})"/>
+                            <div th:replace="fragments/input :: externalArtifactCheck(${localiser.localise('validator.label.includeExternalArtefacts')}, ${localiser.localise('validator.label.externalArtefactsTooltip')})"/>
+                            <div th:replace="fragments/input :: externalArtifactControl('schema', ${localiser.localise('validator.label.externalSchemaLabel')})"/>
+                            <div th:replace="fragments/input :: externalArtifactControl('schematron', ${localiser.localise('validator.label.externalSchematronLabel')})"/>
                             <div th:replace="fragments/input :: submit(${config}, ${minimalUI})"/>
                         </div>
                     </div>
@@ -61,6 +61,7 @@
                 </div>
                 <div th:replace="fragments/output :: reportDetails(${config}, ${minimalUI}, true)"/>
             </div>
+            <div th:replace="fragments/common :: localeSelector(${config}, ${localiser.getLocale()})"/>
             <div th:replace="fragments/common :: footer(${config}, ${minimalUI})"/>
         </div>
         <div th:replace="fragments/common :: about">About</div>

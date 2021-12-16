@@ -1,7 +1,9 @@
 package eu.europa.ec.itb.xml.email;
 
 import com.gitb.tr.TAR;
+import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.ValidatorChannel;
+import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.DomainConfigCache;
@@ -167,6 +169,10 @@ public class MailHandler {
                                         messageAdditionalText.append(msg);
                                         logger.info(msg);
                                     }
+                                } catch (ValidatorException e) {
+                                    // Send error response to sender.
+                                    messageAdditionalText.append("Failed to process message ["+message.getSubject()+"]: "+e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))+"\n");
+                                    e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
                                 } catch (Exception e) {
                                     // Send error response to sender.
                                     messageAdditionalText.append("Failed to process message ["+message.getSubject()+"]: "+e.getMessage()+"\n");
@@ -265,8 +271,8 @@ public class MailHandler {
             for (FileReport report: reports) {
                 String fileID = UUID.randomUUID().toString();
                 fileManager.saveReport(report.getReport(), fileID, domainConfig);
-                helper.addAttachment(report.getReportXmlFileName(), fileController.getReportXml(domainConfig.getDomainName(), fileID));
-                helper.addAttachment(report.getReportPdfFileName(), fileController.getReportPdf(domainConfig.getDomainName(), fileID));
+                helper.addAttachment(report.getReportXmlFileName(), fileController.getReportXml(domainConfig.getDomainName(), fileID, null));
+                helper.addAttachment(report.getReportPdfFileName(), fileController.getReportPdf(domainConfig.getDomainName(), fileID, null, null));
                 sb.append(report).append("\n\n");
             }
             helper.setText(sb.toString());

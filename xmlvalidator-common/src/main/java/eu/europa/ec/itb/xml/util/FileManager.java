@@ -1,8 +1,9 @@
 package eu.europa.ec.itb.xml.util;
 
+import eu.europa.ec.itb.validation.commons.BaseFileManager;
+import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
-import eu.europa.ec.itb.validation.commons.BaseFileManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
@@ -14,8 +15,6 @@ import org.apache.xerces.xs.XSNamespaceItemList;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -242,7 +241,7 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
                         getFileFromURL(rootFolder, currentLocation);
                         documentLocations.add(currentLocation);
                     } catch (IOException e) {
-                        throw new IllegalStateException("Error to loading remote schemas for imports", e);
+                        throw new ValidatorException("validator.label.exception.loadingRemoteSchemas", e);
                     }
                 }
             }

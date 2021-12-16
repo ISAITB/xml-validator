@@ -71,12 +71,6 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         domainConfig.setMailInboundFolder(config.getString("validator.mailInboundFolder", "INBOX"));
         domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
         domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
-        // Labels
-        domainConfig.getLabel().setPopupTitle(config.getString("validator.label.popupTitle", "XML content"));
-        domainConfig.getLabel().setExternalSchemaLabel(config.getString("validator.label.externalSchemaLabel", "XML Schema"));
-        domainConfig.getLabel().setExternalSchematronLabel(config.getString("validator.label.externalSchematronLabel", "Schematron"));
-        domainConfig.getLabel().setExternalSchemaPlaceholder(config.getString("validator.label.externalSchemaPlaceholder", ""));
-        domainConfig.getLabel().setExternalSchematronPlaceholder(config.getString("validator.label.externalSchematronPlaceholder", ""));
     }
 
     /**

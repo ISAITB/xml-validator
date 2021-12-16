@@ -6,6 +6,7 @@ import com.gitb.vs.GetModuleDefinitionResponse;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
 import com.gitb.vs.Void;
+import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.InputHelper;
 import eu.europa.ec.itb.xml.util.FileManager;
@@ -29,6 +30,7 @@ import javax.xml.ws.WebServiceContext;
 
 import java.io.File;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by simatosc on 25/02/2016.
@@ -103,11 +105,12 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
             result.setReport(report);
             return result;
         } catch (ValidatorException e) {
-            logger.error("Validation error", e);
-            throw e;
+            logger.error(e.getMessageForLog(), e);
+            throw new ValidatorException(e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH)), true);
         } catch (Exception e) {
             logger.error("Unexpected error", e);
-            throw new ValidatorException(e);
+            var message = new LocalisationHelper(Locale.ENGLISH).localise(ValidatorException.MESSAGE_DEFAULT);
+            throw new ValidatorException(message, e, true, (Object[]) null);
         } finally {
             // Cleanup.
             if (tempFolderPath.exists()) {

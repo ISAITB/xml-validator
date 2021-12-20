@@ -61,7 +61,7 @@
         <version.saxon>10.6</version.saxon>
         <version.tika>2.1.0</version.tika>
         <version.slf4j>1.7.32</version.slf4j>
-        <version.helgerSchematron>6.2.4</version.helgerSchematron>
+        <version.helgerSchematron>6.2.7</version.helgerSchematron>
         <version.commonsConfiguration>2.7</version.commonsConfiguration>
         <version.jaxWs>2.3.1</version.jaxWs>
         <version.jws>1.1</version.jws>

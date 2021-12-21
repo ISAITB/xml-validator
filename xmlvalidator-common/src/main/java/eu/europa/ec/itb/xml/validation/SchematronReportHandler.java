@@ -1,7 +1,5 @@
 package eu.europa.ec.itb.xml.validation;
 
-import com.gitb.core.AnyContent;
-import com.gitb.core.ValueEmbeddingEnumeration;
 import com.gitb.tr.*;
 import com.helger.commons.error.level.EErrorLevel;
 import com.helger.schematron.svrl.AbstractSVRLMessage;
@@ -117,7 +115,7 @@ public class SchematronReportHandler {
             this.report.setResult(TestResultType.SUCCESS);
             if (error.size() > 0) {
                 this.report.setResult(getErrorLevel(error));
-                List element = this.traverseSVRLMessages(error, true);
+                List element = this.traverseSVRLMessages(error);
                 this.report.getReports().getInfoOrWarningOrError().addAll(element);
             }
             List<SVRLSuccessfulReport> element = SVRLHelper.getAllSuccessfulReports(this.svrlReport);
@@ -125,7 +123,7 @@ public class SchematronReportHandler {
                 if (this.report.getResult() == TestResultType.SUCCESS) {
                     this.report.setResult(getErrorLevel(element));
                 }
-                List successReports = this.traverseSVRLMessages(element, false);
+                List successReports = this.traverseSVRLMessages(element);
                 this.report.getReports().getInfoOrWarningOrError().addAll(successReports);
             }
         } else {
@@ -146,19 +144,16 @@ public class SchematronReportHandler {
      * Convert the Schematron SVRL messages to report items to include in the TAR report.
      *
      * @param svrlMessages The SVRL messages.
-     * @param failure Whether the validation is overall a failure.
      * @param <T> The SVRL message type.
      * @return The items for the TAR report.
      */
-    private <T extends AbstractSVRLMessage> List<JAXBElement<TestAssertionReportType>> traverseSVRLMessages(List<T> svrlMessages, boolean failure) {
+    private <T extends AbstractSVRLMessage> List<JAXBElement<TestAssertionReportType>> traverseSVRLMessages(List<T> svrlMessages) {
         ArrayList<JAXBElement<TestAssertionReportType>> reports = new ArrayList<>();
         JAXBElement<TestAssertionReportType> element;
         for(Iterator<T> var4 = svrlMessages.iterator(); var4.hasNext(); reports.add(element)) {
             AbstractSVRLMessage message = var4.next();
             BAR error = new BAR();
-            if (message.getText() != null) {
-                error.setDescription(message.getText().trim());
-            }
+            error.setDescription(getMessageText(message));
             if (message.getLocation() != null && !message.getLocation().isBlank()) {
                 if (locationAsPath) {
                     error.setLocation(convertToXPathExpression(message.getLocation(), false));
@@ -181,6 +176,41 @@ public class SchematronReportHandler {
             }
         }
         return reports;
+    }
+
+    /**
+     * Get the message to return for the provided SVRL message.
+     *
+     * @param svrlMessage The SVRL message.
+     * @return The message for the report.
+     */
+    private String getMessageText(AbstractSVRLMessage svrlMessage) {
+        StringBuilder message = null;
+        if (svrlMessage != null) {
+            var diagnostics = svrlMessage.getDiagnisticReferences();
+            if (diagnostics.isNotEmpty()) {
+                for (var diagnostic: diagnostics) {
+                    if (localiser.getLocale().getLanguage().equalsIgnoreCase(diagnostic.getLang()) && diagnostic.hasContentEntries()) {
+                        for (var content: diagnostic.getContent()) {
+                            if (message == null) {
+                                message = new StringBuilder(content.toString());
+                            } else {
+                                message.append(" ").append(content.toString());
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        if (message == null) {
+            if (svrlMessage != null && svrlMessage.getText() != null) {
+                message = new StringBuilder(svrlMessage.getText().trim());
+            } else {
+                message = new StringBuilder();
+            }
+        }
+        return message.toString();
     }
 
     /**

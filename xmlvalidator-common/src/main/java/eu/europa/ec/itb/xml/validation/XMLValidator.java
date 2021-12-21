@@ -29,6 +29,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.ls.LSResourceResolver;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBElement;
@@ -212,6 +214,11 @@ public class XMLValidator {
         }
         // Validate XML content against given XSD schema.
         Validator validator = schema.newValidator();
+        try {
+            validator.setProperty("http://apache.org/xml/properties/locale", localiser.getLocale());
+        } catch (SAXNotRecognizedException | SAXNotSupportedException e) {
+            throw new IllegalStateException("Unable to pass locale to validator", e);
+        }
         validator.setErrorHandler(handler);
         TAR report;
         try {
@@ -439,6 +446,7 @@ public class XMLValidator {
         request.getInput().add(Utils.createInputItem("domain", domainConfig.getDomainName()));
         request.getInput().add(Utils.createInputItem("validationType", validationType));
         request.getInput().add(Utils.createInputItem("tempFolder", pluginTmpFolder.getAbsolutePath()));
+        request.getInput().add(Utils.createInputItem("locale", localiser.getLocale().toString()));
         return request;
     }
 

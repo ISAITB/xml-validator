@@ -7,6 +7,7 @@ import com.helger.schematron.svrl.SVRLFailedAssert;
 import com.helger.schematron.svrl.SVRLHelper;
 import com.helger.schematron.svrl.SVRLSuccessfulReport;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
+import com.helger.schematron.svrl.jaxb.Text;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.Utils;
 import org.slf4j.Logger;
@@ -179,6 +180,35 @@ public class SchematronReportHandler {
     }
 
     /**
+     * Convert the provided content of a diagnostic element to a string.
+     *
+     * @param content The diagnostic content.
+     * @return The string.
+     */
+    private String diagnosticContentAsString(Object content) {
+        String messageText;
+        if (content == null) {
+            messageText = "";
+        } else if (content instanceof String) {
+            messageText = (String)content;
+        } else if (content instanceof Text) {
+            messageText = diagnosticContentAsString(((Text) content).getContent());
+        } else if (content instanceof Iterable) {
+            StringBuilder messageBuilder = new StringBuilder();
+            for (var item: (Iterable<?>)content) {
+                if (messageBuilder.length() > 0) {
+                    messageBuilder.append(' ');
+                }
+                messageBuilder.append(diagnosticContentAsString(item));
+            }
+            messageText = messageBuilder.toString();
+        } else {
+            messageText = content.toString();
+        }
+        return messageText;
+    }
+
+    /**
      * Get the message to return for the provided SVRL message.
      *
      * @param svrlMessage The SVRL message.
@@ -192,10 +222,11 @@ public class SchematronReportHandler {
                 for (var diagnostic: diagnostics) {
                     if (localiser.getLocale().getLanguage().equalsIgnoreCase(diagnostic.getLang()) && diagnostic.hasContentEntries()) {
                         for (var content: diagnostic.getContent()) {
+                            String messageText = diagnosticContentAsString(content);
                             if (message == null) {
-                                message = new StringBuilder(content.toString());
+                                message = new StringBuilder(messageText);
                             } else {
-                                message.append(" ").append(content.toString());
+                                message.append(" ").append(messageText);
                             }
                         }
                         break;

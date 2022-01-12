@@ -1,9 +1,12 @@
 package eu.europa.ec.itb.xml;
 
+import eu.europa.ec.itb.xml.validation.ValidationConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -13,6 +16,7 @@ import java.util.Set;
 @ConfigurationProperties("validator")
 public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.config.ApplicationConfig {
 
+    private final Map<String, String> defaultLabels = new HashMap<>();
     private String inputFilePrefix = "ITB-";
     private String reportFilePrefix = "TAR-";
     private Set<String> acceptedMimeTypes;
@@ -22,6 +26,14 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
     private Set<String> acceptedSchemaMimeType;
     private Set<String> acceptedSchematronMimeType;
     private boolean disablePreprocessingCache = false;
+    private String defaultXmlDescription;
+    private String defaultTypeDescription;
+    private String defaultEmbeddingMethodDescription;
+    private String defaultExternalSchemaDescription;
+    private String defaultExternalSchematronDescription;
+    private String defaultLocationAsPathDescription;
+    private String defaultLocaleDescription;
+    private String defaultAddInputToReportDescription;
 
     /**
      * @return True if caching is disabled for artifact pre-processing.
@@ -150,11 +162,139 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
 	}
 
     /**
+     * @return The web service description for the XML input.
+     */
+    public String getDefaultXmlDescription() {
+        return defaultXmlDescription;
+    }
+
+    /**
+     * @param defaultXmlDescription The web service description for the XML input.
+     */
+    public void setDefaultXmlDescription(String defaultXmlDescription) {
+        this.defaultXmlDescription = defaultXmlDescription;
+    }
+
+    /**
+     * @return The web service description for the type input.
+     */
+    public String getDefaultTypeDescription() {
+        return defaultTypeDescription;
+    }
+
+    /**
+     * @param defaultTypeDescription The web service description for the type input.
+     */
+    public void setDefaultTypeDescription(String defaultTypeDescription) {
+        this.defaultTypeDescription = defaultTypeDescription;
+    }
+
+    /**
+     * @return The web service description for the embedding method input.
+     */
+    public String getDefaultEmbeddingMethodDescription() {
+        return defaultEmbeddingMethodDescription;
+    }
+
+    /**
+     * @param defaultEmbeddingMethodDescription The web service description for the embedding method input.
+     */
+    public void setDefaultEmbeddingMethodDescription(String defaultEmbeddingMethodDescription) {
+        this.defaultEmbeddingMethodDescription = defaultEmbeddingMethodDescription;
+    }
+
+    /**
+     * @return The web service description for the external schema input.
+     */
+    public String getDefaultExternalSchemaDescription() {
+        return defaultExternalSchemaDescription;
+    }
+
+    /**
+     * @param defaultExternalSchemaDescription The web service description for the external Schema input.
+     */
+    public void setDefaultExternalSchemaDescription(String defaultExternalSchemaDescription) {
+        this.defaultExternalSchemaDescription = defaultExternalSchemaDescription;
+    }
+
+    /**
+     * @return The web service description for the external Schematron.
+     */
+    public String getDefaultExternalSchematronDescription() {
+        return defaultExternalSchematronDescription;
+    }
+
+    /**
+     * @param defaultExternalSchematronDescription The web service description for the external Schematron input.
+     */
+    public void setDefaultExternalSchematronDescription(String defaultExternalSchematronDescription) {
+        this.defaultExternalSchematronDescription = defaultExternalSchematronDescription;
+    }
+
+    /**
+     * @return The web service description for the location as path input.
+     */
+    public String getDefaultLocationAsPathDescription() {
+        return defaultLocationAsPathDescription;
+    }
+
+    /**
+     * @param defaultLocationAsPathDescription The web service description for the location as path input.
+     */
+    public void setDefaultLocationAsPathDescription(String defaultLocationAsPathDescription) {
+        this.defaultLocationAsPathDescription = defaultLocationAsPathDescription;
+    }
+
+    /**
+     * @return The web service description for the locale input.
+     */
+    public String getDefaultLocaleDescription() {
+        return defaultLocaleDescription;
+    }
+
+    /**
+     * @param defaultLocaleDescription The web service description for the locale input.
+     */
+    public void setDefaultLocaleDescription(String defaultLocaleDescription) {
+        this.defaultLocaleDescription = defaultLocaleDescription;
+    }
+
+    /**
+     * @return The web service description for the add input to report input.
+     */
+    public String getDefaultAddInputToReportDescription() {
+        return defaultAddInputToReportDescription;
+    }
+
+    /**
+     * @param defaultAddInputToReportDescription The web service description for the add input to report input.
+     */
+    public void setDefaultAddInputToReportDescription(String defaultAddInputToReportDescription) {
+        this.defaultAddInputToReportDescription = defaultAddInputToReportDescription;
+    }
+
+    /**
+     * @return The default labels to use for the description of SOAP web service inputs.
+     */
+    public Map<String, String> getDefaultLabels() {
+        return defaultLabels;
+    }
+
+    /**
      * Initialise the configuration.
      */
     @PostConstruct
     public void init() {
         super.init();
+        //  Default labels.
+        defaultLabels.put(ValidationConstants.INPUT_XML, defaultXmlDescription);
+        defaultLabels.put(ValidationConstants.INPUT_TYPE, defaultTypeDescription);
+        defaultLabels.put(ValidationConstants.INPUT_EMBEDDING_METHOD, defaultEmbeddingMethodDescription);
+        defaultLabels.put(ValidationConstants.INPUT_EXTERNAL_SCHEMA, defaultExternalSchemaDescription);
+        defaultLabels.put(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, defaultExternalSchematronDescription);
+        defaultLabels.put(ValidationConstants.INPUT_LOCATION_AS_PATH, defaultLocationAsPathDescription);
+        defaultLabels.put(ValidationConstants.INPUT_LOCALE, defaultLocaleDescription);
+        defaultLabels.put(ValidationConstants.INPUT_ADD_INPUT_TO_REPORT, defaultAddInputToReportDescription);
     }
 
 }

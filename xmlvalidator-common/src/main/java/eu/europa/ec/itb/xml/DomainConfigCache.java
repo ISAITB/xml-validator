@@ -3,6 +3,7 @@ package eu.europa.ec.itb.xml;
 import eu.europa.ec.itb.validation.commons.ValidatorChannel;
 import eu.europa.ec.itb.validation.commons.config.WebDomainConfigCache;
 import org.apache.commons.configuration2.Configuration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -13,6 +14,9 @@ import java.util.Set;
  */
 @Component
 public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
+
+    @Autowired
+    private ApplicationConfig appConfig = null;
 
     /**
      * Initialise the configuration.
@@ -71,6 +75,7 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         domainConfig.setMailInboundFolder(config.getString("validator.mailInboundFolder", "INBOX"));
         domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
         domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
+        addMissingDefaultValues(domainConfig.getWebServiceDescription(), appConfig.getDefaultLabels());
     }
 
     /**

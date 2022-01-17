@@ -43,7 +43,7 @@
         <validatorBuild.resourceJar>validator-resources</validatorBuild.resourceJar>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss (XXX)</maven.build.timestamp.format>
         <version.springBoot>2.6.2</version.springBoot>
-        <version.itbCommons>1.1.0-SNAPSHOT</version.itbCommons>
+        <version.itbCommons>1.1.0</version.itbCommons>
         <version.cxf>3.4.5</version.cxf>
         <version.commonsIo>2.7</version.commonsIo>
         <version.jaxb>2.3.1</version.jaxb>

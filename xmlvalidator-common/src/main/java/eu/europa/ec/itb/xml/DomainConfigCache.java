@@ -21,6 +21,7 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
     /**
      * Initialise the configuration.
      */
+    @Override
     @PostConstruct
     public void init() {
         super.init();

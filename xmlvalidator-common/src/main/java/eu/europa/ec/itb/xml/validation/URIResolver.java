@@ -61,7 +61,7 @@ public class URIResolver implements javax.xml.transform.URIResolver {
                 return baseFile.getParentFile();
             }
         } else {
-            LOG.error("The root Schematron file could not be loaded ["+baseFile.getAbsolutePath()+"]");
+            LOG.error("The root Schematron file could not be loaded [{}]", baseFile.getAbsolutePath());
             throw new IllegalStateException("The root Schematron file could not be loaded");
         }
     }
@@ -80,8 +80,9 @@ public class URIResolver implements javax.xml.transform.URIResolver {
             try {
                 return new StreamSource(new FileInputStream(schematronFile));
             } catch (FileNotFoundException e) {
-                LOG.error("Base schematron file not found base["+base+"] href["+href+"] file ["+schematronFile+"]");
-                throw new IllegalStateException("Base schematron file not found base["+base+"] href["+href+"] file ["+schematronFile+"]");
+                var message = String.format("Base schematron file not found base[%s] href[%s] file [%s]", base, href, schematronFile);
+                LOG.error(message);
+                throw new IllegalStateException(message);
             }
         } else {
             File baseFile;
@@ -106,12 +107,12 @@ public class URIResolver implements javax.xml.transform.URIResolver {
                 try {
                     return new StreamSource(new FileInputStream(referencedFile));
                 } catch (FileNotFoundException e) {
-                    LOG.error("Referenced file not found base["+base+"] href["+href+"] file ["+referencedFile+"]");
-                    throw new IllegalStateException("Referenced file not found base["+base+"] href["+href+"]");
+                    LOG.error("Referenced file not found base[{}] href[{}] file [{}]", base, href, referencedFile);
+                    throw new IllegalStateException(String.format("Referenced file not found base[%s] href[%s]", base, href));
                 }
             } else {
-                LOG.error("Referenced file not found base["+base+"] href["+href+"] file ["+referencedFile+"]");
-                throw new IllegalStateException("Referenced file not found base["+base+"] href["+href+"]");
+                LOG.error("Referenced file not found base[{}] href[{}] file [{}]", base, href, referencedFile);
+                throw new IllegalStateException(String.format("Referenced file not found base[%s] href[%s]", base, href));
             }
         }
     }

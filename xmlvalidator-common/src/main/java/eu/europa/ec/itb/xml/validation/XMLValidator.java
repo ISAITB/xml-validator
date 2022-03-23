@@ -64,7 +64,7 @@ public class XMLValidator {
     @Autowired
     private PluginManager pluginManager;
     @Autowired
-    private DomainPluginConfigProvider pluginConfigProvider;
+    private DomainPluginConfigProvider<DomainConfig> pluginConfigProvider;
     @Autowired
     private ApplicationContext ctx;
 
@@ -180,11 +180,11 @@ public class XMLValidator {
         } else {
             List<TAR> reports = new ArrayList<>();
             for (FileInfo aSchemaFile: schemaFiles) {
-                logger.info("Validating against ["+aSchemaFile.getFile().getName()+"]");
+                logger.info("Validating against [{}]", aSchemaFile.getFile().getName());
                 TAR report = validateSchema(getInputStreamForValidation(), aSchemaFile.getFile());
                 logReport(report, aSchemaFile.getFile().getName());
                 reports.add(report);
-                logger.info("Validated against ["+aSchemaFile.getFile().getName()+"]");
+                logger.info("Validated against [{}]", aSchemaFile.getFile().getName());
             }
             return Utils.mergeReports(reports);
         }
@@ -202,7 +202,7 @@ public class XMLValidator {
         // Create error handler.
         XSDReportHandler handler = new XSDReportHandler();
         // Resolve schema.
-        SchemaFactory schemaFactory = XMLSchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         schemaFactory.setErrorHandler(handler);
         schemaFactory.setResourceResolver(getXSDResolver(schemaFile.getParent()));
         Schema schema;
@@ -227,7 +227,7 @@ public class XMLValidator {
             validator.validate(source);
             report = handler.createReport();
         } catch (Exception e) {
-            logger.warn("Error while validating XML ["+e.getMessage()+"]");
+            logger.warn("Error while validating XML [{}]", e.getMessage());
             report = createFailureReport();
         }
         return report;
@@ -257,7 +257,7 @@ public class XMLValidator {
         BAR error1 = new BAR();
         error1.setDescription(localiser.localise("validator.label.exception.errorDueToProblemInXML"));
         error1.setLocation("XML:1:0");
-        JAXBElement element1 = this.gitbTRObjectFactory.createTestAssertionGroupReportsTypeError(error1);
+        var element1 = this.gitbTRObjectFactory.createTestAssertionGroupReportsTypeError(error1);
         report.getReports().getInfoOrWarningOrError().add(element1);
         return report;
     }
@@ -323,11 +323,11 @@ public class XMLValidator {
             return null;
         } else {
             for (FileInfo aSchematronFile: schematronFiles) {
-                logger.info("Validating against ["+aSchematronFile.getFile().getName()+"]");
+                logger.info("Validating against [{}]", aSchematronFile.getFile().getName());
                 TAR report = validateSchematron(getInputStreamForValidation(), aSchematronFile.getFile());
                 logReport(report, aSchematronFile.getFile().getName());
                 reports.add(report);
-                logger.info("Validated against ["+aSchematronFile.getFile().getName()+"]");
+                logger.info("Validated against [{}]", aSchematronFile.getFile().getName());
             }
             return Utils.mergeReports(reports);
         }
@@ -349,7 +349,7 @@ public class XMLValidator {
                         .append(" warnings: ").append(report.getCounters().getNrOfWarnings());
             }
             logOutput.append("\nDetails");
-            report.getReports().getInfoOrWarningOrError().forEach((item) -> {
+            report.getReports().getInfoOrWarningOrError().forEach(item -> {
                 if (item.getValue() instanceof BAR) {
                     BAR reportItem = (BAR)item.getValue();
                     logOutput.append("\nDescription: ").append(reportItem.getDescription());

@@ -34,12 +34,12 @@ import java.util.Locale;
 @Scope("prototype")
 public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
 
-    private static final String FLAG__NO_REPORTS = "-noreports";
-    private static final String FLAG__VALIDATION_TYPE = "-type";
-    private static final String FLAG__INPUT = "-input";
-    private static final String FLAG__XSD = "-xsd";
-    private static final String FLAG__SCHEMATRON = "-sch";
-    private static final String FLAG__LOCALE = "-locale";
+    private static final String FLAG_NO_REPORTS = "-noreports";
+    private static final String FLAG_VALIDATION_TYPE = "-type";
+    private static final String FLAG_INPUT = "-input";
+    private static final String FLAG_XSD = "-xsd";
+    private static final String FLAG_SCHEMATRON = "-sch";
+    private static final String FLAG_LOCALE = "-locale";
 
     @Autowired
     private ApplicationContext ctx;
@@ -97,30 +97,28 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
         try {
             int i = 0;
             while (i < args.length) {
-                if (FLAG__NO_REPORTS.equalsIgnoreCase(args[i])) {
+                if (FLAG_NO_REPORTS.equalsIgnoreCase(args[i])) {
                     noReports = true;
-                } else if (FLAG__VALIDATION_TYPE.equalsIgnoreCase(args[i])) {
+                } else if (FLAG_VALIDATION_TYPE.equalsIgnoreCase(args[i])) {
                     validationType = argumentAsString(args, i);
                     if (validationType != null && !domainConfig.getType().contains(validationType)) {
                         throw new ValidatorException("validator.label.exception.unknownValidationType", String.join("|", domainConfig.getType()));
                     }
-                } else if (FLAG__INPUT.equalsIgnoreCase(args[i])) {
+                } else if (FLAG_INPUT.equalsIgnoreCase(args[i])) {
                     if (args.length > i + 1) {
                         String path = args[++i];
                         inputs.add(new ValidationInput(getContent(path, parentFolder), path));
                     }
-                } else if (FLAG__XSD.equalsIgnoreCase(args[i])) {
+                } else if (FLAG_XSD.equalsIgnoreCase(args[i])) {
                     if (args.length > i + 1) {
                         externalXsdInfo = List.of(new FileInfo(getContent(args[++i], parentFolder)));
                     }
-                } else if (FLAG__SCHEMATRON.equalsIgnoreCase(args[i])) {
+                } else if (FLAG_SCHEMATRON.equalsIgnoreCase(args[i])) {
                     if (args.length > i + 1) {
                         externalSchInfo.add(new FileInfo(getContent(args[++i], parentFolder)));
                     }
-                } else if (FLAG__LOCALE.equalsIgnoreCase(args[i])) {
-                    if (args.length > i+1) {
-                        locale = args[++i];
-                    }
+                } else if (FLAG_LOCALE.equalsIgnoreCase(args[i]) && args.length > i+1) {
+                    locale = args[++i];
                 }
                 i++;
             }
@@ -132,8 +130,8 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                 }
             }
         } catch (ValidatorException e) {
-            LOGGER_FEEDBACK.info("\nInvalid arguments provided: "+e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))+"\n");
-            LOGGER.error("Invalid arguments provided: "+e.getMessageForLog(), e);
+            LOGGER_FEEDBACK.info("\nInvalid arguments provided: {}\n", e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH)));
+            LOGGER.error(String.format("Invalid arguments provided: %s", e.getMessageForLog()), e);
             inputs.clear();
         } catch (Exception e) {
             LOGGER_FEEDBACK.info("\nAn error occurred while processing the provided arguments.\n");
@@ -149,7 +147,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
             int i = 0;
             var localiser = new LocalisationHelper(domainConfig, Utils.getSupportedLocale(LocaleUtils.toLocale(locale), domainConfig));
             for (ValidationInput input: inputs) {
-                LOGGER_FEEDBACK.info(String.format("\nValidating %s of %s ...", i + 1, inputs.size()));
+                LOGGER_FEEDBACK.info("\nValidating {} of {} ...", i + 1, inputs.size());
                 try {
                     XMLValidator validator = ctx.getBean(XMLValidator.class, input.getInputFile(), validationType, externalXsdInfo, externalSchInfo, domainConfig, localiser);
                     TAR report = validator.validateAll();
@@ -174,7 +172,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                                 reportGenerator.writeReport(
                                         xmlReportFile,
                                         pdfReportFile,
-                                        (TARReport) -> reportGenerator.getReportLabels(localiser, TARReport.getResult()));
+                                        tarReport -> reportGenerator.getReportLabels(localiser, tarReport.getResult()));
                                 summary.append("- Detailed reports in [").append(xmlReportFile.getAbsolutePath()).append("] and [").append(pdfReportFile.getAbsolutePath()).append("] \n");
                             } else if (report.getCounters() != null && (report.getCounters().getNrOfAssertions().longValue() + report.getCounters().getNrOfErrors().longValue() + report.getCounters().getNrOfWarnings().longValue()) <= domainConfig.getMaximumReportsForXmlOutput()) {
                                 summary.append("- Detailed report in [").append(xmlReportFile.getAbsolutePath()).append("] (PDF report skipped due to large number of report items) \n");
@@ -184,20 +182,21 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                         }
                     }
                 } catch (ValidatorException e) {
-                    LOGGER_FEEDBACK.info("\nAn error occurred while executing the validation: "+e.getMessageForDisplay(localiser));
-                    LOGGER.error("An error occurred while executing the validation: "+e.getMessageForLog(), e);
+                    LOGGER_FEEDBACK.info("\nAn error occurred while executing the validation: {}", e.getMessageForDisplay(localiser));
+                    LOGGER.error(String.format("An error occurred while executing the validation: %s", e.getMessageForLog()), e);
                     break;
 
                 } catch (Exception e) {
                     LOGGER_FEEDBACK.info("\nAn error occurred while executing the validation.");
-                    LOGGER.error("An error occurred while executing the validation: "+e.getMessage(), e);
+                    LOGGER.error(String.format("An error occurred while executing the validation: %s", e.getMessage()), e);
                     break;
                 }
                 i++;
                 LOGGER_FEEDBACK.info(" Done.");
             }
-            LOGGER_FEEDBACK.info(summary.toString());
-            LOGGER_FEEDBACK_FILE.info(summary.toString());
+            var summaryString = summary.toString();
+            LOGGER_FEEDBACK.info(summaryString);
+            LOGGER_FEEDBACK_FILE.info(summaryString);
         }
     }
 
@@ -209,17 +208,17 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
     private void printUsage(boolean requireType) {
         StringBuilder usageMessage = new StringBuilder();
         StringBuilder parametersMessage = new StringBuilder();
-        usageMessage.append("\nExpected usage: java -jar validator.jar ").append(FLAG__INPUT).append(" FILE_OR_URI_1 ... [").append(FLAG__INPUT).append(" FILE_OR_URI_N] [").append(FLAG__NO_REPORTS).append("] [").append(FLAG__LOCALE).append(" LOCALE]");
+        usageMessage.append("\nExpected usage: java -jar validator.jar ").append(FLAG_INPUT).append(" FILE_OR_URI_1 ... [").append(FLAG_INPUT).append(" FILE_OR_URI_N] [").append(FLAG_NO_REPORTS).append("] [").append(FLAG_LOCALE).append(" LOCALE]");
         if (requireType) {
-            usageMessage.append(" [").append(FLAG__VALIDATION_TYPE).append(" VALIDATION_TYPE]");
+            usageMessage.append(" [").append(FLAG_VALIDATION_TYPE).append(" VALIDATION_TYPE]");
             parametersMessage.append("\n").append(PAD).append(PAD).append("- VALIDATION_TYPE is the type of validation to perform, one of [").append(String.join("|", domainConfig.getType())).append("].");
         }
         if (domainConfig.definesTypeWithExternalXsd()) {
-            usageMessage.append(" [").append(FLAG__XSD).append(" SCHEMA_FILE_OR_URI]");
+            usageMessage.append(" [").append(FLAG_XSD).append(" SCHEMA_FILE_OR_URI]");
             parametersMessage.append("\n").append(PAD).append(PAD).append("- SCHEMA_FILE_OR_URI is the full file path or URI to a schema for the validation.");
         }
         if (domainConfig.definesTypeWithExternalSchematrons()) {
-            usageMessage.append(" [").append(FLAG__SCHEMATRON).append(" SCHEMATRON_FILE_OR_URI_1] ... [").append(FLAG__SCHEMATRON).append(" SCHEMATRON_FILE_OR_URI_N]");
+            usageMessage.append(" [").append(FLAG_SCHEMATRON).append(" SCHEMATRON_FILE_OR_URI_1] ... [").append(FLAG_SCHEMATRON).append(" SCHEMATRON_FILE_OR_URI_N]");
             parametersMessage.append("\n").append(PAD).append(PAD).append("- SCHEMATRON_FILE_OR_URI_X is the full file path or URI to a schematron file for the validation.");
         }
         usageMessage.append("\n").append(PAD).append("Where:");

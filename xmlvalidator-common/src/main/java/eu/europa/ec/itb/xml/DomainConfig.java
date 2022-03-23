@@ -103,6 +103,7 @@ public class DomainConfig extends WebDomainConfig {
     /**
      * @return True if the domain defines multiple validation types.
      */
+    @Override
     public boolean hasMultipleValidationTypes() {
         return getType() != null && getType().size() > 1;
     }

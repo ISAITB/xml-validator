@@ -25,6 +25,7 @@ public class Application {
         // Disabling System.err because Saxon by default writes errors to it.
         System.setErr(new PrintStream(new OutputStream() {
             public void write(int b) {
+                // Don't write.
             }
         }));
         new CommandLineValidator().start(Application.class, args, "xmlvalidator");

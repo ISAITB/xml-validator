@@ -38,9 +38,9 @@ public class XSLTPreprocessor implements ArtifactPreprocessor {
     @Override
     public File preprocessFile(File fileToProcess, File preProcessorFile, String outputFileExtension) {
         Source inputSource = new StreamSource(fileToProcess);
-        File outputFile = new File(fileToProcess.getParentFile(), UUID.randomUUID().toString()+"."+outputFileExtension);
+        File outputFile = new File(fileToProcess.getParentFile(), UUID.randomUUID() +"."+outputFileExtension);
         try {
-            LOG.info("Pre-processing ["+fileToProcess.getName()+"] using ["+preProcessorFile.getName()+"] to produce ["+outputFile.getName()+"]");
+            LOG.info("Pre-processing [{}] using [{}] to produce [{}]", fileToProcess.getName(), preProcessorFile.getName(), outputFile.getName());
             getTransformer(preProcessorFile).transform(inputSource, new StreamResult(outputFile));
         } catch (TransformerException e) {
             throw new IllegalArgumentException("Error while performing transformation", e);

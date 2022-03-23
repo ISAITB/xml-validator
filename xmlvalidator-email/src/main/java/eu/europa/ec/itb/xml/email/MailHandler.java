@@ -62,7 +62,7 @@ public class MailHandler {
         for (DomainConfig domainConfig: domainConfigCache.getAllDomainConfigurations()) {
             if (domainConfig.getChannels().contains(ValidatorChannel.EMAIL)) {
                 mailSenders.put(domainConfig.getDomain(), createJavaMailSender(domainConfig));
-                logger.info("Configured mail service for ["+domainConfig.getDomainName()+"]");
+                logger.info("Configured mail service for [{}]", domainConfig.getDomainName());
             }
         }
         if (mailSenders.isEmpty()) {
@@ -104,7 +104,7 @@ public class MailHandler {
             if (config.getChannels().contains(ValidatorChannel.EMAIL)) {
                 try {
                     MDC.put("domain", config.getDomainName());
-                    logger.info("Checking emails for ["+config.getDomainName()+"]...");
+                    logger.info("Checking emails for [{}]...", config.getDomainName());
                     Properties props = new Properties();
                     String storeName = "imap";
                     if (config.isMailInboundSSLEnable()) {
@@ -133,29 +133,26 @@ public class MailHandler {
                                 StringBuilder messageAdditionalText = new StringBuilder();
                                 try {
                                     if (contentObj instanceof Multipart) {
-                                        logger.info("Processing message ["+message.getSubject()+"]");
                                         Multipart content = (Multipart)contentObj;
                                         for (int i=0; i < content.getCount(); i++) {
                                             BodyPart part = content.getBodyPart(i);
                                             if (!StringUtils.isBlank(part.getFileName())) {
-                                                boolean acceptableFileType = false;
+                                                boolean acceptableFileType;
                                                 try (InputStream is = part.getInputStream()) {
                                                     acceptableFileType = checkFileType(is);
                                                 }
                                                 if (acceptableFileType) {
                                                     String validationType = getValidationType(part.getFileName(), config);
-                                                    logger.info("Processing file ["+part.getFileName()+"] of ["+message.getSubject()+"] for ["+validationType+"]");
                                                     try (InputStream is = part.getInputStream()) {
                                                         XMLValidator validator = beans.getBean(XMLValidator.class, is, validationType, config, new LocalisationHelper(config, Locale.ENGLISH));
                                                         TAR report = validator.validateAll();
                                                         reports.add(new FileReport(part.getFileName(), report));
-                                                        logger.info("Processed message ["+message.getSubject()+"], file ["+part.getFileName()+"]");
                                                     } catch (Exception e) {
                                                         messageAdditionalText.append("Failed to validate file ["+part.getFileName()+"]: "+e.getMessage()+"\n");
-                                                        logger.warn("Failed to validate file ["+part.getFileName()+"]", e);
+                                                        logger.warn("Failed to validate file", e);
                                                     }
                                                 } else {
-                                                    logger.info("Ignoring file ["+part.getFileName()+"] of ["+message.getSubject()+"]");
+                                                    logger.info("Ignoring file.");
                                                 }
                                             }
                                         }
@@ -171,14 +168,14 @@ public class MailHandler {
                                     }
                                 } catch (ValidatorException e) {
                                     // Send error response to sender.
-                                    messageAdditionalText.append("Failed to process message ["+message.getSubject()+"]: "+e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))+"\n");
+                                    messageAdditionalText.append("Failed to process message: "+e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))+"\n");
                                     e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
                                 } catch (Exception e) {
                                     // Send error response to sender.
-                                    messageAdditionalText.append("Failed to process message ["+message.getSubject()+"]: "+e.getMessage()+"\n");
+                                    messageAdditionalText.append("Failed to process message: "+e.getMessage()+"\n");
                                     e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
                                 } finally {
-                                    logger.info("Sending email response for ["+message.getSubject()+"]");
+                                    logger.info("Sending email response");
                                     try {
                                         sendEmail(message, reports, messageAdditionalText.toString(), config);
                                     } catch(MessagingException e) {
@@ -201,16 +198,18 @@ public class MailHandler {
                             try {
                                 folder.close(true);
                             } catch (MessagingException e) {
+                                // No action.
                             }
                         }
                         if (store != null) {
                             try {
                                 store.close();
                             } catch (MessagingException e) {
+                                // No action.
                             }
                         }
                     }
-                    logger.info("Checking emails completed for ["+config.getDomainName()+"].");
+                    logger.info("Checking emails completed for [{}].", config.getDomainName());
                 } finally {
                     MDC.clear();
                 }

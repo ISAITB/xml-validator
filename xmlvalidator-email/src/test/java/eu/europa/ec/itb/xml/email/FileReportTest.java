@@ -12,7 +12,7 @@ import java.util.GregorianCalendar;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class FileReportTest {
+class FileReportTest {
 
     @Test
     void testCreationAndAccess() throws DatatypeConfigurationException {

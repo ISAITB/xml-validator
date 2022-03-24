@@ -7,7 +7,7 @@ import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ValidationInputTest {
+class ValidationInputTest {
 
     @Test
     void testValidationInput() {

@@ -24,10 +24,10 @@ import java.nio.file.Paths;
 @Scope("prototype")
 public class XSDFileResolver implements LSResourceResolver {
 
-    private final static Logger LOG = LoggerFactory.getLogger(XSDFileResolver.class);
+    private static final Logger LOG = LoggerFactory.getLogger(XSDFileResolver.class);
 
     @Autowired
-    private FileManager fileManager = null;
+    private final FileManager fileManager = null;
 
     private final DomainConfig domainConfig;
     private final String validationType;
@@ -156,6 +156,7 @@ public class XSDFileResolver implements LSResourceResolver {
          */
         @Override
         public void setCharacterStream(Reader characterStream) {
+            // No action.
         }
 
         /**
@@ -194,6 +195,7 @@ public class XSDFileResolver implements LSResourceResolver {
          */
         @Override
         public void setStringData(String stringData) {
+            // No action.
         }
 
         /**
@@ -273,6 +275,7 @@ public class XSDFileResolver implements LSResourceResolver {
          */
         @Override
         public void setEncoding(String encoding) {
+            // No action.
         }
 
         /**

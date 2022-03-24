@@ -30,6 +30,7 @@ public class InputHelper extends BaseInputHelper<FileManager, DomainConfig, Appl
      * @param parentFolder The temp folder to use for storage.
      * @return The list of user-provided artifacts to consider.
      */
+    @Override
     public List<FileInfo> validateExternalArtifacts(DomainConfig domainConfig, ValidateRequest validateRequest, String artifactContainerInputName, String artifactContentInputName, String artifactEmbeddingMethodInputName, String validationType, String artifactType, File parentFolder) {
         List<FileInfo> artifactContents = super.validateExternalArtifacts(domainConfig, validateRequest, artifactContainerInputName, artifactContentInputName, artifactEmbeddingMethodInputName, validationType, artifactType, parentFolder);
         List<FileInfo> artifactsToReturn = new ArrayList<>();
@@ -40,7 +41,7 @@ public class InputHelper extends BaseInputHelper<FileManager, DomainConfig, Appl
                     artifactsToReturn.add(new FileInfo(fileManager.preprocessFileIfNeeded(domainConfig, validationType, artifactType, fileInfo.getFile(), true)));
                 } else {
                     // ZIP File
-                    boolean proceed = false;
+                    boolean proceed;
                     if (DomainConfig.ARTIFACT_TYPE_SCHEMA.equals(artifactType)) {
                         proceed = validateSchemaZip(rootFile);
                     } else {

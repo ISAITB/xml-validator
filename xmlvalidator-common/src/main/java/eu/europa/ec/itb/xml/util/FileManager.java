@@ -123,7 +123,7 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
      */
     public String checkContentType(File content) throws IOException {
         Tika tika = new Tika();
-        String mimeType = "";
+        String mimeType;
         try (InputStream in = Files.newInputStream(content.toPath())){
             mimeType = tika.detect(in);
         }
@@ -141,11 +141,9 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
     private boolean getZipFiles(ZipInputStream zis, File tmpFolder) throws IOException{
         byte[] buffer = new byte[1024];
         ZipEntry zipEntry = zis.getNextEntry();
-
-        if(zipEntry == null) {
+        if (zipEntry == null) {
             return false;
         }
-
         while (zipEntry != null) {
             Path tmpPath = createFile(tmpFolder, null, zipEntry.getName());
 
@@ -153,18 +151,16 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
                 tmpPath.toFile().mkdirs();
             }else {
                 File f = tmpPath.toFile();
-                FileOutputStream fos = new FileOutputStream(f);
-                int len;
-
-                while ((len = zis.read(buffer)) > 0) {
-                    fos.write(buffer, 0, len);
+                try (FileOutputStream fos = new FileOutputStream(f)) {
+                    int len;
+                    while ((len = zis.read(buffer)) > 0) {
+                        fos.write(buffer, 0, len);
+                    }
                 }
-                fos.close();
             }
 
             zipEntry = zis.getNextEntry();
         }
-
         return true;
     }
 
@@ -178,14 +174,12 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
     public File unzipFile(File parentFolder, File zipFile){
         File unzipFiles;
         boolean isZip;
-        try {
-            ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
             File rootFolder = createTemporaryFolderPath(parentFolder);
             rootFolder.mkdirs();
             isZip = getZipFiles(zis, rootFolder);
             unzipFiles = rootFolder;
             zis.closeEntry();
-            zis.close();
         } catch (Exception e) {
             return null;
         }

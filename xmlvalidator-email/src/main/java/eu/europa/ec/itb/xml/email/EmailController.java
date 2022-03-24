@@ -4,7 +4,9 @@ import eu.europa.ec.itb.xml.ApplicationConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller used to trigger the checking of emails.
@@ -24,7 +26,7 @@ public class EmailController {
      *
      * @return A confirmation text.
      */
-    @RequestMapping(value = "/email/read", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
+    @GetMapping(value = "/email/read", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody
     public String readEmail() {
         mailHandler.receiveEmail();

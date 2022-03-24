@@ -3,9 +3,7 @@ package eu.europa.ec.itb.xml.validation;
 import com.gitb.tr.*;
 import com.helger.commons.error.level.EErrorLevel;
 import com.helger.schematron.svrl.AbstractSVRLMessage;
-import com.helger.schematron.svrl.SVRLFailedAssert;
 import com.helger.schematron.svrl.SVRLHelper;
-import com.helger.schematron.svrl.SVRLSuccessfulReport;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.svrl.jaxb.Text;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
@@ -22,7 +20,10 @@ import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -95,11 +96,9 @@ public class SchematronReportHandler {
      */
     private <T extends AbstractSVRLMessage> TestResultType getErrorLevel(List<T> messages) {
         for (AbstractSVRLMessage item: messages) {
-            if (item.getFlag() != null) {
-                if (item.getFlag().getNumericLevel() == EErrorLevel.ERROR.getNumericLevel()
-                    || item.getFlag().getNumericLevel() == EErrorLevel.FATAL_ERROR.getNumericLevel()) {
-                    return TestResultType.FAILURE;
-                }
+            if (item.getFlag().getNumericLevel() == EErrorLevel.ERROR.getNumericLevel()
+                || item.getFlag().getNumericLevel() == EErrorLevel.FATAL_ERROR.getNumericLevel()) {
+                return TestResultType.FAILURE;
             }
         }
         return TestResultType.SUCCESS;
@@ -112,19 +111,19 @@ public class SchematronReportHandler {
      */
     public TAR createReport() {
         if (this.svrlReport != null) {
-            List<SVRLFailedAssert> error = SVRLHelper.getAllFailedAssertions(this.svrlReport);
+            var error = SVRLHelper.getAllFailedAssertions(this.svrlReport);
             this.report.setResult(TestResultType.SUCCESS);
-            if (error.size() > 0) {
+            if (!error.isEmpty()) {
                 this.report.setResult(getErrorLevel(error));
-                List element = this.traverseSVRLMessages(error);
+                var element = this.traverseSVRLMessages(error);
                 this.report.getReports().getInfoOrWarningOrError().addAll(element);
             }
-            List<SVRLSuccessfulReport> element = SVRLHelper.getAllSuccessfulReports(this.svrlReport);
+            var element = SVRLHelper.getAllSuccessfulReports(this.svrlReport);
             if (element.size() > 0) {
                 if (this.report.getResult() == TestResultType.SUCCESS) {
                     this.report.setResult(getErrorLevel(element));
                 }
-                List successReports = this.traverseSVRLMessages(element);
+                var successReports = this.traverseSVRLMessages(element);
                 this.report.getReports().getInfoOrWarningOrError().addAll(successReports);
             }
         } else {
@@ -132,11 +131,11 @@ public class SchematronReportHandler {
             BAR error1 = new BAR();
             error1.setDescription(localiser.localise("validator.label.exception.errorWithSchematronDueToProblemInXML"));
             error1.setLocation(ValidationConstants.INPUT_XML+":1:0");
-            JAXBElement element1 = this.objectFactory.createTestAssertionGroupReportsTypeError(error1);
+            var element1 = this.objectFactory.createTestAssertionGroupReportsTypeError(error1);
             this.report.getReports().getInfoOrWarningOrError().add(element1);
         }
         if (reportsOrdered) {
-            Collections.sort(this.report.getReports().getInfoOrWarningOrError(), new ReportItemComparator());
+            this.report.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
         }
         return this.report;
     }
@@ -266,12 +265,12 @@ public class SchematronReportHandler {
         String xpathExpressionConverted = convertToXPathExpression(xpathExpression, true);
         XPath xPath = getXPathFactory().newXPath();
         xPath.setNamespaceContext(getNamespaceContext());
-        Node node;
+        Node locatedNode;
         try {
-            node = (Node)xPath.evaluate(xpathExpressionConverted, this.node, XPathConstants.NODE);
-            return (String)node.getUserData("lineNumber");
+            locatedNode = (Node)xPath.evaluate(xpathExpressionConverted, this.node, XPathConstants.NODE);
+            return (String)locatedNode.getUserData("lineNumber");
         } catch (Exception e) {
-            logger.error("Unable to locate line for expression ["+xpathExpression+"] ["+xpathExpressionConverted+"]: "+e.getMessage());
+            logger.error("Unable to locate line for expression [{}] [{}]: {}", xpathExpression, xpathExpressionConverted, e.getMessage());
             return "0";
         }
     }

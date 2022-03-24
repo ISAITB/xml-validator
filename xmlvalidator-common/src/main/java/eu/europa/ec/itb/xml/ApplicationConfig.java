@@ -283,6 +283,7 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
     /**
      * Initialise the configuration.
      */
+    @Override
     @PostConstruct
     public void init() {
         super.init();

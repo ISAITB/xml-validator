@@ -15,15 +15,15 @@ public class DomainConfig extends WebDomainConfig {
 
     private String mailFrom;
     private boolean mailAuthEnable = true;
-    private String mailAuthUsername = "validate.invoice@gmail.com";
-    private String mailAuthPassword = "Admin12345_";
-    private String mailOutboundHost = "smtp.gmail.com";
-    private int mailOutboundPort = 465;
+    private String mailAuthUsername;
+    private String mailAuthPassword;
+    private String mailOutboundHost;
+    private int mailOutboundPort;
     private boolean mailOutboundSSLEnable = true;
-    private String mailInboundHost = "imap.gmail.com";
-    private int mailInboundPort = 993;
+    private String mailInboundHost;
+    private int mailInboundPort;
     private boolean mailInboundSSLEnable = true;
-    private String mailInboundFolder = "INBOX";
+    private String mailInboundFolder;
     private boolean includeTestDefinition;
     private boolean reportsOrdered;
 

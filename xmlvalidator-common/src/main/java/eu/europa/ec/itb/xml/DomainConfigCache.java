@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.Set;
 
+import static eu.europa.ec.itb.validation.commons.config.ParseUtils.addMissingDefaultValues;
+
 /**
  * Component to load, record and share the domain configurations.
  */

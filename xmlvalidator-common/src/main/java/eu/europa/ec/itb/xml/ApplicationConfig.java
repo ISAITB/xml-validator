@@ -287,6 +287,8 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
     @PostConstruct
     public void init() {
         super.init();
+        setSupportsAdditionalInformationInReportItems(false);
+        setSupportsTestDefinitionInReportItems(true);
         //  Default labels.
         defaultLabels.put(ValidationConstants.INPUT_XML, defaultXmlDescription);
         defaultLabels.put(ValidationConstants.INPUT_TYPE, defaultTypeDescription);

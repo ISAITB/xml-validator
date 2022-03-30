@@ -104,6 +104,16 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
     }
 
     /**
+     * Returns the name of a CSV report file based on the provided identifier.
+     *
+     * @param uuid The UUID to consider.
+     * @return The file name.
+     */
+    public String getReportFileNameCsv(String uuid) {
+        return config.getReportFilePrefix()+uuid+".csv";
+    }
+
+    /**
      * Check if the provided file is accepted as input in terms of its content type.
      *
      * @param file The file to check.

@@ -45,4 +45,15 @@ public class FileController extends BaseFileController<FileManager, ApplicationC
         return fileManager.getReportFileNamePdf(id);
     }
 
+    /**
+     * @see BaseFileController#getReportFileNameCsv(String)
+     *
+     * @param id The UUID.
+     * @return The file name.
+     */
+    @Override
+    public String getReportFileNameCsv(String id) {
+        return fileManager.getReportFileNameCsv(id);
+    }
+
 }

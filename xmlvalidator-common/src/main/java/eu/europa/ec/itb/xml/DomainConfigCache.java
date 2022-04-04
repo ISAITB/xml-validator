@@ -77,7 +77,6 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         domainConfig.setMailInboundSSLEnable(config.getBoolean("validator.mailInboundSSLEnable", false));
         domainConfig.setMailInboundFolder(config.getString("validator.mailInboundFolder", "INBOX"));
         domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
-        domainConfig.setReportsOrdered(config.getBoolean("validator.reportsOrdered", false));
         addMissingDefaultValues(domainConfig.getWebServiceDescription(), appConfig.getDefaultLabels());
     }
 

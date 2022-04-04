@@ -25,7 +25,6 @@ public class DomainConfig extends WebDomainConfig {
     private boolean mailInboundSSLEnable = true;
     private String mailInboundFolder;
     private boolean includeTestDefinition;
-    private boolean reportsOrdered;
 
     /**
      * @return True if the domain defines a validation type supporting or requiring user-provided XSDs.
@@ -84,20 +83,6 @@ public class DomainConfig extends WebDomainConfig {
      */
     public void setIncludeTestDefinition(boolean includeTestDefinition) {
         this.includeTestDefinition = includeTestDefinition;
-    }
-
-    /**
-     * @return True if validation report items should be ordered based on severity level.
-     */
-    public boolean isReportsOrdered() {
-        return reportsOrdered;
-    }
-
-    /**
-     * @param reportsOrdered True if validation report items should be ordered based on severity level.
-     */
-    public void setReportsOrdered(boolean reportsOrdered) {
-        this.reportsOrdered = reportsOrdered;
     }
 
     /**

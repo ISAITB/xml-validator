@@ -51,7 +51,7 @@
         <version.jaxb>2.3.1</version.jaxb>
         <version.commonsLang>3.10</version.commonsLang>
         <version.gitbTypes>1.16.0</version.gitbTypes>
-        <version.xerces>2.12.1</version.xerces>
+        <version.xerces>2.12.2</version.xerces>
         <version.saxon>10.6</version.saxon>
         <version.tika>2.1.0</version.tika>
         <version.helgerSchematron>6.2.8</version.helgerSchematron>

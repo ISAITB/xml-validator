@@ -57,7 +57,8 @@
                 <div th:replace="fragments/output :: reportTitle(${config}, ${minimalUI})"/>
                 <div class="panel panel-default">
                     <div th:replace="fragments/output :: reportHeader(${config}, ${minimalUI})"/>
-                    <div th:replace="fragments/output :: reportSummary(${config}, true)"/>
+                    <div th:replace="fragments/output :: reportSummary(${config})"/>
+                    <div th:replace="fragments/output :: reportControls(${config})"/>
                 </div>
                 <div th:replace="fragments/output :: reportDetails(${config}, ${minimalUI}, true)"/>
             </div>

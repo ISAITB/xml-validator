@@ -1,7 +1,7 @@
 package eu.europa.ec.itb.xml.upload;
 
 import com.gitb.tr.TAR;
-import eu.europa.ec.itb.validation.commons.LocalisationHelper;
+import eu.europa.ec.itb.validation.commons.*;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.validation.commons.web.locale.CustomLocaleResolver;
 import eu.europa.ec.itb.xml.ApplicationConfig;
@@ -10,8 +10,6 @@ import eu.europa.ec.itb.xml.DomainConfigCache;
 import eu.europa.ec.itb.xml.InputHelper;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
-import eu.europa.ec.itb.validation.commons.FileInfo;
-import eu.europa.ec.itb.validation.commons.ValidatorChannel;
 import eu.europa.ec.itb.validation.commons.artifact.ExternalArtifactSupport;
 import eu.europa.ec.itb.validation.commons.artifact.ValidationArtifactInfo;
 import eu.europa.ec.itb.validation.commons.web.errors.NotFoundException;
@@ -185,7 +183,13 @@ public class UploadController {
                     if (proceedToValidate) {
                         XMLValidator validator = beans.getBean(XMLValidator.class, inputFile, validationType, externalSchemaIS, externalSchIS, config, localisationHelper);
                         TAR report = validator.validateAll();
+                        TAR aggregateReport = Utils.toAggregatedTAR(report, localisationHelper);
+                        if (config.isReportsOrdered() && aggregateReport.getReports() != null) {
+                            aggregateReport.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
+                        }
                         attributes.put(PARAM_REPORT, report);
+                        attributes.put(PARAM_AGGREGATE_REPORT, aggregateReport);
+                        attributes.put(PARAM_SHOW_AGGREGATE_REPORT, Utils.aggregateDiffers(report, aggregateReport));
                         attributes.put(PARAM_DATE, report.getDate().toString());
                         if (contentType.equals(CONTENT_TYPE_FILE)) {
                             attributes.put(PARAM_FILE_NAME, file.getOriginalFilename());
@@ -199,6 +203,7 @@ public class UploadController {
                             String inputID = fileManager.writeXML(config.getDomainName(), report.getContext().getItem().get(0).getValue());
                             attributes.put(PARAM_INPUT_ID, inputID);
                             fileManager.saveReport(report, inputID, config);
+                            fileManager.saveReport(aggregateReport, inputID, config, true);
                         } catch (IOException e) {
                             logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
                             attributes.put(PARAM_MESSAGE, localisationHelper.localise("validator.label.exception.errorGeneratingDetailedReport", e.getMessage()));

@@ -12,6 +12,7 @@ import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.validation.commons.FileInfo;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
+import eu.europa.ec.itb.validation.commons.ReportItemComparator;
 import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
 import eu.europa.ec.itb.validation.plugin.PluginManager;
@@ -19,7 +20,6 @@ import eu.europa.ec.itb.validation.plugin.ValidationPlugin;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.util.FileManager;
 import org.apache.commons.io.FileUtils;
-import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -392,6 +392,9 @@ public class XMLValidator {
         if (pluginResult != null) {
             overallResult = Utils.mergeReports(new TAR[] {overallResult, pluginResult});
         }
+        if (domainConfig.isReportsOrdered() && overallResult.getReports() != null) {
+            overallResult.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
+        }
         return overallResult;
     }
 
@@ -487,7 +490,7 @@ public class XMLValidator {
         } catch (Exception e) {
             throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
         }
-        SchematronReportHandler handler = new SchematronReportHandler(schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isReportsOrdered(), locationAsPath, localiser);
+        SchematronReportHandler handler = new SchematronReportHandler(schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), locationAsPath, localiser);
         return handler.createReport();
     }
 

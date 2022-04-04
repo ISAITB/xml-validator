@@ -21,7 +21,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -44,7 +43,6 @@ public class SchematronReportHandler {
     private Boolean hasDefaultNamespace;
     private final boolean convertXPathExpressions;
     private final boolean includeTest;
-    private final boolean reportsOrdered;
     private final TAR report;
     private final ObjectFactory objectFactory = new ObjectFactory();
 
@@ -55,12 +53,11 @@ public class SchematronReportHandler {
      * @param svrl The raw Schamtron output.
      * @param convertXPathExpressions True if XPath expressions should be converted between SCH and XSLT.
      * @param includeTest True if the test per report item should be included.
-     * @param reportsOrdered True is reports should be ordered based on severity.
      * @param locationAsPath True if report item locations should be XPath expressions. If not the line numbers will be
      *                       calculated and recorded instead.
      * @param localiser Helper class for translations.
      */
-    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean reportsOrdered, boolean locationAsPath, LocalisationHelper localiser) {
+    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean locationAsPath, LocalisationHelper localiser) {
         this.node = node;
         this.svrlReport = svrl;
         report = new TAR();
@@ -70,7 +67,6 @@ public class SchematronReportHandler {
         this.report.setReports(new TestAssertionGroupReportsType());
         this.convertXPathExpressions = convertXPathExpressions;
         this.includeTest = includeTest;
-        this.reportsOrdered = reportsOrdered;
         this.locationAsPath = locationAsPath;
         this.localiser = localiser;
     }
@@ -133,9 +129,6 @@ public class SchematronReportHandler {
             error1.setLocation(ValidationConstants.INPUT_XML+":1:0");
             var element1 = this.objectFactory.createTestAssertionGroupReportsTypeError(error1);
             this.report.getReports().getInfoOrWarningOrError().add(element1);
-        }
-        if (reportsOrdered) {
-            this.report.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
         }
         return this.report;
     }
@@ -346,45 +339,4 @@ public class SchematronReportHandler {
         return hasDefaultNamespace;
     }
 
-    /**
-     * Comparator for TAR report items to allow their sorting.
-     */
-    private static class ReportItemComparator implements Comparator<JAXBElement<TestAssertionReportType>> {
-
-        /**
-         * @see Comparator#compare(Object, Object)
-         *
-         * Errors come before warnings which come before information messages.
-         *
-         * @param o1 Object 1.
-         * @param o2 Object 2.
-         * @return The compare result.
-         */
-        @Override
-        public int compare(JAXBElement<TestAssertionReportType> o1, JAXBElement<TestAssertionReportType> o2) {
-            if (o1 == null && o2 == null) {
-                return 0;
-            } else if (o1 == null) {
-                return -1;
-            } else if (o2 == null) {
-                return 1;
-            } else {
-                String name1 = o1.getName().getLocalPart();
-                String name2 = o2.getName().getLocalPart();
-                if (name1.equals(name2)) {
-                    return 0;
-                } else if ("error".equals(name1)) {
-                    return -1;
-                } else if ("error".equals(name2)) {
-                    return 1;
-                } else if ("warning".equals(name1)) {
-                    return -1;
-                } else if ("warning".equals(name2)) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            }
-        }
-    }
 }

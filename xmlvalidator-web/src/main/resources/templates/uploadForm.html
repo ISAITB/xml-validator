@@ -43,7 +43,7 @@
                 <form method="POST" enctype="multipart/form-data" th:action="@{${not minimalUI ? 'upload' : 'uploadm'}}" class="form-horizontal" novalidate="novalidate">
                     <div th:class="${minimalUI} ? panel-default : ''" th:classappend="${minimalUI} ? panel : ''">
                         <div th:replace="fragments/input :: formHeader(${config}, ${minimalUI})"/>
-                        <div th:class="${minimalUI} ? panel-body : ''">
+                        <div th:class="${minimalUI}?'panel-body panel-body-minimal':''">
                             <div th:replace="fragments/input :: mainForm(${config})"/>
                             <div th:replace="fragments/input :: externalArtifactCheck(${localiser.localise('validator.label.includeExternalArtefacts')}, ${localiser.localise('validator.label.externalArtefactsTooltip')})"/>
                             <div th:replace="fragments/input :: externalArtifactControl('schema', ${localiser.localise('validator.label.externalSchemaLabel')})"/>

@@ -24,36 +24,39 @@ public class FileController extends BaseFileController<FileManager, ApplicationC
     }
 
     /**
-     * @see BaseFileController#getReportFileNameXml(String)
+     * @see BaseFileController#getReportFileNameXml(String, boolean)
      *
      * @param id The UUID.
+     * @param aggregate Whether the report is an aggregate.
      * @return The file name.
      */
     @Override
-    public String getReportFileNameXml(String id) {
-        return fileManager.getReportFileNameXml(id);
+    public String getReportFileNameXml(String id, boolean aggregate) {
+        return fileManager.getReportFileNameXml(id, aggregate);
     }
 
     /**
-     * @see BaseFileController#getReportFileNamePdf(String)
+     * @see BaseFileController#getReportFileNamePdf(String, boolean)
      *
      * @param id The UUID.
+     * @param aggregate Whether the report is an aggregate.
      * @return The file name.
      */
     @Override
-    public String getReportFileNamePdf(String id) {
-        return fileManager.getReportFileNamePdf(id);
+    public String getReportFileNamePdf(String id, boolean aggregate) {
+        return fileManager.getReportFileNamePdf(id, aggregate);
     }
 
     /**
-     * @see BaseFileController#getReportFileNameCsv(String)
+     * @see BaseFileController#getReportFileNameCsv(String, boolean)
      *
      * @param id The UUID.
+     * @param aggregate Whether the report is an aggregate.
      * @return The file name.
      */
     @Override
-    public String getReportFileNameCsv(String id) {
-        return fileManager.getReportFileNameCsv(id);
+    public String getReportFileNameCsv(String id, boolean aggregate) {
+        return fileManager.getReportFileNameCsv(id, aggregate);
     }
 
 }

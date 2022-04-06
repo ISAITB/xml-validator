@@ -270,8 +270,8 @@ public class MailHandler {
             for (FileReport report: reports) {
                 String fileID = UUID.randomUUID().toString();
                 fileManager.saveReport(report.getReport(), fileID, domainConfig);
-                helper.addAttachment(report.getReportXmlFileName(), fileController.getReportXml(domainConfig.getDomainName(), fileID, null));
-                helper.addAttachment(report.getReportPdfFileName(), fileController.getReportPdf(domainConfig.getDomainName(), fileID, null, null));
+                helper.addAttachment(report.getReportXmlFileName(), fileController.getReportXml(domainConfig.getDomainName(), fileID, false, null));
+                helper.addAttachment(report.getReportPdfFileName(), fileController.getReportPdf(domainConfig.getDomainName(), fileID, false, null, null));
                 sb.append(report).append("\n\n");
             }
             helper.setText(sb.toString());

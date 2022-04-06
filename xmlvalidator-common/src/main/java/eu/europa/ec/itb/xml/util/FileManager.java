@@ -87,30 +87,33 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
      * Returns the name of a XML report file based on the provided identifier.
      *
      * @param uuid The UUID to consider.
+     * @param aggregate Whether the report is an aggregate.
      * @return The file name.
      */
-    public String getReportFileNameXml(String uuid) {
-        return config.getReportFilePrefix()+uuid+".xml";
+    public String getReportFileNameXml(String uuid, boolean aggregate) {
+        return config.getReportFilePrefix()+uuid+(aggregate?"_aggregate":"")+".xml";
     }
 
     /**
      * Returns the name of a PDF report file based on the provided identifier.
      *
      * @param uuid The UUID to consider.
+     * @param aggregate Whether the report is an aggregate.
      * @return The file name.
      */
-    public String getReportFileNamePdf(String uuid) {
-        return config.getReportFilePrefix()+uuid+".pdf";
+    public String getReportFileNamePdf(String uuid, boolean aggregate) {
+        return config.getReportFilePrefix()+uuid+(aggregate?"_aggregate":"")+".pdf";
     }
 
     /**
      * Returns the name of a CSV report file based on the provided identifier.
      *
      * @param uuid The UUID to consider.
+     * @param aggregate Whether the report is an aggregate.
      * @return The file name.
      */
-    public String getReportFileNameCsv(String uuid) {
-        return config.getReportFilePrefix()+uuid+".csv";
+    public String getReportFileNameCsv(String uuid, boolean aggregate) {
+        return config.getReportFilePrefix()+uuid+(aggregate?"_aggregate":"")+".csv";
     }
 
     /**

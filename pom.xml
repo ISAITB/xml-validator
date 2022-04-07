@@ -46,7 +46,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <version.springBoot>2.6.6</version.springBoot>
         <version.itbCommons>1.2.0-SNAPSHOT</version.itbCommons>
-        <version.cxf>3.4.5</version.cxf>
+        <version.cxf>3.5.1</version.cxf>
         <version.commonsIo>2.7</version.commonsIo>
         <version.jaxb>2.3.1</version.jaxb>
         <version.commonsLang>3.10</version.commonsLang>

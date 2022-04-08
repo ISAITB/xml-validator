@@ -200,7 +200,11 @@ public class UploadController {
                         }
                         // Cache detailed report.
                         try {
-                            String inputID = fileManager.writeXML(config.getDomainName(), report.getContext().getItem().get(0).getValue());
+                            String inputToInclude = null;
+                            if (report.getContext() != null && !report.getContext().getItem().isEmpty()) {
+                                inputToInclude = report.getContext().getItem().get(0).getValue();
+                            }
+                            String inputID = fileManager.writeXML(config.getDomainName(), inputToInclude);
                             attributes.put(PARAM_INPUT_ID, inputID);
                             fileManager.saveReport(report, inputID, config);
                             fileManager.saveReport(aggregateReport, inputID, config, true);

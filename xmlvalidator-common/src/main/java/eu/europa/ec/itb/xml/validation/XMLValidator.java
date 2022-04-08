@@ -15,10 +15,14 @@ import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.ReportItemComparator;
 import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
+import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.validation.plugin.PluginManager;
 import eu.europa.ec.itb.validation.plugin.ValidationPlugin;
 import eu.europa.ec.itb.xml.DomainConfig;
+import eu.europa.ec.itb.xml.XMLInvalidException;
 import eu.europa.ec.itb.xml.util.FileManager;
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.type.Type;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StreamUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.SAXNotRecognizedException;
@@ -34,11 +37,15 @@ import org.xml.sax.SAXNotSupportedException;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBElement;
+import javax.xml.transform.Source;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -77,6 +84,7 @@ public class XMLValidator {
     private final List<FileInfo> externalSch;
     private final boolean locationAsPath;
     private final boolean addInputToReport;
+    private File inputToValidatePreprocessed;
 
     /**
      * Constructor.
@@ -123,13 +131,67 @@ public class XMLValidator {
      * Open a stream to read the input content.
      *
      * @return The stream to read.
+     * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    private InputStream getInputStreamForValidation() {
+    private InputStream getInputStreamForValidation() throws XMLInvalidException {
         try {
-            return Files.newInputStream(inputToValidate.toPath());
+            return Files.newInputStream(getInputFileToUse().toPath());
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /**
+     * Get the input file to use for validations.
+     *
+     * @return The file to use.
+     * @throws XMLInvalidException If the XML cannot be parsed.
+     */
+    private File getInputFileToUse() throws XMLInvalidException {
+        if (inputToValidatePreprocessed == null) {
+            var expression = domainConfig.getInputPreprocessorPerType().get(validationType);
+            if (expression == null) {
+                // No preprocessing needed.
+                inputToValidatePreprocessed = inputToValidate;
+            } else {
+                inputToValidatePreprocessed = new File(inputToValidate.getParentFile(), UUID.randomUUID() + ".xml");
+                // A preprocessing XPath expression has been provided for the given validation type.
+                XPathExpression xPath;
+                try {
+                    xPath = new net.sf.saxon.xpath.XPathFactoryImpl().newXPath().compile(expression);
+                } catch (XPathExpressionException e) {
+                    throw new ValidatorException("validator.label.exception.invalidInputPreprocessingExpression");
+                }
+                try (
+                    var input = Files.newInputStream(inputToValidate.toPath());
+                    var output = Files.newOutputStream(inputToValidatePreprocessed.toPath())
+                ) {
+                    var result = xPath.evaluate(new StreamSource(input), XPathConstants.NODE);
+                    if (result instanceof NodeInfo) {
+                        int resultKind = ((NodeInfo) result).getNodeKind();
+                        if (resultKind == Type.ELEMENT || resultKind == Type.DOCUMENT || resultKind == Type.NODE) {
+                            Utils.serialize((Source) result, output);
+                        } else {
+                            throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
+                        }
+                    } else {
+                        throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
+                    }
+                } catch (IOException e) {
+                    throw new IllegalStateException("Unable to read input for preprocessing", e);
+                } catch (XPathExpressionException e) {
+                    throw new XMLInvalidException(e);
+                }
+                try {
+                    FileUtils.deleteQuietly(inputToValidate);
+                    FileUtils.moveFile(inputToValidatePreprocessed, inputToValidate);
+                    inputToValidatePreprocessed = inputToValidate;
+                } catch (IOException e) {
+                    throw new IllegalStateException("Unable to preprocess input", e);
+                }
+            }
+        }
+        return inputToValidatePreprocessed;
     }
 
     /**
@@ -171,7 +233,7 @@ public class XMLValidator {
      *
      * @return The TAR validation report.
      */
-    private TAR validateAgainstSchema() {
+    private TAR validateAgainstSchema() throws XMLInvalidException {
         List<FileInfo> schemaFiles = fileManager.getPreconfiguredValidationArtifacts(domainConfig, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA);
         schemaFiles.addAll(externalSchema);
         if (schemaFiles.isEmpty()) {
@@ -197,8 +259,9 @@ public class XMLValidator {
      * @param schemaFile The XSD to use.
      *
      * @return The TAR validation report.
+     * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    private TAR validateSchema(InputStream inputSource, File schemaFile) {
+    private TAR validateSchema(InputStream inputSource, File schemaFile) throws XMLInvalidException {
         // Create error handler.
         XSDReportHandler handler = new XSDReportHandler();
         // Resolve schema.
@@ -227,8 +290,7 @@ public class XMLValidator {
             validator.validate(source);
             report = handler.createReport();
         } catch (Exception e) {
-            logger.warn("Error while validating XML [{}]", e.getMessage());
-            report = createFailureReport();
+            throw new XMLInvalidException(e);
         }
         return report;
     }
@@ -252,8 +314,13 @@ public class XMLValidator {
      */
     private TAR createFailureReport() {
         TAR report = new TAR();
+        report.setCounters(new ValidationCounters());
+        report.getCounters().setNrOfErrors(BigInteger.ONE);
+        report.getCounters().setNrOfWarnings(BigInteger.ZERO);
+        report.getCounters().setNrOfAssertions(BigInteger.ZERO);
         report.setReports(new TestAssertionGroupReportsType());
         report.setResult(TestResultType.FAILURE);
+        report.setDate(Utils.getXMLGregorianCalendarDateTime());
         BAR error1 = new BAR();
         error1.setDescription(localiser.localise("validator.label.exception.errorDueToProblemInXML"));
         error1.setLocation("XML:1:0");
@@ -266,8 +333,9 @@ public class XMLValidator {
      * Complete the metadata of the provided report.
      *
      * @param report The report to complete.
+     * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    private void completeReport(TAR report) {
+    private void completeReport(TAR report) throws XMLInvalidException {
         if (report != null) {
             if (report.getDate() == null) {
                 report.setDate(Utils.getXMLGregorianCalendarDateTime());
@@ -276,7 +344,7 @@ public class XMLValidator {
                 report.setContext(new AnyContent());
                 String inputXML;
                 try {
-                    inputXML = StreamUtils.copyToString(getInputStreamForValidation(), StandardCharsets.UTF_8);
+                    inputXML = Files.readString(getInputFileToUse().toPath(), StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
@@ -313,8 +381,9 @@ public class XMLValidator {
      * Validate the input against the configured and provided Schematron files.
      *
      * @return The TAR validation report.
+     * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    private TAR validateAgainstSchematron() {
+    private TAR validateAgainstSchematron() throws XMLInvalidException {
         List<TAR> reports = new ArrayList<>();
         List<FileInfo> schematronFiles = fileManager.getPreconfiguredValidationArtifacts(domainConfig, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON);
         schematronFiles.addAll(externalSch);
@@ -368,32 +437,37 @@ public class XMLValidator {
     public TAR validateAll() {
         TAR overallResult;
         try {
-            fileManager.signalValidationStart(domainConfig.getDomainName());
-            TAR schemaResult = validateAgainstSchema();
-            if (schemaResult == null) {
-                // No schema.
-                schemaResult = createEmptyReport();
-            }
-            if (schemaResult.getResult() != TestResultType.SUCCESS) {
-                overallResult = schemaResult;
-            } else {
-                TAR schematronResult = validateAgainstSchematron();
-                if (schematronResult != null) {
-                    overallResult = Utils.mergeReports(new TAR[] {schemaResult, schematronResult});
-                } else {
-                    overallResult = Utils.mergeReports(new TAR[] {schemaResult});
+            try {
+                fileManager.signalValidationStart(domainConfig.getDomainName());
+                TAR schemaResult = validateAgainstSchema();
+                if (schemaResult == null) {
+                    // No schema.
+                    schemaResult = createEmptyReport();
                 }
+                if (schemaResult.getResult() != TestResultType.SUCCESS) {
+                    overallResult = schemaResult;
+                } else {
+                    TAR schematronResult = validateAgainstSchematron();
+                    if (schematronResult != null) {
+                        overallResult = Utils.mergeReports(new TAR[] {schemaResult, schematronResult});
+                    } else {
+                        overallResult = Utils.mergeReports(new TAR[] {schemaResult});
+                    }
+                }
+                completeReport(overallResult);
+            } finally {
+                fileManager.signalValidationEnd(domainConfig.getDomainName());
             }
-            completeReport(overallResult);
-        } finally {
-            fileManager.signalValidationEnd(domainConfig.getDomainName());
-        }
-        TAR pluginResult = validateAgainstPlugins();
-        if (pluginResult != null) {
-            overallResult = Utils.mergeReports(new TAR[] {overallResult, pluginResult});
-        }
-        if (domainConfig.isReportsOrdered() && overallResult.getReports() != null) {
-            overallResult.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
+            TAR pluginResult = validateAgainstPlugins();
+            if (pluginResult != null) {
+                overallResult = Utils.mergeReports(new TAR[] {overallResult, pluginResult});
+            }
+            if (domainConfig.isReportsOrdered() && overallResult.getReports() != null) {
+                overallResult.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
+            }
+        } catch (XMLInvalidException e) {
+            logger.warn("Error while validating XML [{}]", e.getMessage());
+            overallResult = createFailureReport();
         }
         return overallResult;
     }
@@ -402,12 +476,13 @@ public class XMLValidator {
      * Validate the input against any configured custom plugins.
      *
      * @return The plugin validation report.
+     * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    private TAR validateAgainstPlugins() {
+    private TAR validateAgainstPlugins() throws XMLInvalidException {
         TAR pluginReport = null;
         ValidationPlugin[] plugins = pluginManager.getPlugins(pluginConfigProvider.getPluginClassifier(domainConfig, validationType));
         if (plugins != null && plugins.length > 0) {
-            File pluginTmpFolder = new File(inputToValidate.getParentFile(), UUID.randomUUID().toString());
+            File pluginTmpFolder = new File(getInputFileToUse().getParentFile(), UUID.randomUUID().toString());
             try {
                 pluginTmpFolder.mkdirs();
                 ValidateRequest pluginInput = preparePluginInput(pluginTmpFolder);
@@ -436,11 +511,12 @@ public class XMLValidator {
      *
      * @param pluginTmpFolder A temporary folder to be used by the plugins for processing.
      * @return The request to pass to each plugin.
+     * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    private ValidateRequest preparePluginInput(File pluginTmpFolder) {
+    private ValidateRequest preparePluginInput(File pluginTmpFolder) throws XMLInvalidException {
         File pluginInputFile = new File(pluginTmpFolder, UUID.randomUUID() +".xml");
         try {
-            FileUtils.copyFile(inputToValidate, pluginInputFile);
+            FileUtils.copyFile(getInputFileToUse(), pluginInputFile);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to copy input file for plugin", e);
         }

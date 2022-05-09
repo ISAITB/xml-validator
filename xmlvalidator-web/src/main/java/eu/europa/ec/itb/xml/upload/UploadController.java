@@ -2,7 +2,12 @@ package eu.europa.ec.itb.xml.upload;
 
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.validation.commons.*;
+import eu.europa.ec.itb.validation.commons.artifact.ExternalArtifactSupport;
+import eu.europa.ec.itb.validation.commons.artifact.ValidationArtifactInfo;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
+import eu.europa.ec.itb.validation.commons.web.dto.Translations;
+import eu.europa.ec.itb.validation.commons.web.dto.UploadResult;
+import eu.europa.ec.itb.validation.commons.web.errors.NotFoundException;
 import eu.europa.ec.itb.validation.commons.web.locale.CustomLocaleResolver;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
@@ -10,9 +15,6 @@ import eu.europa.ec.itb.xml.DomainConfigCache;
 import eu.europa.ec.itb.xml.InputHelper;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
-import eu.europa.ec.itb.validation.commons.artifact.ExternalArtifactSupport;
-import eu.europa.ec.itb.validation.commons.artifact.ValidationArtifactInfo;
-import eu.europa.ec.itb.validation.commons.web.errors.NotFoundException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -113,7 +115,8 @@ public class UploadController {
      * @return The model and view information.
      */
     @PostMapping(value = "/{domain}/upload")
-    public ModelAndView handleUpload(@PathVariable("domain") String domain,
+    @ResponseBody
+    public UploadResult<Translations> handleUpload(@PathVariable("domain") String domain,
                                      @RequestParam("file") MultipartFile file,
                                      @RequestParam(value = "uri", defaultValue = "") String uri,
                                      @RequestParam(value = "text-editor", defaultValue = "") String string,
@@ -135,38 +138,28 @@ public class UploadController {
         }
         var localisationHelper = new LocalisationHelper(config, localeResolver.resolveLocale(request, response, config, appConfig));
         MDC.put(MDC_DOMAIN, domain);
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(PARAM_DOMAIN_CONFIG, config);
-        attributes.put(PARAM_MINIMAL_UI, false);
-        attributes.put(PARAM_LOCALISER, localisationHelper);
-        attributes.put(PARAM_HTML_BANNER_EXISTS, localisationHelper.propertyExists("validator.bannerHtml"));
-        attributes.put(PARAM_EXTERNAL_ARTIFACT_INFO, config.getExternalArtifactInfoMap());
-        if (StringUtils.isNotBlank(validationType)) {
-            attributes.put(PARAM_VALIDATION_TYPE_LABEL, config.getCompleteTypeOptionLabel(validationType, localisationHelper));
+        var result = new UploadResult<>();
+
+        if (StringUtils.isBlank(validationType)) {
+            validationType = config.getType().get(0);
         }
-        attributes.put(PARAM_APP_CONFIG, appConfig);
-        File tempFolderForRequest = fileManager.createTemporaryFolderPath();
-        try {
-            boolean proceedToValidate = true;
-            if (StringUtils.isBlank(validationType)) {
-                validationType = config.getType().get(0);
-            }
-            if (config.hasMultipleValidationTypes() && (validationType == null || !config.getType().contains(validationType))) {
-                // A validation type is required.
-                attributes.put(PARAM_MESSAGE, localisationHelper.localise("validator.label.exception.providedValidationTypeNotValid"));
-                proceedToValidate = false;
-            }
-            if (proceedToValidate) {
+        if (config.hasMultipleValidationTypes() && (validationType == null || !config.getType().contains(validationType))) {
+            // A validation type is required.
+            result.setMessage(localisationHelper.localise("validator.label.exception.providedValidationTypeNotValid"));
+        } else {
+            File tempFolderForRequest = fileManager.createTemporaryFolderPath();
+            var proceedToValidate = true;
+            try {
                 File inputFile = null;
                 try {
                     inputFile = saveInput(contentType, file.getInputStream(), uri, string, tempFolderForRequest);
                     if (inputFile == null || !fileManager.checkFileType(inputFile)) {
                         proceedToValidate = false;
-                        attributes.put(PARAM_MESSAGE, localisationHelper.localise("validator.label.exception.providedInputNotXML"));
+                        result.setMessage(localisationHelper.localise("validator.label.exception.providedInputNotXML"));
                     }
                 } catch (IOException e) {
                     logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
-                    attributes.put(PARAM_MESSAGE, localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));
+                    result.setMessage(localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));
                     proceedToValidate = false;
                 }
                 if (proceedToValidate) {
@@ -177,7 +170,7 @@ public class UploadController {
                         externalSchIS = getExternalFiles(config, externalSchContentType, externalSchFiles, externalSchUri, config.getSchematronInfo(validationType), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, tempFolderForRequest);
                     } catch (Exception e) {
                         logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
-                        attributes.put(PARAM_MESSAGE, localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));
+                        result.setMessage(localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));
                         proceedToValidate = false;
                     }
                     if (proceedToValidate) {
@@ -187,17 +180,6 @@ public class UploadController {
                         if (config.isReportsOrdered() && aggregateReport.getReports() != null) {
                             aggregateReport.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
                         }
-                        attributes.put(PARAM_REPORT, report);
-                        attributes.put(PARAM_AGGREGATE_REPORT, aggregateReport);
-                        attributes.put(PARAM_SHOW_AGGREGATE_REPORT, Utils.aggregateDiffers(report, aggregateReport));
-                        attributes.put(PARAM_DATE, report.getDate().toString());
-                        if (contentType.equals(CONTENT_TYPE_FILE)) {
-                            attributes.put(PARAM_FILE_NAME, file.getOriginalFilename());
-                        } else if (contentType.equals(CONTENT_TYPE_URI)) {
-                            attributes.put(PARAM_FILE_NAME, uri);
-                        } else {
-                            attributes.put(PARAM_FILE_NAME, "-");
-                        }
                         // Cache detailed report.
                         try {
                             String inputToInclude = null;
@@ -205,33 +187,43 @@ public class UploadController {
                                 inputToInclude = report.getContext().getItem().get(0).getValue();
                             }
                             String inputID = fileManager.writeXML(config.getDomainName(), inputToInclude);
-                            attributes.put(PARAM_INPUT_ID, inputID);
                             fileManager.saveReport(report, inputID, config);
                             fileManager.saveReport(aggregateReport, inputID, config, true);
+                            String fileName;
+                            if (contentType.equals(CONTENT_TYPE_FILE)) {
+                                fileName = file.getOriginalFilename();
+                            } else if (contentType.equals(CONTENT_TYPE_URI)) {
+                                fileName = uri;
+                            } else {
+                                fileName = "-";
+                            }
+                            result.populateCommon(localisationHelper, validationType, config, inputID,
+                                    fileName, report, aggregateReport,
+                                    new Translations(localisationHelper, report, config));
                         } catch (IOException e) {
                             logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
-                            attributes.put(PARAM_MESSAGE, localisationHelper.localise("validator.label.exception.errorGeneratingDetailedReport", e.getMessage()));
+                            result.setMessage(localisationHelper.localise("validator.label.exception.errorGeneratingDetailedReport", e.getMessage()));
                         }
                     }
                 }
-            }
-        } catch (ValidatorException e) {
-            logger.error(e.getMessageForLog(), e);
-            attributes.put(PARAM_MESSAGE, e.getMessageForDisplay(localisationHelper));
-        } catch (Exception e) {
-            logger.error("An error occurred during the validation [" + e.getMessage() + "]", e);
-            if (e.getMessage() != null) {
-                attributes.put(PARAM_MESSAGE, localisationHelper.localise("validator.label.exception.unexpectedErrorDuringValidationWithParams", e.getMessage()));
-            } else {
-                attributes.put(PARAM_MESSAGE, localisationHelper.localise("validator.label.exception.unexpectedErrorDuringValidation"));
-            }
-        } finally {
-            // Cleanup temporary resources for request.
-            if (tempFolderForRequest.exists()) {
-                FileUtils.deleteQuietly(tempFolderForRequest);
+            } catch (ValidatorException e) {
+                logger.error(e.getMessageForLog(), e);
+                result.setMessage(e.getMessageForDisplay(localisationHelper));
+            } catch (Exception e) {
+                logger.error("An error occurred during the validation [" + e.getMessage() + "]", e);
+                if (e.getMessage() != null) {
+                    result.setMessage(localisationHelper.localise("validator.label.exception.unexpectedErrorDuringValidationWithParams", e.getMessage()));
+                } else {
+                    result.setMessage(localisationHelper.localise("validator.label.exception.unexpectedErrorDuringValidation"));
+                }
+            } finally {
+                // Cleanup temporary resources for request.
+                if (tempFolderForRequest.exists()) {
+                    FileUtils.deleteQuietly(tempFolderForRequest);
+                }
             }
         }
-        return new ModelAndView(VIEW_UPLOAD_FORM, attributes);
+        return result;
     }
 
     /**
@@ -291,7 +283,8 @@ public class UploadController {
      * @return The model and view information.
      */
     @PostMapping(value = "/{domain}/uploadm")
-    public ModelAndView handleUploadM(@PathVariable("domain") String domain,
+    @ResponseBody
+    public UploadResult<Translations> handleUploadM(@PathVariable("domain") String domain,
                                       @RequestParam("file") MultipartFile file,
                                       @RequestParam(value = "uri", defaultValue = "") String uri,
                                       @RequestParam(value = "text-editor", defaultValue = "") String string,
@@ -308,12 +301,7 @@ public class UploadController {
                                       HttpServletResponse response) {
 
         setMinimalUIFlag(request, true);
-        ModelAndView mv = handleUpload(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, redirectAttributes, request, response);
-
-        Map<String, Object> attributes = mv.getModel();
-        attributes.put(PARAM_MINIMAL_UI, true);
-
-        return new ModelAndView(VIEW_UPLOAD_FORM, attributes);
+        return handleUpload(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, redirectAttributes, request, response);
     }
 
     /**

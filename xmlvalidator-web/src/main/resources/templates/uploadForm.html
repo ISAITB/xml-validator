@@ -4,11 +4,6 @@
         <title th:replace="fragments/common :: header">Validator</title>
         <script th:src="@{/webjars/codemirror/5.62.2/mode/xml/xml.js}"></script>
         <script th:src="@{/js/lib/FileSaver.min.js}"></script>
-        <script th:if="${report}" th:inline="text">
-        /*<![CDATA[*/
-            getReportData("[[${inputID}]]");
-        /*]]>*/
-        </script>
         <script th:inline="javascript">
             var externalArtifacts = {};
             [# th:each="artifactInfoEntry : ${externalArtifactInfo}"]
@@ -50,19 +45,14 @@
                             <div th:replace="fragments/input :: externalArtifactControl('schematron', ${localiser.localise('validator.label.externalSchematronLabel')})"/>
                             <div th:replace="fragments/input :: submit(${config}, ${minimalUI})"/>
                         </div>
+                        <div th:if="${minimalUI}" id="reportPlaceholder"></div>
                     </div>
                 </form>
             </div>
-            <div th:if="${report}" th:class="${not minimalUI} ? view-section-result : ''">
-                <div th:replace="fragments/output :: reportTitle(${config}, ${minimalUI})"/>
-                <div class="panel panel-default">
-                    <div th:replace="fragments/output :: reportHeader(${config}, ${minimalUI})"/>
-                    <div th:replace="fragments/output :: reportSummary(${config})"/>
-                    <div th:replace="fragments/output :: reportControls(${config})"/>
-                </div>
-                <div th:replace="fragments/output :: reportDetails(${config}, ${minimalUI}, true)"/>
-            </div>
-            <div th:replace="fragments/common :: localeSelector(${config}, ${localiser.getLocale()})"/>
+            <th:block th:if="${!minimalUI}">
+                <div id="reportPlaceholder"></div>
+                <div th:replace="fragments/common :: localeSelector(${config}, ${localiser.getLocale()})"/>
+            </th:block>
             <div th:replace="fragments/common :: footer(${config}, ${minimalUI})"/>
         </div>
         <div th:replace="fragments/common :: about">About</div>

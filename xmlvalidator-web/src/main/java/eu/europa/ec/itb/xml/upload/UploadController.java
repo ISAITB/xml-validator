@@ -288,7 +288,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
      */
     @PostMapping(value = "/{domain}/uploadm", produces = MediaType.TEXT_HTML_VALUE)
     public ModelAndView handleUploadMinimalEmbedded(@PathVariable("domain") String domain,
-                                             @RequestParam("file") MultipartFile file,
+                                             @RequestParam(value = "file", required = false) MultipartFile file,
                                              @RequestParam(value = "uri", defaultValue = "") String uri,
                                              @RequestParam(value = "text-editor", defaultValue = "") String string,
                                              @RequestParam(value = "validationType", defaultValue = "") String validationType,

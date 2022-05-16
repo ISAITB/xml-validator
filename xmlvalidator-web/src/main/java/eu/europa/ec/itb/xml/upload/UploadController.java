@@ -77,7 +77,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
      */
     @GetMapping(value = "/{domain}/upload")
     public ModelAndView upload(@PathVariable("domain") String domain, HttpServletRequest request, HttpServletResponse response) {
-        var config = validateDomain(request, domain);
+        var config = getDomainConfig(request);
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(PARAM_DOMAIN_CONFIG, config);
         attributes.put(PARAM_APP_CONFIG, appConfig);
@@ -99,7 +99,6 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
      */
     @GetMapping(value = "/{domain}/uploadm")
     public ModelAndView uploadMinimal(@PathVariable("domain") String domain, HttpServletRequest request, HttpServletResponse response) {
-        setMinimalUIFlag(request, true);
         return upload(domain, request, response);
     }
 
@@ -126,7 +125,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
     @PostMapping(value = "/{domain}/upload", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public UploadResult<Translations> handleUpload(@PathVariable("domain") String domain,
-                                     @RequestParam("file") MultipartFile file,
+                                     @RequestParam(value = "file", required = false) MultipartFile file,
                                      @RequestParam(value = "uri", defaultValue = "") String uri,
                                      @RequestParam(value = "text-editor", defaultValue = "") String string,
                                      @RequestParam(value = "validationType", defaultValue = "") String validationType,
@@ -140,7 +139,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                      RedirectAttributes redirectAttributes,
                                      HttpServletRequest request,
                                      HttpServletResponse response) {
-        var config = validateDomain(request, domain);
+        var config = getDomainConfig(request);
         var localisationHelper = new LocalisationHelper(config, localeResolver.resolveLocale(request, response, config, appConfig));
         var result = new UploadResult<>();
 
@@ -156,7 +155,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
             try {
                 File inputFile = null;
                 try {
-                    inputFile = saveInput(contentType, file.getInputStream(), uri, string, tempFolderForRequest);
+                    inputFile = saveInput(contentType, file, uri, string, tempFolderForRequest);
                     if (inputFile == null || !fileManager.checkFileType(inputFile)) {
                         proceedToValidate = false;
                         result.setMessage(localisationHelper.localise("validator.label.exception.providedInputNotXML"));
@@ -238,7 +237,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
     @PostMapping(value = "/{domain}/uploadm", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public UploadResult<Translations> handleUploadMinimal(@PathVariable("domain") String domain,
-                                      @RequestParam("file") MultipartFile file,
+                                      @RequestParam(value = "file", required = false) MultipartFile file,
                                       @RequestParam(value = "uri", defaultValue = "") String uri,
                                       @RequestParam(value = "text-editor", defaultValue = "") String string,
                                       @RequestParam(value = "validationType", defaultValue = "") String validationType,
@@ -252,8 +251,6 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                       RedirectAttributes redirectAttributes,
                                       HttpServletRequest request,
                                       HttpServletResponse response) {
-
-        setMinimalUIFlag(request, true);
         return handleUpload(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, redirectAttributes, request, response);
     }
 
@@ -264,7 +261,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
      */
     @PostMapping(value = "/{domain}/upload", produces = MediaType.TEXT_HTML_VALUE)
     public ModelAndView handleUploadEmbedded(@PathVariable("domain") String domain,
-                                             @RequestParam("file") MultipartFile file,
+                                             @RequestParam(value = "file", required = false) MultipartFile file,
                                              @RequestParam(value = "uri", defaultValue = "") String uri,
                                              @RequestParam(value = "text-editor", defaultValue = "") String string,
                                              @RequestParam(value = "validationType", defaultValue = "") String validationType,
@@ -305,7 +302,6 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                              RedirectAttributes redirectAttributes,
                                              HttpServletRequest request,
                                              HttpServletResponse response) {
-        setMinimalUIFlag(request, true);
         return handleUploadEmbedded(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, redirectAttributes, request, response);
     }
 
@@ -406,18 +402,18 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
      * Save the input XML to validate in the validator's temp file system folder.
      *
      * @param inputType The way in which to load the input.
-     * @param inputStream The input as a stream.
+     * @param file The input as a file.
      * @param uri The input as a URI.
      * @param string The input as directly provided text
      * @param parentFolder The temp folder to store the file in.
      * @return The stored file.
      * @throws IOException If an IO error occurs.
      */
-    private File saveInput(String inputType, InputStream inputStream, String uri, String string, File parentFolder) throws IOException {
+    private File saveInput(String inputType, MultipartFile file, String uri, String string, File parentFolder) throws IOException {
         File inputFile;
         switch (inputType) {
             case CONTENT_TYPE_FILE:
-                inputFile = fileManager.getFileFromInputStream(parentFolder, inputStream, null, null);
+                inputFile = fileManager.getFileFromInputStream(parentFolder, file.getInputStream(), null, null);
                 break;
             case CONTENT_TYPE_URI:
                 inputFile = fileManager.getFileFromURL(parentFolder, uri);

@@ -36,7 +36,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,10 +50,6 @@ import static eu.europa.ec.itb.validation.commons.web.Constants.*;
 public class UploadController extends BaseUploadController<DomainConfig, DomainConfigCache> {
 
     private static final Logger logger = LoggerFactory.getLogger(UploadController.class);
-
-    public static final String CONTENT_TYPE_FILE = "fileType" ;
-    public static final String CONTENT_TYPE_URI = "uriType" ;
-    public static final String CONTENT_TYPE_STRING = "stringType" ;
 
     @Autowired
     FileManager fileManager;
@@ -81,7 +76,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(PARAM_DOMAIN_CONFIG, config);
         attributes.put(PARAM_APP_CONFIG, appConfig);
-        attributes.put(PARAM_MINIMAL_UI, request.getAttribute(IS_MINIMAL));
+        attributes.put(PARAM_MINIMAL_UI, isMinimalUI(request));
         attributes.put(PARAM_EXTERNAL_ARTIFACT_INFO, config.getExternalArtifactInfoMap());
         var localisationHelper = new LocalisationHelper(config, localeResolver.resolveLocale(request, response, config, appConfig));
         attributes.put(PARAM_LOCALISER, localisationHelper);
@@ -127,7 +122,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
     public UploadResult<Translations> handleUpload(@PathVariable("domain") String domain,
                                      @RequestParam(value = "file", required = false) MultipartFile file,
                                      @RequestParam(value = "uri", defaultValue = "") String uri,
-                                     @RequestParam(value = "text-editor", defaultValue = "") String string,
+                                     @RequestParam(value = "text", defaultValue = "") String string,
                                      @RequestParam(value = "validationType", defaultValue = "") String validationType,
                                      @RequestParam(value = "contentType", defaultValue = "") String contentType,
                                      @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false) String[] externalSchemaContentType,
@@ -140,6 +135,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                      HttpServletRequest request,
                                      HttpServletResponse response) {
         var config = getDomainConfig(request);
+        contentType = checkInputType(contentType, file, uri, string);
         var localisationHelper = new LocalisationHelper(config, localeResolver.resolveLocale(request, response, config, appConfig));
         var result = new UploadResult<>();
 
@@ -239,7 +235,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
     public UploadResult<Translations> handleUploadMinimal(@PathVariable("domain") String domain,
                                       @RequestParam(value = "file", required = false) MultipartFile file,
                                       @RequestParam(value = "uri", defaultValue = "") String uri,
-                                      @RequestParam(value = "text-editor", defaultValue = "") String string,
+                                      @RequestParam(value = "text", defaultValue = "") String string,
                                       @RequestParam(value = "validationType", defaultValue = "") String validationType,
                                       @RequestParam(value = "contentType", defaultValue = "") String contentType,
                                       @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false) String[] externalSchema,
@@ -263,7 +259,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
     public ModelAndView handleUploadEmbedded(@PathVariable("domain") String domain,
                                              @RequestParam(value = "file", required = false) MultipartFile file,
                                              @RequestParam(value = "uri", defaultValue = "") String uri,
-                                             @RequestParam(value = "text-editor", defaultValue = "") String string,
+                                             @RequestParam(value = "text", defaultValue = "") String string,
                                              @RequestParam(value = "validationType", defaultValue = "") String validationType,
                                              @RequestParam(value = "contentType", defaultValue = "") String contentType,
                                              @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false) String[] externalSchema,
@@ -290,7 +286,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
     public ModelAndView handleUploadMinimalEmbedded(@PathVariable("domain") String domain,
                                              @RequestParam(value = "file", required = false) MultipartFile file,
                                              @RequestParam(value = "uri", defaultValue = "") String uri,
-                                             @RequestParam(value = "text-editor", defaultValue = "") String string,
+                                             @RequestParam(value = "text", defaultValue = "") String string,
                                              @RequestParam(value = "validationType", defaultValue = "") String validationType,
                                              @RequestParam(value = "contentType", defaultValue = "") String contentType,
                                              @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false) String[] externalSchema,

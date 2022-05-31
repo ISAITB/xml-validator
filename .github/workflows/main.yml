@@ -62,7 +62,7 @@ jobs:
             ]
           active_profiles: >
             [
-              "itbRepoRead"
+              "itbRepoRead", "github"
             ]
       - name: Install commons
         run: mvn -B install -DskipTests=true

@@ -29,6 +29,20 @@ jobs:
       - name: Generate Maven settings
         uses: whelk-io/maven-settings-xml-action@v18
         with:
+          repositories: >
+            [
+              {
+                "id": "itbRepoRead",
+                "name": "itbRepoRead",
+                "url": "${{ secrets.ITB_MVN_REPO_URL }}",
+                "releases": {
+                  "enabled": "true"
+                },
+                "snapshots": {
+                  "enabled": "true"
+                }
+              }
+            ]
           servers: >
             [
               {

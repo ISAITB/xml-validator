@@ -138,7 +138,7 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
         Tika tika = new Tika();
         String mimeType;
         try (InputStream in = Files.newInputStream(content.toPath())){
-            mimeType = tika.detect(in);
+            mimeType = tika.detect(in, content.getName());
         }
         return mimeType;
     }

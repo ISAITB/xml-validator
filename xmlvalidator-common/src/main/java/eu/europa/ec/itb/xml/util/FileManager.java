@@ -7,6 +7,7 @@ import eu.europa.ec.itb.xml.DomainConfig;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
+import org.apache.tika.metadata.Metadata;
 import org.apache.xerces.impl.xs.XMLSchemaLoader;
 import org.apache.xerces.xs.StringList;
 import org.apache.xerces.xs.XSModel;
@@ -138,7 +139,9 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
         Tika tika = new Tika();
         String mimeType;
         try (InputStream in = Files.newInputStream(content.toPath())){
-            mimeType = tika.detect(in, content.getName());
+            var metadata = new Metadata();
+            metadata.set(Metadata.CONTENT_TYPE, "application/xml");
+            mimeType = tika.detect(in, metadata);
         }
         return mimeType;
     }

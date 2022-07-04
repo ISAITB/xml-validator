@@ -66,7 +66,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         response.getModule().getMetadata().setVersion("1.0.0");
         response.getModule().setInputs(new TypedParameters());
         UsageEnumeration usage = UsageEnumeration.O;
-        if (domainConfig.hasMultipleValidationTypes()) {
+        if (domainConfig.hasMultipleValidationTypes() && domainConfig.getDefaultType() == null) {
             usage = UsageEnumeration.R;
         }
         response.getModule().getInputs().getParam().add(Utils.createParameter(ValidationConstants.INPUT_TYPE, "string", usage, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_TYPE)));

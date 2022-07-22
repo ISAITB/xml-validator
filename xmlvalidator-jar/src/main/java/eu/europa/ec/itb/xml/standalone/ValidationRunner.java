@@ -11,6 +11,7 @@ import eu.europa.ec.itb.validation.commons.jar.FileReport;
 import eu.europa.ec.itb.validation.commons.jar.ValidationInput;
 import eu.europa.ec.itb.validation.commons.report.ReportGeneratorBean;
 import eu.europa.ec.itb.xml.DomainConfig;
+import eu.europa.ec.itb.xml.InputHelper;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
 import org.apache.commons.lang3.LocaleUtils;
@@ -50,6 +51,8 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
     private ReportGeneratorBean reportGenerator;
     @Autowired
     private CsvReportGenerator csvReportGenerator;
+    @Autowired
+    private InputHelper inputHelper;
 
     /**
      * Get the XML content to validate based ont he provided path (can be a URL or file reference).
@@ -90,7 +93,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
     @Override
     protected void bootstrapInternal(String[] args, File parentFolder) {
         // Process input arguments
-        boolean typeRequired = domainConfig.hasMultipleValidationTypes();
+        boolean typeRequired = domainConfig.hasMultipleValidationTypes() && domainConfig.getDefaultType() == null;
         List<ValidationInput> inputs = new ArrayList<>();
         List<FileInfo> externalXsdInfo = new ArrayList<>();
         List<FileInfo> externalSchInfo = new ArrayList<>();
@@ -104,9 +107,6 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                     noReports = true;
                 } else if (FLAG_VALIDATION_TYPE.equalsIgnoreCase(args[i])) {
                     validationType = argumentAsString(args, i);
-                    if (validationType != null && !domainConfig.getType().contains(validationType)) {
-                        throw new ValidatorException("validator.label.exception.unknownValidationType", String.join("|", domainConfig.getType()));
-                    }
                 } else if (FLAG_INPUT.equalsIgnoreCase(args[i])) {
                     if (args.length > i + 1) {
                         String path = args[++i];
@@ -125,13 +125,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                 }
                 i++;
             }
-            if (validationType == null) {
-                if (typeRequired) {
-                    throw new ValidatorException("validator.label.exception.requiredValidationType", String.join("|", domainConfig.getType()));
-                } else {
-                    validationType = domainConfig.getType().get(0);
-                }
-            }
+            validationType = inputHelper.validateValidationType(domainConfig, validationType);
         } catch (ValidatorException e) {
             LOGGER_FEEDBACK.info("\nInvalid arguments provided: {}\n", e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH)));
             LOGGER.error(String.format("Invalid arguments provided: %s", e.getMessageForLog()), e);
@@ -218,6 +212,9 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
         if (requireType) {
             usageMessage.append(" [").append(FLAG_VALIDATION_TYPE).append(" VALIDATION_TYPE]");
             parametersMessage.append("\n").append(PAD).append(PAD).append("- VALIDATION_TYPE is the type of validation to perform, one of [").append(String.join("|", domainConfig.getType())).append("].");
+        } else if (domainConfig.hasMultipleValidationTypes()) {
+            usageMessage.append(" [").append(FLAG_VALIDATION_TYPE).append(" VALIDATION_TYPE]");
+            parametersMessage.append("\n").append(PAD).append(PAD).append("- VALIDATION_TYPE is the type of validation to perform, one of [").append(String.join("|", domainConfig.getType())).append("] (default is ").append(domainConfig.getDefaultType()).append(").");
         }
         if (domainConfig.definesTypeWithExternalXsd()) {
             usageMessage.append(" [").append(FLAG_XSD).append(" SCHEMA_FILE_OR_URI]");

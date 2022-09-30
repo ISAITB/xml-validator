@@ -7,6 +7,7 @@ import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.DomainConfigCache;
+import eu.europa.ec.itb.xml.InputHelper;
 import eu.europa.ec.itb.xml.upload.FileController;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
@@ -53,6 +54,8 @@ public class MailHandler {
     BeanFactory beans;
     @Autowired
     ApplicationConfig appConfig;
+    @Autowired
+    InputHelper inputHelper;
 
     /**
      * Initialize email-specific configuration.
@@ -142,7 +145,8 @@ public class MailHandler {
                                                     acceptableFileType = checkFileType(is);
                                                 }
                                                 if (acceptableFileType) {
-                                                    String validationType = getValidationType(part.getFileName(), config);
+                                                    String fileName = part.getFileName();
+                                                    String validationType = inputHelper.validateValidationType(config, fileName.substring(0, fileName.indexOf('.')));
                                                     try (InputStream is = part.getInputStream()) {
                                                         XMLValidator validator = beans.getBean(XMLValidator.class, is, validationType, config, new LocalisationHelper(config, Locale.ENGLISH));
                                                         TAR report = validator.validateAll();
@@ -215,33 +219,6 @@ public class MailHandler {
                 }
             }
         }
-    }
-
-    /**
-     * Get the validation type to considered based on the provided attachment name.
-     *
-     * The validation type is determined from the file name's prefix. The format of the filename is
-     * as follows: [VALIDATION_TYPE].[NAME].[EXT]
-     * If wanting to target validation type "abc" the file name would e.g. be "abc.originalName.xml".
-     * If there is only one type of validation supported then the prefix can be omitted.
-     *
-     * @param fileName The name of the attachment to validate.
-     * @param domainConfig The domain configuration.
-     * @return The validation type.
-     */
-    private String getValidationType(String fileName, DomainConfig domainConfig) {
-        String validationType;
-        if (domainConfig.hasMultipleValidationTypes()) {
-            String prefix = fileName.substring(0, fileName.indexOf('.'));
-            if (domainConfig.getType().contains(prefix)) {
-                validationType = prefix;
-            } else {
-                throw new IllegalStateException("Validation type ["+prefix+"] determined for file ["+fileName+"] is not supported");
-            }
-        } else {
-            validationType = domainConfig.getType().get(0);
-        }
-        return validationType;
     }
 
     /**

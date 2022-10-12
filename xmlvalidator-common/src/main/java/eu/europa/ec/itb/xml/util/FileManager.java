@@ -31,14 +31,20 @@ import java.util.zip.ZipInputStream;
 @Component
 public class FileManager extends BaseFileManager<ApplicationConfig> {
 
+    /** Flag to indicate that the given file is externally provided. */
+    public static final String EXTERNAL_FILE = "external";
+
     /**
      * @see BaseFileManager#getFileExtension(String)
      *
      * @param contentType The content type (ignored).
-     * @return Always "xml".
+     * @return Always "xml" or null for external files.
      */
     @Override
     public String getFileExtension(String contentType) {
+        if (EXTERNAL_FILE.equals(contentType)) {
+            return null;
+        }
         return "xml";
     }
 

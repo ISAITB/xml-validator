@@ -324,7 +324,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                 File file = null;
                 if (CONTENT_TYPE_FILE.equals(externalContentType[i])) {
                     if (!externalFiles[i].isEmpty()) {
-                        file = fileManager.getFileFromInputStream(parentFolder, externalFiles[i].getInputStream(), null, externalFiles[i].getOriginalFilename());
+                        file = fileManager.getFileFromInputStream(parentFolder, externalFiles[i].getInputStream(), FileManager.EXTERNAL_FILE, externalFiles[i].getOriginalFilename());
                     }
                 } else {
                     if (StringUtils.isNotBlank(externalUri[i])) {

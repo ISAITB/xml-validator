@@ -79,7 +79,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
     @ApiResponse(responseCode = "200", description = "Success (for successful validation)", content = @Content(mediaType = MediaType.APPLICATION_XML_VALUE))
     @ApiResponse(responseCode = "500", description = "Error (If a problem occurred with processing the request)", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
     @ApiResponse(responseCode = "404", description = "Not found (for an invalid domain value)", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
-    @PostMapping(value = "/rest/{domain}/api/validate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_XML_VALUE)
+    @PostMapping(value = "/rest/{domain}/api/validate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE })
     public ResponseEntity<StreamingResponseBody> validate(
             @Parameter(required = true, name = "domain", description = "A fixed value corresponding to the specific validation domain.")
             @PathVariable("domain") String domain,
@@ -93,9 +93,16 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
          * uses a separate thread. Doing so would break the ThreadLocal used in the statistics reporting.
          */
         var report = executeValidationProcess(in, domainConfig);
+        var reportType = MediaType.valueOf(getAcceptHeader(request, MediaType.APPLICATION_XML_VALUE));
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(outputStream -> fileManager.saveReport(report, outputStream, domainConfig));
+                .contentType(reportType)
+                .body(outputStream -> {
+                    if (MediaType.APPLICATION_JSON.equals(reportType)) {
+                        writeReportAsJson(outputStream, report, domainConfig);
+                    } else {
+                        fileManager.saveReport(report, outputStream, domainConfig);
+                    }
+                });
     }
 
     /**

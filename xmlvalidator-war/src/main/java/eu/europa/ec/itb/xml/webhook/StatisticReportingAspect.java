@@ -3,9 +3,9 @@ package eu.europa.ec.itb.xml.webhook;
 import com.gitb.tr.TAR;
 import com.gitb.tr.TestResultType;
 import eu.europa.ec.itb.validation.commons.war.webhook.StatisticReporting;
+import eu.europa.ec.itb.validation.commons.war.webhook.StatisticReportingConstants;
 import eu.europa.ec.itb.validation.commons.war.webhook.UsageData;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
-import eu.europa.ec.itb.xml.ws.ValidationServiceImpl;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -17,9 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.xml.ws.handler.MessageContext;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -31,7 +28,6 @@ import java.util.Map;
 public class StatisticReportingAspect extends StatisticReporting {
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticReportingAspect.class);
-    private static final ThreadLocal<Map<String, String>> adviceContext = new ThreadLocal<>();
 
     /**
      * Pointcut for minimal WEB validation.
@@ -78,42 +74,37 @@ public class StatisticReportingAspect extends StatisticReporting {
     }
 
     /**
-     * Common advice processing for all web UIs.
-     *
-     * @param joinPoint The relevant join point.
-     * @param api The specific API type.
-     */
-    private void handleUploadContext(JoinPoint joinPoint, String api) {
-        Map<String, String> contextParams = new HashMap<>();
-        contextParams.put("api", api);
-        if (config.getWebhook().isStatisticsEnableCountryDetection()) {
-            HttpServletRequest request = getHttpRequest(joinPoint);
-            if (request != null) {
-                String ip = extractIpAddress(request);
-                contextParams.put("ip", ip);
-            }
-        }
-        adviceContext.set(contextParams);
-    }
-
-    /**
      * Advice to obtain the arguments passed to the SOAP API call.
      *
      * @param joinPoint The original call's information.
      */
     @Before(value = "execution(public * eu.europa.ec.itb.xml.ws.ValidationServiceImpl.validate(..))")
     public void getSoapCallContext(JoinPoint joinPoint) {
-        Map<String, String> contextParams = new HashMap<>();
-        contextParams.put("api", StatisticReportingConstants.SOAP_API);
-        if (config.getWebhook().isStatisticsEnableCountryDetection()) {
-            ValidationServiceImpl validationService = (ValidationServiceImpl) joinPoint.getTarget();
-            HttpServletRequest request = (HttpServletRequest) validationService.getWebServiceContext()
-                    .getMessageContext().get(MessageContext.SERVLET_REQUEST);
-            String ip = extractIpAddress(request);
-            contextParams.put("ip", ip);
-        }
-        adviceContext.set(contextParams);
+        handleSoapCallContext(joinPoint);
     }
+
+    /**
+     * Pointcut for the single REST validation.
+     */
+    @Pointcut("execution(public * eu.europa.ec.itb.xml.rest.RestValidationController.validate(..))")
+    private void singleRestValidation(){}
+
+    /**
+     * Pointcut for batch REST validation.
+     */
+    @Pointcut("execution(public * eu.europa.ec.itb.xml.rest.RestValidationController.validateMultiple(..))")
+    private void multipleRestValidation(){}
+
+    /**
+     * Advice to obtain the arguments passed to the REST API call.
+     *
+     * @param joinPoint The original call's information.
+     */
+    @Before("singleRestValidation() || multipleRestValidation()")
+    public void getRestCallContext(JoinPoint joinPoint) {
+        handleRestCallContext(joinPoint);
+    }
+
 
     /**
      * Advice to obtain the arguments passed to the email API call.
@@ -122,9 +113,7 @@ public class StatisticReportingAspect extends StatisticReporting {
      */
     @Before(value = "execution(public * eu.europa.ec.itb.xml.email.MailHandler.getValidationType(..))")
     public void getEmailContext(JoinPoint joinPoint) {
-        Map<String, String> contextParams = new HashMap<>();
-        contextParams.put("api", StatisticReportingConstants.EMAIL_API);
-        adviceContext.set(contextParams);
+        handleEmailContext(joinPoint);
     }
 
     /**
@@ -137,7 +126,7 @@ public class StatisticReportingAspect extends StatisticReporting {
         XMLValidator validator = (XMLValidator) joinPoint.getTarget();
         Object report = joinPoint.proceed();
         try {
-            Map<String, String> usageParams = adviceContext.get();
+            Map<String, String> usageParams = getAdviceContext();
             String validatorId = config.getIdentifier();
             String domain = validator.getDomain();
             String validationType = validator.getValidationType();

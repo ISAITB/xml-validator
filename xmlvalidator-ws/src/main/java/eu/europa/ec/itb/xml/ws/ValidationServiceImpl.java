@@ -10,6 +10,7 @@ import eu.europa.ec.itb.validation.commons.FileInfo;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
+import eu.europa.ec.itb.validation.commons.web.WebServiceContextProvider;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.InputHelper;
 import eu.europa.ec.itb.xml.util.FileManager;
@@ -36,7 +37,7 @@ import java.util.List;
  */
 @Component
 @Scope("prototype")
-public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
+public class ValidationServiceImpl implements com.gitb.vs.ValidationService, WebServiceContextProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(ValidationServiceImpl.class);
     private final DomainConfig domainConfig;
@@ -153,6 +154,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService {
         return defaultIfMissing;
     }
 
+    @Override
     public WebServiceContext getWebServiceContext() {
         return this.wsContext;
     }

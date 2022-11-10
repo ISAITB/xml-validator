@@ -41,7 +41,7 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
 
     @Override
     protected ValidatorChannel[] getSupportedChannels() {
-        return new ValidatorChannel[] {ValidatorChannel.FORM, ValidatorChannel.SOAP_API, ValidatorChannel.EMAIL};
+        return new ValidatorChannel[] {ValidatorChannel.FORM, ValidatorChannel.SOAP_API, ValidatorChannel.EMAIL, ValidatorChannel.REST_API};
     }
 
     /**
@@ -51,7 +51,7 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
      */
     @Override
     protected ValidatorChannel[] getDefaultChannels() {
-        return new ValidatorChannel[] {ValidatorChannel.FORM, ValidatorChannel.SOAP_API};
+        return new ValidatorChannel[] {ValidatorChannel.FORM, ValidatorChannel.SOAP_API, ValidatorChannel.REST_API};
     }
 
     /**

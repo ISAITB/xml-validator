@@ -15,7 +15,7 @@ import java.util.List;
  * Component to facilitate the validation and preparation of inputs.
  */
 @Component
-public class InputHelper extends BaseInputHelper<FileManager, DomainConfig, ApplicationConfig> {
+public class InputHelper extends BaseInputHelper<ApplicationConfig, FileManager, DomainConfig> {
 
     /**
      * Validate, store and return the user-provided validation artifacts.

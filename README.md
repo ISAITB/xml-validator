@@ -48,7 +48,7 @@ If you do not plan on modifying the validator's source you can reuse the Test Be
 
 * Via **Docker**, using the [isaitb/xml-validator](https://hub.docker.com/r/isaitb/xml-validator) image from the Docker Hub.
 * Via **JAR file**, using the [generic web application package](https://www.itb.ec.europa.eu/xml-jar/any/validator.zip).
-* Via **command line tool**, using the [generic command line tool package](https://www.itb.ec.europa.eu/xml-offline/any/validator.zip).
+* Via **command line tool**, using the [generic command line tool package](https://www.itb.ec.europa.eu/xml-offline/xml/validator.zip).
 
 It is interesting to note that the second option (executable web application JAR) matches what you would build from this
 repository. The command line package is produced from the `xmlvalidator-jar` although this requires an additional step

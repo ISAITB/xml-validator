@@ -14,7 +14,8 @@ The **XML validator** is a web application to validate XML data against [XML Sch
 The application provides a fully reusable core that requires only configuration to determine the supported specifications,
 configured validation types and other validator customisations. The web application allows validation via:
 
-* A SOAP web service API for machine-machine integrations.
+* A SOAP web service API for contract-based machine-machine integrations.
+* A REST web service API for machine-machine integrations.
 * A web form for validation via user interface.
 * Polling of an email address.
 
@@ -47,7 +48,7 @@ built from the `xmlvalidator-war` module. You can use and configure this as desc
 If you do not plan on modifying the validator's source you can reuse the Test Bed's provided packages. Specifically:
 
 * Via **Docker**, using the [isaitb/xml-validator](https://hub.docker.com/r/isaitb/xml-validator) image from the Docker Hub.
-* Via **JAR file**, using the [generic web application package](https://www.itb.ec.europa.eu/xml-jar/any/validator.zip).
+* Via **JAR file**, using the [generic web application package](https://www.itb.ec.europa.eu/xml-jar/xml/validator.zip).
 * Via **command line tool**, using the [generic command line tool package](https://www.itb.ec.europa.eu/xml-offline/xml/validator.zip).
 
 It is interesting to note that the second option (executable web application JAR) matches what you would build from this
@@ -57,6 +58,7 @@ of JAR post-processing to configure the validator's domain(s).
 Once the validator's web application is up you can use it as follows:
 
 * SOAP-API: http://localhost:8080/api/DOMAIN/validation?wsdl
+* REST API: http://localhost:8080/rest/DOMAIN/api/validate (Swagger docs at http://localhost:8080/swagger-ui/index.html)
 * Web form: http://localhost:8080/DOMAIN/upload
 
 Note that the `DOMAIN` placeholder in the above URLs is the name of a domain configuration folder beneath your configured `validator.resourceRoot`.

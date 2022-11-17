@@ -32,13 +32,16 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.ls.LSResourceResolver;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBElement;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -46,10 +49,7 @@ import javax.xml.validation.Validator;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -144,6 +144,9 @@ public class XMLValidator {
     /**
      * Get the input file to use for validations.
      *
+     * This method applies any pre-processing needed, followed by pretty-printing (if pretty-printing would
+     * be necessary).
+     *
      * @return The file to use.
      * @throws XMLInvalidException If the XML cannot be parsed.
      */
@@ -182,16 +185,43 @@ public class XMLValidator {
                 } catch (XPathExpressionException e) {
                     throw new XMLInvalidException(e);
                 }
+                inputToValidatePreprocessed = replaceFile(inputToValidate, inputToValidatePreprocessed);
+            }
+            // We now see if we need also to pretty-print.
+            if (addInputToReport || !locationAsPath) {
+                File prettyPrintedFile = new File(inputToValidatePreprocessed.getParentFile(), UUID.randomUUID() + ".xml");
                 try {
-                    FileUtils.deleteQuietly(inputToValidate);
-                    FileUtils.moveFile(inputToValidatePreprocessed, inputToValidate);
-                    inputToValidatePreprocessed = inputToValidate;
-                } catch (IOException e) {
-                    throw new IllegalStateException("Unable to preprocess input", e);
+                    var document = Utils.secureDocumentBuilder().parse(new InputSource(new FileReader(inputToValidatePreprocessed)));
+                    var factory = Utils.secureTransformerFactory();
+                    var transformer = factory.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.transform(new DOMSource(document), new StreamResult(prettyPrintedFile));
+                } catch (Exception e) {
+                    throw new IllegalStateException("Unable to pretty-print input", e);
                 }
+                replaceFile(inputToValidatePreprocessed, prettyPrintedFile);
             }
         }
         return inputToValidatePreprocessed;
+    }
+
+    /**
+     * Replace one file with another.
+     *
+     * @param fileToReplace The file to replace.
+     * @param newFile The new file.
+     * @return The file path to use.
+     */
+    private File replaceFile(File fileToReplace, File newFile) {
+        try {
+            FileUtils.deleteQuietly(fileToReplace);
+            FileUtils.moveFile(newFile, fileToReplace);
+            return fileToReplace;
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to replace file", e);
+        }
     }
 
     /**

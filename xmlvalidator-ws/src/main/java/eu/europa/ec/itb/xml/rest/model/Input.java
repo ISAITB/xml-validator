@@ -28,7 +28,7 @@ public class Input {
     private Boolean locationAsPath;
     @Schema(description = "Whether to include the validated input in the resulting report's context section.", defaultValue = "false")
     private Boolean addInputToReport;
-    @Schema(description = "Whether to wrap the input (see addInputToReport) in a CDATA block if producing an XML report. False results in adding the input via XML escaping.", defaultValue = "true")
+    @Schema(description = "Whether to wrap the input (see addInputToReport) in a CDATA block if producing an XML report. False results in adding the input via XML escaping.", defaultValue = "false")
     private Boolean wrapReportDataInCDATA;
     @Schema(description = "Locale (language code) to use for reporting of results. If the provided locale is not supported by the validator the default locale will be used instead (e.g. 'fr', 'fr_FR').")
     private String locale;

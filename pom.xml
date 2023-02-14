@@ -65,6 +65,11 @@
                 <artifactId>xmlvalidator-email</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>eu.europa.ec.itb.xml</groupId>
+                <artifactId>xmlvalidator-resources</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- Common modules. -->
             <dependency>
                 <groupId>eu.europa.ec.itb.commons</groupId>

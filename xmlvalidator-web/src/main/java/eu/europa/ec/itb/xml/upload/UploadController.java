@@ -324,7 +324,9 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                 File file = null;
                 if (CONTENT_TYPE_FILE.equals(externalContentType[i])) {
                     if (!externalFiles[i].isEmpty()) {
-                        file = fileManager.getFileFromInputStream(parentFolder, externalFiles[i].getInputStream(), FileManager.EXTERNAL_FILE, externalFiles[i].getOriginalFilename());
+                        try (var stream = externalFiles[i].getInputStream()) {
+                            file = fileManager.getFileFromInputStream(parentFolder, stream, FileManager.EXTERNAL_FILE, externalFiles[i].getOriginalFilename());
+                        }
                     }
                 } else {
                     if (StringUtils.isNotBlank(externalUri[i])) {
@@ -409,7 +411,9 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
         File inputFile;
         switch (inputType) {
             case CONTENT_TYPE_FILE:
-                inputFile = fileManager.getFileFromInputStream(parentFolder, file.getInputStream(), null, null);
+                try (var stream = file.getInputStream()) {
+                    inputFile = fileManager.getFileFromInputStream(parentFolder, stream, null, null);
+                }
                 break;
             case CONTENT_TYPE_URI:
                 inputFile = fileManager.getFileFromURL(parentFolder, uri);

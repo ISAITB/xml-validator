@@ -499,6 +499,7 @@ public class XMLValidator {
             logger.warn("Error while validating XML [{}]", e.getMessage());
             overallResult = createFailureReport();
         }
+        domainConfig.applyMetadata(overallResult, getValidationType());
         return overallResult;
     }
 

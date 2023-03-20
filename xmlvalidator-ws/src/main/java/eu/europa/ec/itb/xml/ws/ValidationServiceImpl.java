@@ -60,11 +60,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
         MDC.put("domain", domainConfig.getDomainName());
         GetModuleDefinitionResponse response = new GetModuleDefinitionResponse();
         response.setModule(new ValidationModule());
-        response.getModule().setId(domainConfig.getWebServiceId());
-        response.getModule().setOperation("V");
-        response.getModule().setMetadata(new Metadata());
-        response.getModule().getMetadata().setName(domainConfig.getWebServiceId());
-        response.getModule().getMetadata().setVersion("1.0.0");
+        domainConfig.applyWebServiceMetadata(response.getModule());
         response.getModule().setInputs(new TypedParameters());
         UsageEnumeration usage = UsageEnumeration.O;
         if (domainConfig.hasMultipleValidationTypes() && domainConfig.getDefaultType() == null) {

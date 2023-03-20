@@ -76,7 +76,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
      * @return The result of the validator.
      */
     @Operation(summary = "Validate a single XML document.", description="Validate a single XML document. The content can be provided either within the request as a BASE64 encoded string or remotely as a URL.")
-    @ApiResponse(responseCode = "200", description = "Success (for successful validation)", content = @Content(mediaType = MediaType.APPLICATION_XML_VALUE))
+    @ApiResponse(responseCode = "200", description = "Success (for successful validation)", content = { @Content(mediaType = MediaType.APPLICATION_XML_VALUE), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE) })
     @ApiResponse(responseCode = "500", description = "Error (If a problem occurred with processing the request)", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
     @ApiResponse(responseCode = "404", description = "Not found (for an invalid domain value)", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
     @PostMapping(value = "/rest/{domain}/api/validate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE })

@@ -176,6 +176,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                         XMLValidator validator = beans.getBean(XMLValidator.class, inputFile, validationType, externalSchemaIS, externalSchIS, config, localisationHelper);
                         TAR report = validator.validateAll();
                         TAR aggregateReport = Utils.toAggregatedTAR(report, localisationHelper);
+                        config.applyMetadata(aggregateReport, validator.getValidationType());
                         if (config.isReportsOrdered() && aggregateReport.getReports() != null) {
                             aggregateReport.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
                         }

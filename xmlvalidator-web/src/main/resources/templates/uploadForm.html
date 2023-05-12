@@ -17,17 +17,14 @@
                 externalArtifactURILabel: [[${localiser.localise('validator.label.optionContentURI')}]],
                 externalArtifactSettings: {
                     schema: {
-                        filePlaceholder: [[${localiser.localise('validator.label.externalSchemaPlaceholder')}]],
                         maxCount: 1
-                    },
-                    schematron: {
-                        filePlaceholder: [[${localiser.localise('validator.label.externalSchematronPlaceholder')}]]
                     }
                 },
                 codeTypeObj: "xml",
                 isMinimalUI: [[${minimalUI}]],
                 artifactTypes: ['schema', 'schematron'],
-                externalArtifacts: externalArtifacts
+                externalArtifacts: externalArtifacts,
+                labels: [(${labelConfig})]
             });
         </script>
         <script th:inline="javascript" th:if="${reportData}">

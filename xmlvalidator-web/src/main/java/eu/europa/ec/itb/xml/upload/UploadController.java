@@ -21,6 +21,7 @@ import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -36,10 +37,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static eu.europa.ec.itb.validation.commons.web.Constants.*;
 
@@ -81,6 +79,16 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
         var localisationHelper = new LocalisationHelper(config, localeResolver.resolveLocale(request, response, config, appConfig));
         attributes.put(PARAM_LOCALISER, localisationHelper);
         attributes.put(PARAM_HTML_BANNER_EXISTS, localisationHelper.propertyExists("validator.bannerHtml"));
+        attributes.put(PARAM_LABEL_CONFIG, getDynamicLabelConfiguration(localisationHelper, config, Collections.emptyList(),
+                List.of(
+                        Pair.of("validator.label.includeExternalArtefacts", "externalIncludeText"),
+                        Pair.of("validator.label.externalArtefactsTooltip", "externalIncludeTooltip"),
+                        Pair.of("validator.label.externalSchemaLabel", "external."+DomainConfig.ARTIFACT_TYPE_SCHEMA+".label"),
+                        Pair.of("validator.label.externalSchemaPlaceholder", "external."+DomainConfig.ARTIFACT_TYPE_SCHEMA+".placeholder"),
+                        Pair.of("validator.label.externalSchematronLabel", "external."+DomainConfig.ARTIFACT_TYPE_SCHEMATRON+".label"),
+                        Pair.of("validator.label.externalSchematronPlaceholder", "external."+DomainConfig.ARTIFACT_TYPE_SCHEMATRON+".placeholder")
+                )
+        ));
         return new ModelAndView(VIEW_UPLOAD_FORM, attributes);
     }
 

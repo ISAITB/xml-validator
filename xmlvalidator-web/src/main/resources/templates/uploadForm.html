@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
     <head>
-        <title th:replace="fragments/common :: header">Validator</title>
+        <title th:replace="~{fragments/common :: header}">Validator</title>
         <script th:src="@{/webjars/codemirror/5.62.2/mode/xml/xml.js}"></script>
         <script th:src="@{/js/lib/FileSaver.min.js}"></script>
-        <script th:inline="javascript">
+        <script th:attr="nonce=${nonce}" th:inline="javascript">
             var externalArtifacts = {};
             [# th:each="artifactInfoEntry : ${externalArtifactInfo}"]
                 externalArtifacts[[# th:text="${artifactInfoEntry.key}" /]] = {}
@@ -27,25 +27,20 @@
                 labels: [(${labelConfig})]
             });
         </script>
-        <script th:inline="javascript" th:if="${reportData}">
-            $(document).ready(function() {
-                displayReport([(${reportData})]);
-            });
-        </script>
     </head>
     <body th:class="${not minimalUI} ? body-ui : ''">
         <div th:classappend="${not minimalUI} ? view-section-ui : ''" class="container view-section">
             <div class="view-section-input" th:classappend="${minimalUI} ? 'minimal-ui' : 'normal-ui'" th:if="${!minimalUI || report == null}">
-                <div th:replace="fragments/input :: pageHeader(${config}, ${minimalUI})"/>
+                <div th:replace="~{fragments/input :: pageHeader(${config}, ${minimalUI})}"/>
                 <form method="POST" enctype="multipart/form-data" th:action="@{${not minimalUI ? 'upload' : 'uploadm'}}" class="form-horizontal" novalidate="novalidate">
                     <div th:class="${minimalUI} ? panel-default : ''" th:classappend="${minimalUI} ? panel : ''">
-                        <div th:replace="fragments/input :: formHeader(${config}, ${minimalUI})"/>
+                        <div th:replace="~{fragments/input :: formHeader(${config}, ${minimalUI})}"/>
                         <div th:class="${minimalUI}?'panel-body panel-body-minimal':''">
-                            <div th:replace="fragments/input :: mainForm(${config})"/>
-                            <div th:replace="fragments/input :: externalArtifactCheck(${localiser.localise('validator.label.includeExternalArtefacts')}, ${localiser.localise('validator.label.externalArtefactsTooltip')})"/>
-                            <div th:replace="fragments/input :: externalArtifactControl('schema', ${localiser.localise('validator.label.externalSchemaLabel')})"/>
-                            <div th:replace="fragments/input :: externalArtifactControl('schematron', ${localiser.localise('validator.label.externalSchematronLabel')})"/>
-                            <div th:replace="fragments/input :: submit(${config}, ${minimalUI})"/>
+                            <div th:replace="~{fragments/input :: mainForm(${config})}"/>
+                            <div th:replace="~{fragments/input :: externalArtifactCheck(${localiser.localise('validator.label.includeExternalArtefacts')}, ${localiser.localise('validator.label.externalArtefactsTooltip')})}"/>
+                            <div th:replace="~{fragments/input :: externalArtifactControl('schema', ${localiser.localise('validator.label.externalSchemaLabel')})}"/>
+                            <div th:replace="~{fragments/input :: externalArtifactControl('schematron', ${localiser.localise('validator.label.externalSchematronLabel')})}"/>
+                            <div th:replace="~{fragments/input :: submit(${config}, ${minimalUI})}"/>
                         </div>
                         <div th:if="${minimalUI}" id="reportPlaceholder"></div>
                     </div>
@@ -53,11 +48,11 @@
             </div>
             <th:block th:if="${!minimalUI}">
                 <div id="reportPlaceholder"></div>
-                <div th:replace="fragments/common :: localeSelector(${config}, ${localiser.getLocale()})"/>
+                <div th:replace="~{fragments/common :: localeSelector(${config}, ${localiser.getLocale()})}"/>
             </th:block>
-            <div th:replace="fragments/common :: footer(${config}, ${minimalUI})"/>
+            <div th:replace="~{fragments/common :: footer(${config}, ${minimalUI})}"/>
         </div>
-        <div th:replace="fragments/common :: about">About</div>
-        <div th:replace="fragments/common :: buildInfo">Build info</div>
+        <div th:replace="~{fragments/common :: about}">About</div>
+        <div th:replace="~{fragments/common :: buildInfo}">Build info</div>
     </body>
 </html>

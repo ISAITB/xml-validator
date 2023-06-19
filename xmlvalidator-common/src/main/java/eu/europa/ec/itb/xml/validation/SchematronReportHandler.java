@@ -15,7 +15,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import javax.xml.XMLConstants;
-import javax.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBElement;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
  */
 public class SchematronReportHandler {
 
-    private static final Pattern ARRAY_PATTERN = Pattern.compile("\\[\\d+\\]");
     private static final Pattern DEFAULTNS_PATTERN = Pattern.compile("\\/[\\w]+:?");
     private static final Logger logger = LoggerFactory.getLogger(SchematronReportHandler.class);
     private final Document node;
@@ -149,7 +148,7 @@ public class SchematronReportHandler {
             error.setDescription(getMessageText(message));
             if (message.getLocation() != null && !message.getLocation().isBlank()) {
                 if (locationAsPath) {
-                    error.setLocation(convertToXPathExpression(message.getLocation(), false));
+                    error.setLocation(message.getLocation());
                 } else {
                     error.setLocation(ValidationConstants.INPUT_XML+":" + this.getLineNumberFromXPath(message.getLocation()) + ":0");
                 }
@@ -255,7 +254,7 @@ public class SchematronReportHandler {
      * @return The line number.
      */
     private String getLineNumberFromXPath(String xpathExpression) {
-        String xpathExpressionConverted = convertToXPathExpression(xpathExpression, true);
+        String xpathExpressionConverted = convertToXPathExpression(xpathExpression);
         XPath xPath = getXPathFactory().newXPath();
         xPath.setNamespaceContext(getNamespaceContext());
         Node locatedNode;
@@ -269,24 +268,17 @@ public class SchematronReportHandler {
     }
 
     /**
-     * Convert the expression to ensure it is correct. This is because Schematron reports arrays as 0-based whereas xpath
-     * has 1-based arrays. This is used to increment each array index by one.
+     * Convert the expression to an executable XPath expression by adding the default namespace if needed.
      *
      * @param xpathExpression The Schematron expression.
-     * @param addDefaultNamespace True if the defaull namespace prefix should be added to elements.
      * @return The expression to use via normal XPath lookup.
      */
-    private String convertToXPathExpression(String xpathExpression, boolean addDefaultNamespace) {
-        if (isXPathConversionNeeded()) {
+    private String convertToXPathExpression(String xpathExpression) {
+        if (convertXPathExpressions) {
             try {
-                StringBuilder s = new StringBuilder();
-                Matcher m = ARRAY_PATTERN.matcher(xpathExpression);
-                while (m.find()) {
-                    m.appendReplacement(s, "["+ (1 + Integer.parseInt(m.group(0).substring(1, m.group(0).length() - 1))) +"]");
-                }
-                m.appendTail(s);
-                if (addDefaultNamespace && documentHasDefaultNamespace(node)) {
-                    m = DEFAULTNS_PATTERN.matcher(s.toString());
+                if (documentHasDefaultNamespace(node)) {
+                    StringBuilder s = new StringBuilder(xpathExpression);
+                    Matcher m = DEFAULTNS_PATTERN.matcher(s.toString());
                     s.delete(0, s.length());
                     while (m.find()) {
                         String match = m.group(0);
@@ -296,24 +288,13 @@ public class SchematronReportHandler {
                         m.appendReplacement(s, match);
                     }
                     m.appendTail(s);
+                    xpathExpression = s.toString();
                 }
-                return s.toString();
             } catch (Exception e) {
                 logger.warn("Failed to convert XPath expression.", e);
-                return xpathExpression;
             }
-        } else {
-            return xpathExpression;
         }
-    }
-
-    /**
-     * Check to see if XPath expressions need to be converted (which is the case for raw Schematron output).
-     *
-     * @return True if yes.
-     */
-    private boolean isXPathConversionNeeded() {
-        return convertXPathExpressions;
+        return xpathExpression;
     }
 
     /**

@@ -42,6 +42,7 @@ public class SchematronReportHandler {
     private Boolean hasDefaultNamespace;
     private final boolean convertXPathExpressions;
     private final boolean includeTest;
+    private final boolean includeAssertionID;
     private final TAR report;
     private final ObjectFactory objectFactory = new ObjectFactory();
 
@@ -52,11 +53,12 @@ public class SchematronReportHandler {
      * @param svrl The raw Schamtron output.
      * @param convertXPathExpressions True if XPath expressions should be converted between SCH and XSLT.
      * @param includeTest True if the test per report item should be included.
+     * @param includeAssertionID True if the assertion IDs per report item should be included.
      * @param locationAsPath True if report item locations should be XPath expressions. If not the line numbers will be
      *                       calculated and recorded instead.
      * @param localiser Helper class for translations.
      */
-    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean locationAsPath, LocalisationHelper localiser) {
+    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean includeAssertionID, boolean locationAsPath, LocalisationHelper localiser) {
         this.node = node;
         this.svrlReport = svrl;
         report = new TAR();
@@ -66,6 +68,7 @@ public class SchematronReportHandler {
         this.report.setReports(new TestAssertionGroupReportsType());
         this.convertXPathExpressions = convertXPathExpressions;
         this.includeTest = includeTest;
+        this.includeAssertionID = includeAssertionID;
         this.locationAsPath = locationAsPath;
         this.localiser = localiser;
     }
@@ -144,27 +147,30 @@ public class SchematronReportHandler {
         JAXBElement<TestAssertionReportType> element;
         for(Iterator<T> var4 = svrlMessages.iterator(); var4.hasNext(); reports.add(element)) {
             AbstractSVRLMessage message = var4.next();
-            BAR error = new BAR();
-            error.setDescription(getMessageText(message));
+            BAR reportItem = new BAR();
+            reportItem.setDescription(getMessageText(message));
             if (message.getLocation() != null && !message.getLocation().isBlank()) {
                 if (locationAsPath) {
-                    error.setLocation(message.getLocation());
+                    reportItem.setLocation(message.getLocation());
                 } else {
-                    error.setLocation(ValidationConstants.INPUT_XML+":" + this.getLineNumberFromXPath(message.getLocation()) + ":0");
+                    reportItem.setLocation(ValidationConstants.INPUT_XML+":" + this.getLineNumberFromXPath(message.getLocation()) + ":0");
                 }
             }
             if (message.getTest() != null && includeTest) {
-                error.setTest(message.getTest().trim());
+                reportItem.setTest(message.getTest().trim());
+            }
+            if (message.getID() != null && includeAssertionID) {
+                reportItem.setAssertionID(message.getID());
             }
             int level = message.getFlag().getNumericLevel();
             if (level == EErrorLevel.SUCCESS.getNumericLevel()) {
-                element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(error);
+                element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(reportItem);
             } else if (level == EErrorLevel.INFO.getNumericLevel()) {
-                element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(error);
+                element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(reportItem);
             } else if (level == EErrorLevel.WARN.getNumericLevel()) {
-                element = this.objectFactory.createTestAssertionGroupReportsTypeWarning(error);
+                element = this.objectFactory.createTestAssertionGroupReportsTypeWarning(reportItem);
             } else { // ERROR, FATAL_ERROR
-                element = this.objectFactory.createTestAssertionGroupReportsTypeError(error);
+                element = this.objectFactory.createTestAssertionGroupReportsTypeError(reportItem);
             }
         }
         return reports;

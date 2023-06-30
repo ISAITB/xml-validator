@@ -25,6 +25,7 @@ public class DomainConfig extends WebDomainConfig {
     private boolean mailInboundSSLEnable = true;
     private String mailInboundFolder;
     private boolean includeTestDefinition;
+    private boolean includeAssertionID;
 
     /**
      * @return True if the domain defines a validation type supporting or requiring user-provided XSDs.
@@ -83,6 +84,20 @@ public class DomainConfig extends WebDomainConfig {
      */
     public void setIncludeTestDefinition(boolean includeTestDefinition) {
         this.includeTestDefinition = includeTestDefinition;
+    }
+
+    /**
+     * @return True if assertion IDs should be included in validation report items.
+     */
+    public boolean isIncludeAssertionID() {
+        return includeAssertionID;
+    }
+
+    /**
+     * @param includeAssertionID True if assertion IDs should be included in validation report items.
+     */
+    public void setIncludeAssertionID(boolean includeAssertionID) {
+        this.includeAssertionID = includeAssertionID;
     }
 
     /**

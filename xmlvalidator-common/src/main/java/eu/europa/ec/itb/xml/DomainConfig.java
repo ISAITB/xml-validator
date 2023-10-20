@@ -5,6 +5,9 @@ import eu.europa.ec.itb.validation.commons.artifact.TypedValidationArtifactInfo;
 import eu.europa.ec.itb.validation.commons.artifact.ValidationArtifactInfo;
 import eu.europa.ec.itb.validation.commons.config.WebDomainConfig;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * The configuration for a specific validation domain.
  */
@@ -26,6 +29,8 @@ public class DomainConfig extends WebDomainConfig {
     private String mailInboundFolder;
     private boolean includeTestDefinition;
     private boolean includeAssertionID;
+    private List<ContextFileConfig> contextFileConfigDefaultConfig;
+    private Map<String, List<ContextFileConfig>> contextFileMap;
 
     /**
      * @return True if the domain defines a validation type supporting or requiring user-provided XSDs.
@@ -37,6 +42,51 @@ public class DomainConfig extends WebDomainConfig {
             }
         }
         return false;
+    }
+
+    /**
+     * Get the context files that apply for the given validation type.
+     *
+     * @param validationType The validation type.
+     * @return The context files.
+     */
+    public List<ContextFileConfig> getContextFiles(String validationType) {
+        var configs = contextFileConfigDefaultConfig;
+        if (contextFileMap.containsKey(validationType)) {
+            var specificConfigs = contextFileMap.get(validationType);
+            if (specificConfigs != null && !specificConfigs.isEmpty()) {
+                configs = specificConfigs;
+            }
+        }
+        return configs;
+    }
+
+    /**
+     * Check to see whether any validation type expects context files.
+     *
+     * @return The check result.
+     */
+    public boolean hasContextFiles() {
+        return (contextFileConfigDefaultConfig != null && !contextFileConfigDefaultConfig.isEmpty()) ||
+               (contextFileMap != null && contextFileMap.values().stream().anyMatch(configs -> configs != null && !configs.isEmpty()));
+    }
+
+    /**
+     * Set the default context files for all validation types.
+     *
+     * @param contextFileConfigDefaultConfig The context files.
+     */
+    public void setContextFileDefaultConfig(List<ContextFileConfig> contextFileConfigDefaultConfig) {
+        this.contextFileConfigDefaultConfig = contextFileConfigDefaultConfig;
+    }
+
+    /**
+     * Set the context files for the given validation type.
+     *
+     * @param contextFiles The context files.
+     */
+    public void setContextFiles(Map<String, List<ContextFileConfig>> contextFiles) {
+        this.contextFileMap = contextFiles;
     }
 
     /**

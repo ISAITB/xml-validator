@@ -20,6 +20,8 @@ public class ValidationConstants {
     public static final String INPUT_EXTERNAL_SCHEMA = "externalSchema";
     /** User-provided Schematron wrapper. */
     public static final String INPUT_EXTERNAL_SCHEMATRON = "externalSchematron";
+    /** User-provided context files. */
+    public static final String INPUT_CONTEXT_FILES = "contextFiles";
     /** The content of the user-provided artifact. */
     public static final String INPUT_EXTERNAL_ARTIFACT_CONTENT = "content";
     /** The type of provided artifact. */

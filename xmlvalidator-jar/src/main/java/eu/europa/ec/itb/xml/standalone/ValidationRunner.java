@@ -10,8 +10,10 @@ import eu.europa.ec.itb.validation.commons.jar.BaseValidationRunner;
 import eu.europa.ec.itb.validation.commons.jar.FileReport;
 import eu.europa.ec.itb.validation.commons.jar.ValidationInput;
 import eu.europa.ec.itb.validation.commons.report.ReportGeneratorBean;
+import eu.europa.ec.itb.xml.ContextFileData;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.InputHelper;
+import eu.europa.ec.itb.xml.ValidationSpecs;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
 import org.apache.commons.lang3.LocaleUtils;
@@ -26,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -42,6 +45,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
     private static final String FLAG_XSD = "-xsd";
     private static final String FLAG_SCHEMATRON = "-sch";
     private static final String FLAG_LOCALE = "-locale";
+    private static final String FLAG_CONTEXT = "-context";
 
     @Autowired
     private ApplicationContext ctx;
@@ -55,19 +59,20 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
     private InputHelper inputHelper;
 
     /**
-     * Get the XML content to validate based ont he provided path (can be a URL or file reference).
+     * Get the XML content to validate based on the provided path (can be a URL or file reference).
      *
      * @param contentPath The path to process.
      * @param parentFolder The validation run's temporary folder.
+     * @param fileName The file name to use to store the file.
      * @return The file with the JSON content to use for the validation.
      * @throws IOException If an IO error occurs.
      */
-    private File getContent(String contentPath, File parentFolder) throws IOException {
+    private File getContent(String contentPath, File parentFolder, String fileName) throws IOException {
         File fileToUse;
         if (isValidURL(contentPath)) {
             // Value is a URL.
             try {
-                fileToUse = fileManager.getFileFromURL(parentFolder, contentPath);
+                fileToUse = fileManager.getFileFromURL(parentFolder, contentPath, fileName);
             } catch (IOException e) {
                 throw new ValidatorException("validator.label.exception.unableToReadFileFromURL", e, contentPath);
             }
@@ -77,7 +82,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
             if (!Files.exists(inputFile) || !Files.isRegularFile(inputFile) || !Files.isReadable(inputFile)) {
                 throw new ValidatorException("validator.label.exception.unableToReadFile", contentPath);
             }
-            Path finalInputFile = Paths.get(parentFolder.getAbsolutePath(), inputFile.getFileName().toString());
+            Path finalInputFile = Paths.get(parentFolder.getAbsolutePath(), (fileName == null?inputFile.getFileName().toString():fileName));
             Files.createDirectories(finalInputFile.getParent());
             fileToUse = Files.copy(inputFile, finalInputFile).toFile();
         }
@@ -97,6 +102,8 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
         List<ValidationInput> inputs = new ArrayList<>();
         List<FileInfo> externalXsdInfo = new ArrayList<>();
         List<FileInfo> externalSchInfo = new ArrayList<>();
+        List<String> contextFileInputs = new ArrayList<>();
+        List<ContextFileData> contextFileInfo = new ArrayList<>();
         boolean noReports = false;
         String validationType = null;
         String locale = null;
@@ -110,15 +117,19 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                 } else if (FLAG_INPUT.equalsIgnoreCase(args[i])) {
                     if (args.length > i + 1) {
                         String path = args[++i];
-                        inputs.add(new ValidationInput(getContent(path, parentFolder), path));
+                        inputs.add(new ValidationInput(getContent(path, parentFolder, null), path));
                     }
                 } else if (FLAG_XSD.equalsIgnoreCase(args[i])) {
                     if (args.length > i + 1) {
-                        externalXsdInfo = List.of(new FileInfo(getContent(args[++i], parentFolder)));
+                        externalXsdInfo = List.of(new FileInfo(getContent(args[++i], parentFolder, null)));
                     }
                 } else if (FLAG_SCHEMATRON.equalsIgnoreCase(args[i])) {
                     if (args.length > i + 1) {
-                        externalSchInfo.add(new FileInfo(getContent(args[++i], parentFolder)));
+                        externalSchInfo.add(new FileInfo(getContent(args[++i], parentFolder, null)));
+                    }
+                } else if (FLAG_CONTEXT.equalsIgnoreCase(args[i])) {
+                    if (args.length > i + 1) {
+                        contextFileInputs.add(args[++i]);
                     }
                 } else if (FLAG_LOCALE.equalsIgnoreCase(args[i]) && args.length > i+1) {
                     locale = args[++i];
@@ -126,6 +137,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                 i++;
             }
             validationType = inputHelper.validateValidationType(domainConfig, validationType);
+            contextFileInfo = processContextFiles(domainConfig, validationType, contextFileInputs, parentFolder);
         } catch (ValidatorException e) {
             LOGGER_FEEDBACK.info("\nInvalid arguments provided: {}\n", e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH)));
             LOGGER.error(String.format("Invalid arguments provided: %s", e.getMessageForLog()), e);
@@ -146,7 +158,14 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
             for (ValidationInput input: inputs) {
                 LOGGER_FEEDBACK.info("\nValidating {} of {} ...", i + 1, inputs.size());
                 try {
-                    XMLValidator validator = ctx.getBean(XMLValidator.class, input.getInputFile(), validationType, externalXsdInfo, externalSchInfo, domainConfig, localiser);
+                    ValidationSpecs specs = ValidationSpecs.builder(input.getInputFile(), localiser, domainConfig, ctx)
+                            .withValidationType(validationType)
+                            .withExternalSchemas(externalXsdInfo)
+                            .withExternalSchematrons(externalSchInfo)
+                            .withContextFiles(contextFileInfo)
+                            .withTempFolder(parentFolder.toPath())
+                            .build();
+                    XMLValidator validator = ctx.getBean(XMLValidator.class, specs);
                     TAR report = validator.validateAll();
                     if (report == null) {
                         summary.append("\nNo validation report was produced.\n");
@@ -201,6 +220,40 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
     }
 
     /**
+     * Process the provided context files.
+     *
+     * @param domainConfig The domain configuration.
+     * @param validationType The validation type.
+     * @param contextFileInputs The context file inputs.
+     * @param parentFolder The temp folder to use.
+     * @return The context files to use.
+     */
+    private List<ContextFileData> processContextFiles(DomainConfig domainConfig, String validationType, List<String> contextFileInputs, File parentFolder) throws IOException {
+        var contextFileConfigs = domainConfig.getContextFiles(validationType);
+        if (contextFileConfigs.isEmpty()) {
+            return Collections.emptyList();
+        } else {
+            int expectedContextFiles = contextFileConfigs.size();
+            if (expectedContextFiles != contextFileInputs.size()) {
+                var exception = new ValidatorException("validator.label.exception.wrongContextFileCount");
+                LOGGER.error(exception.getMessageForLog());
+                throw exception;
+            } else {
+                int index = 0;
+                List<ContextFileData> contextFiles = new ArrayList<>();
+                for (var contextFileConfig: contextFileConfigs) {
+                    var targetFile = Path.of(parentFolder.getPath(), "contextFiles").resolve(contextFileConfig.path()).toFile();
+                    var contextFileInput = contextFileInputs.get(index);
+                    getContent(contextFileInput, targetFile.getParentFile(), targetFile.getName());
+                    contextFiles.add(new ContextFileData(targetFile.toPath(), contextFileConfig));
+                    index += 1;
+                }
+                return contextFiles;
+            }
+        }
+    }
+
+    /**
      * Print the usage string for the validator.
      *
      * @param requireType True if the validation type should be included in the message.
@@ -223,6 +276,10 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
         if (domainConfig.definesTypeWithExternalSchematrons()) {
             usageMessage.append(" [").append(FLAG_SCHEMATRON).append(" SCHEMATRON_FILE_OR_URI_1] ... [").append(FLAG_SCHEMATRON).append(" SCHEMATRON_FILE_OR_URI_N]");
             parametersMessage.append("\n").append(PAD).append(PAD).append("- SCHEMATRON_FILE_OR_URI_X is the full file path or URI to a schematron file for the validation.");
+        }
+        if (domainConfig.hasContextFiles()) {
+            usageMessage.append(" [").append(FLAG_CONTEXT).append(" CONTEXT_FILE_OR_URI_1] ... [").append(FLAG_CONTEXT).append(" CONTEXT_FILE_OR_URI_N]");
+            parametersMessage.append("\n").append(PAD).append(PAD).append("- CONTEXT_FILE_OR_URI_X is the full file path or URI to a context file for the validation.");
         }
         usageMessage.append("\n").append(PAD).append("Where:");
         usageMessage.append("\n").append(PAD).append(PAD).append("- FILE_OR_URI_X is the full file path or URI to the content to validate.");

@@ -1,13 +1,9 @@
 package eu.europa.ec.itb.xml.validation;
 
-import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
 import javax.xml.transform.Source;
 import javax.xml.transform.TransformerException;
@@ -22,26 +18,24 @@ import java.nio.file.Paths;
 /**
  * URI resolver to lookup references resources from the local file system during Schematron processing.
  */
-@Component
-@Scope("prototype")
 public class URIResolver implements javax.xml.transform.URIResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(URIResolver.class);
     private final DomainConfig domainConfig;
     private final String validationType;
     private final File schematronFile;
-
-    @Autowired
-    ApplicationConfig config;
+    private final String domainResourceRoot;
 
     /**
      * Constructor.
      *
+     * @param domainResourceRoot The resource root that contains the domain's resources (absolute path).
      * @param validationType The current validation type.
      * @param schematronFile The root Schematron file.
      * @param domainConfig The domain configuration.
      */
-    public URIResolver(String validationType, File schematronFile, DomainConfig domainConfig) {
+    public URIResolver(String domainResourceRoot, String validationType, File schematronFile, DomainConfig domainConfig) {
+        this.domainResourceRoot = domainResourceRoot;
         this.validationType = validationType;
         this.schematronFile = schematronFile;
         this.domainConfig = domainConfig;
@@ -53,7 +47,7 @@ public class URIResolver implements javax.xml.transform.URIResolver {
      * @return The root file.
      */
     private File getBaseFile() {
-        File baseFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), domainConfig.getSchematronInfo(validationType).getLocalPath()).toFile();
+        File baseFile = Paths.get(domainResourceRoot, domainConfig.getSchematronInfo(validationType).getLocalPath()).toFile();
         if (baseFile.exists()) {
             if (baseFile.isDirectory()) {
                 return baseFile;

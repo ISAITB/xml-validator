@@ -2,8 +2,9 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
     <head>
         <title th:replace="~{fragments/common :: header}">Validator</title>
-        <script th:src="@{/webjars/codemirror/5.62.2/mode/xml/xml.js}"></script>
+        <script th:src="@{/webjars/codemirror/mode/xml/xml.js}"></script>
         <script th:src="@{/js/lib/FileSaver.min.js}"></script>
+        <script th:src="@{/js/itb-upload-xml.js}"></script>
         <script th:attr="nonce=${nonce}" th:inline="javascript">
             var externalArtifacts = {};
             [# th:each="artifactInfoEntry : ${externalArtifactInfo}"]
@@ -26,6 +27,13 @@
                 externalArtifacts: externalArtifacts,
                 labels: [(${labelConfig})]
             });
+            var contextFiles = {};
+            [# th:each="contextFileEntry : ${contextFileLabels}"]
+                contextFiles[[# th:text="${contextFileEntry.key}" /]] = [];
+                [# th:each="contextFileLabels : ${contextFileEntry.value}"]
+                    contextFiles[[# th:text="${contextFileEntry.key}" /]].push({ label: [# th:text="${contextFileLabels.label()}" /], placeholder: [# th:text="${contextFileLabels.placeholder()}" /] });
+                [/]
+            [/]
         </script>
         <script th:attr="nonce=${nonce}" th:inline="javascript" th:if="${reportData}">
             $(document).ready(function() {
@@ -45,6 +53,7 @@
                             <div th:replace="~{fragments/input :: externalArtifactCheck(${localiser.localise('validator.label.includeExternalArtefacts')}, ${localiser.localise('validator.label.externalArtefactsTooltip')})}"/>
                             <div th:replace="~{fragments/input :: externalArtifactControl('schema', ${localiser.localise('validator.label.externalSchemaLabel')})}"/>
                             <div th:replace="~{fragments/input :: externalArtifactControl('schematron', ${localiser.localise('validator.label.externalSchematronLabel')})}"/>
+                            <div th:if="${config.hasContextFiles()}" class="context-files"></div>
                             <div th:replace="~{fragments/input :: submit(${config}, ${minimalUI})}"/>
                         </div>
                         <div th:if="${minimalUI}" id="reportPlaceholder"></div>

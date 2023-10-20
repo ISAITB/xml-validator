@@ -11,18 +11,17 @@ import com.helger.schematron.svrl.SVRLMarshaller;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
 import eu.europa.ec.itb.validation.commons.FileInfo;
-import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.ReportItemComparator;
 import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
-import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.validation.plugin.PluginManager;
 import eu.europa.ec.itb.validation.plugin.ValidationPlugin;
+import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
+import eu.europa.ec.itb.xml.ValidationSpecs;
 import eu.europa.ec.itb.xml.XMLInvalidException;
 import eu.europa.ec.itb.xml.util.FileManager;
-import net.sf.saxon.om.NodeInfo;
-import net.sf.saxon.type.Type;
+import jakarta.xml.bind.JAXBElement;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,24 +31,19 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.ls.LSResourceResolver;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
 
 import javax.xml.XMLConstants;
-import jakarta.xml.bind.JAXBElement;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -73,155 +67,20 @@ public class XMLValidator {
     @Autowired
     private DomainPluginConfigProvider<DomainConfig> pluginConfigProvider;
     @Autowired
+    private ApplicationConfig appConfig;
+    @Autowired
     private ApplicationContext ctx;
 
-    private final File inputToValidate;
-    private final DomainConfig domainConfig;
-    private final LocalisationHelper localiser;
-    private String validationType;
     private final ObjectFactory gitbTRObjectFactory = new ObjectFactory();
-    private final List<FileInfo> externalSchema;
-    private final List<FileInfo> externalSch;
-    private final boolean locationAsPath;
-    private final boolean addInputToReport;
-    private File inputToValidatePreprocessed;
+    private final ValidationSpecs specs;
 
     /**
      * Constructor.
      *
-     * @param inputToValidate The input content to validate.
-     * @param validationType The validation type.
-     * @param externalSchema User-provided XSDs.
-     * @param externalSch User-provided Schematron files.
-     * @param domainConfig The domain configuration.
-     * @param localiser Helper class for translations.
+     * @param specs The specifications with which to carry out the validation.
      */
-    public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig, LocalisationHelper localiser) {
-        this(inputToValidate, validationType, externalSchema, externalSch, domainConfig, false, true, localiser);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param inputToValidate The input content to validate.
-     * @param validationType The validation type.
-     * @param externalSchema User-provided XSDs.
-     * @param externalSch User-provided Schematron files.
-     * @param domainConfig The domain configuration.
-     * @param locationAsPath True if report item locations should be XPath expressions. If not the line numbers will be
-     *                       calculated and recorded instead.
-     * @param addInputToReport True if the provided input should be added as context to the produced TAR report.
-     * @param localiser Helper class for translations.
-     */
-    public XMLValidator(File inputToValidate, String validationType, List<FileInfo> externalSchema, List<FileInfo> externalSch, DomainConfig domainConfig, boolean locationAsPath, boolean addInputToReport, LocalisationHelper localiser) {
-        this.inputToValidate = inputToValidate;
-        this.validationType = validationType;
-        this.domainConfig = domainConfig;
-        this.externalSchema = externalSchema;
-        this.externalSch = externalSch;
-        this.locationAsPath = locationAsPath;
-        this.addInputToReport = addInputToReport;
-        this.localiser = localiser;
-        if (validationType == null) {
-            this.validationType = domainConfig.getType().get(0);
-        }
-    }
-
-    /**
-     * Open a stream to read the input content.
-     *
-     * @return The stream to read.
-     * @throws XMLInvalidException If the XML cannot be parsed.
-     */
-    private InputStream getInputStreamForValidation() throws XMLInvalidException {
-        try {
-            return Files.newInputStream(getInputFileToUse().toPath());
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    /**
-     * Get the input file to use for validations.
-     *
-     * This method applies any pre-processing needed, followed by pretty-printing (if pretty-printing would
-     * be necessary).
-     *
-     * @return The file to use.
-     * @throws XMLInvalidException If the XML cannot be parsed.
-     */
-    private File getInputFileToUse() throws XMLInvalidException {
-        if (inputToValidatePreprocessed == null) {
-            var expression = domainConfig.getInputPreprocessorPerType().get(validationType);
-            if (expression == null) {
-                // No preprocessing needed.
-                inputToValidatePreprocessed = inputToValidate;
-            } else {
-                inputToValidatePreprocessed = new File(inputToValidate.getParentFile(), UUID.randomUUID() + ".xml");
-                // A preprocessing XPath expression has been provided for the given validation type.
-                XPathExpression xPath;
-                try {
-                    xPath = new net.sf.saxon.xpath.XPathFactoryImpl().newXPath().compile(expression);
-                } catch (XPathExpressionException e) {
-                    throw new ValidatorException("validator.label.exception.invalidInputPreprocessingExpression");
-                }
-                try (
-                    var input = Files.newInputStream(inputToValidate.toPath());
-                    var output = Files.newOutputStream(inputToValidatePreprocessed.toPath())
-                ) {
-                    var result = xPath.evaluate(new StreamSource(input), XPathConstants.NODE);
-                    if (result instanceof NodeInfo) {
-                        int resultKind = ((NodeInfo) result).getNodeKind();
-                        if (resultKind == Type.ELEMENT || resultKind == Type.DOCUMENT || resultKind == Type.NODE) {
-                            Utils.serialize((Source) result, output);
-                        } else {
-                            throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
-                        }
-                    } else {
-                        throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
-                    }
-                } catch (IOException e) {
-                    throw new IllegalStateException("Unable to read input for preprocessing", e);
-                } catch (XPathExpressionException e) {
-                    throw new XMLInvalidException(e);
-                }
-                inputToValidatePreprocessed = replaceFile(inputToValidate, inputToValidatePreprocessed);
-            }
-            // We now see if we need also to pretty-print.
-            if (addInputToReport || !locationAsPath) {
-                File prettyPrintedFile = new File(inputToValidatePreprocessed.getParentFile(), UUID.randomUUID() + ".xml");
-                try {
-                    var document = Utils.secureDocumentBuilder().parse(new InputSource(new FileReader(inputToValidatePreprocessed)));
-                    var factory = Utils.secureTransformerFactory();
-                    var transformer = factory.newTransformer();
-                    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                    transformer.transform(new DOMSource(document), new StreamResult(prettyPrintedFile));
-                } catch (Exception e) {
-                    throw new IllegalStateException("Unable to pretty-print input", e);
-                }
-                replaceFile(inputToValidatePreprocessed, prettyPrintedFile);
-            }
-        }
-        return inputToValidatePreprocessed;
-    }
-
-    /**
-     * Replace one file with another.
-     *
-     * @param fileToReplace The file to replace.
-     * @param newFile The new file.
-     * @return The file path to use.
-     */
-    private File replaceFile(File fileToReplace, File newFile) {
-        try {
-            FileUtils.deleteQuietly(fileToReplace);
-            FileUtils.moveFile(newFile, fileToReplace);
-            return fileToReplace;
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to replace file", e);
-        }
+    public XMLValidator(ValidationSpecs specs) {
+        this.specs = specs;
     }
 
     /**
@@ -231,7 +90,7 @@ public class XMLValidator {
      * @return The resolver.
      */
     private LSResourceResolver getXSDResolver(String xsdExternalPath) {
-        return ctx.getBean(XSDFileResolver.class, validationType, domainConfig, xsdExternalPath);
+        return ctx.getBean(XSDFileResolver.class, specs.getValidationType(), specs.getDomainConfig(), xsdExternalPath);
     }
 
     /**
@@ -241,21 +100,21 @@ public class XMLValidator {
      * @return The resolver.
      */
     private javax.xml.transform.URIResolver getURIResolver(File schematronFile) {
-        return ctx.getBean(URIResolver.class, validationType, schematronFile, domainConfig);
+        return new URIResolver(specs.getResourceRootForDomainFileResolution(appConfig), specs.getValidationType(), schematronFile, specs.getDomainConfig());
     }
 
     /**
      * @return The current domain identifier.
      */
     public String getDomain(){
-        return this.domainConfig.getDomain();
+        return specs.getDomainConfig().getDomain();
     }
 
     /**
      * @return The current validation type.
      */
     public String getValidationType(){
-        return this.validationType;
+        return specs.getValidationType();
     }
 
     /**
@@ -264,8 +123,7 @@ public class XMLValidator {
      * @return The TAR validation report.
      */
     private TAR validateAgainstSchema() throws XMLInvalidException {
-        List<FileInfo> schemaFiles = fileManager.getPreconfiguredValidationArtifacts(domainConfig, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA);
-        schemaFiles.addAll(externalSchema);
+        List<FileInfo> schemaFiles = specs.getSchemasToUse(fileManager);
         if (schemaFiles.isEmpty()) {
             logger.info("No schemas to validate against");
             return null;
@@ -273,7 +131,7 @@ public class XMLValidator {
             List<TAR> reports = new ArrayList<>();
             for (FileInfo aSchemaFile: schemaFiles) {
                 logger.info("Validating against [{}]", aSchemaFile.getFile().getName());
-                TAR report = validateSchema(getInputStreamForValidation(), aSchemaFile.getFile());
+                TAR report = validateSchema(specs.getInputStreamForValidation(), aSchemaFile.getFile());
                 logReport(report, aSchemaFile.getFile().getName());
                 reports.add(report);
                 logger.info("Validated against [{}]", aSchemaFile.getFile().getName());
@@ -308,7 +166,7 @@ public class XMLValidator {
         // Validate XML content against given XSD schema.
         Validator validator = schema.newValidator();
         try {
-            validator.setProperty("http://apache.org/xml/properties/locale", localiser.getLocale());
+            validator.setProperty("http://apache.org/xml/properties/locale", specs.getLocalisationHelper().getLocale());
         } catch (SAXNotRecognizedException | SAXNotSupportedException e) {
             throw new IllegalStateException("Unable to pass locale to validator", e);
         }
@@ -352,7 +210,7 @@ public class XMLValidator {
         report.setResult(TestResultType.FAILURE);
         report.setDate(Utils.getXMLGregorianCalendarDateTime());
         BAR error1 = new BAR();
-        error1.setDescription(localiser.localise("validator.label.exception.errorDueToProblemInXML"));
+        error1.setDescription(specs.getLocalisationHelper().localise("validator.label.exception.errorDueToProblemInXML"));
         error1.setLocation("XML:1:0");
         var element1 = this.gitbTRObjectFactory.createTestAssertionGroupReportsTypeError(error1);
         report.getReports().getInfoOrWarningOrError().add(element1);
@@ -370,11 +228,11 @@ public class XMLValidator {
             if (report.getDate() == null) {
                 report.setDate(Utils.getXMLGregorianCalendarDateTime());
             }
-            if (addInputToReport && report.getContext() == null) {
+            if (specs.isAddInputToReport() && report.getContext() == null) {
                 report.setContext(new AnyContent());
                 String inputXML;
                 try {
-                    inputXML = Files.readString(getInputFileToUse().toPath(), StandardCharsets.UTF_8);
+                    inputXML = Files.readString(specs.getInputFileToUse().toPath(), StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
@@ -415,15 +273,14 @@ public class XMLValidator {
      */
     private TAR validateAgainstSchematron() throws XMLInvalidException {
         List<TAR> reports = new ArrayList<>();
-        List<FileInfo> schematronFiles = fileManager.getPreconfiguredValidationArtifacts(domainConfig, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON);
-        schematronFiles.addAll(externalSch);
+        List<FileInfo> schematronFiles = specs.getSchematronsToUse(fileManager, appConfig);
         if (schematronFiles.isEmpty()) {
             logger.info("No schematrons to validate against");
             return null;
         } else {
             for (FileInfo aSchematronFile: schematronFiles) {
                 logger.info("Validating against [{}]", aSchematronFile.getFile().getName());
-                TAR report = validateSchematron(getInputStreamForValidation(), aSchematronFile.getFile());
+                TAR report = validateSchematron(specs.getInputStreamForValidation(), aSchematronFile.getFile());
                 logReport(report, aSchematronFile.getFile().getName());
                 reports.add(report);
                 logger.info("Validated against [{}]", aSchematronFile.getFile().getName());
@@ -449,8 +306,7 @@ public class XMLValidator {
             }
             logOutput.append("\nDetails");
             report.getReports().getInfoOrWarningOrError().forEach(item -> {
-                if (item.getValue() instanceof BAR) {
-                    BAR reportItem = (BAR)item.getValue();
+                if (item.getValue() instanceof BAR reportItem) {
                     logOutput.append("\nDescription: ").append(reportItem.getDescription());
                 }
             });
@@ -468,7 +324,7 @@ public class XMLValidator {
         TAR overallResult;
         try {
             try {
-                fileManager.signalValidationStart(domainConfig.getDomainName());
+                fileManager.signalValidationStart(specs.getDomainConfig().getDomainName());
                 TAR schemaResult = validateAgainstSchema();
                 if (schemaResult == null) {
                     // No schema.
@@ -486,20 +342,20 @@ public class XMLValidator {
                 }
                 completeReport(overallResult);
             } finally {
-                fileManager.signalValidationEnd(domainConfig.getDomainName());
+                fileManager.signalValidationEnd(specs.getDomainConfig().getDomainName());
             }
             TAR pluginResult = validateAgainstPlugins();
             if (pluginResult != null) {
                 overallResult = Utils.mergeReports(new TAR[] {overallResult, pluginResult});
             }
-            if (domainConfig.isReportsOrdered() && overallResult.getReports() != null) {
+            if (specs.getDomainConfig().isReportsOrdered() && overallResult.getReports() != null) {
                 overallResult.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
             }
         } catch (XMLInvalidException e) {
             logger.warn("Error while validating XML [{}]", e.getMessage());
             overallResult = createFailureReport();
         }
-        domainConfig.applyMetadata(overallResult, getValidationType());
+        specs.getDomainConfig().applyMetadata(overallResult, getValidationType());
         return overallResult;
     }
 
@@ -511,9 +367,9 @@ public class XMLValidator {
      */
     private TAR validateAgainstPlugins() throws XMLInvalidException {
         TAR pluginReport = null;
-        ValidationPlugin[] plugins = pluginManager.getPlugins(pluginConfigProvider.getPluginClassifier(domainConfig, validationType));
+        ValidationPlugin[] plugins = pluginManager.getPlugins(pluginConfigProvider.getPluginClassifier(specs.getDomainConfig(), specs.getValidationType()));
         if (plugins != null && plugins.length > 0) {
-            File pluginTmpFolder = new File(getInputFileToUse().getParentFile(), UUID.randomUUID().toString());
+            File pluginTmpFolder = new File(specs.getInputFileToUse().getParentFile(), UUID.randomUUID().toString());
             try {
                 pluginTmpFolder.mkdirs();
                 ValidateRequest pluginInput = preparePluginInput(pluginTmpFolder);
@@ -547,16 +403,16 @@ public class XMLValidator {
     private ValidateRequest preparePluginInput(File pluginTmpFolder) throws XMLInvalidException {
         File pluginInputFile = new File(pluginTmpFolder, UUID.randomUUID() +".xml");
         try {
-            FileUtils.copyFile(getInputFileToUse(), pluginInputFile);
+            FileUtils.copyFile(specs.getInputFileToUse(), pluginInputFile);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to copy input file for plugin", e);
         }
         ValidateRequest request = new ValidateRequest();
         request.getInput().add(Utils.createInputItem("contentToValidate", pluginInputFile.getAbsolutePath()));
-        request.getInput().add(Utils.createInputItem("domain", domainConfig.getDomainName()));
-        request.getInput().add(Utils.createInputItem("validationType", validationType));
+        request.getInput().add(Utils.createInputItem("domain", specs.getDomainConfig().getDomainName()));
+        request.getInput().add(Utils.createInputItem("validationType", specs.getValidationType()));
         request.getInput().add(Utils.createInputItem("tempFolder", pluginTmpFolder.getAbsolutePath()));
-        request.getInput().add(Utils.createInputItem("locale", localiser.getLocale().toString()));
+        request.getInput().add(Utils.createInputItem("locale", specs.getLocalisationHelper().getLocale().toString()));
         return request;
     }
 
@@ -597,7 +453,7 @@ public class XMLValidator {
         } catch (Exception e) {
             throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
         }
-        SchematronReportHandler handler = new SchematronReportHandler(schematronInput, svrlOutput, convertXPathExpressions, domainConfig.isIncludeTestDefinition(), domainConfig.isIncludeAssertionID(), locationAsPath, localiser);
+        SchematronReportHandler handler = new SchematronReportHandler(schematronInput, svrlOutput, convertXPathExpressions, specs.getDomainConfig().isIncludeTestDefinition(), specs.getDomainConfig().isIncludeAssertionID(), specs.isLocationAsPath(), specs.getLocalisationHelper());
         return handler.createReport();
     }
 

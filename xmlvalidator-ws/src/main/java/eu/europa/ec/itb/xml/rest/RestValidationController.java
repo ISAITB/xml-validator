@@ -8,9 +8,8 @@ import eu.europa.ec.itb.validation.commons.web.errors.NotFoundException;
 import eu.europa.ec.itb.validation.commons.web.rest.BaseRestController;
 import eu.europa.ec.itb.validation.commons.web.rest.model.ApiInfo;
 import eu.europa.ec.itb.validation.commons.web.rest.model.Output;
-import eu.europa.ec.itb.xml.ApplicationConfig;
-import eu.europa.ec.itb.xml.DomainConfig;
-import eu.europa.ec.itb.xml.InputHelper;
+import eu.europa.ec.itb.xml.*;
+import eu.europa.ec.itb.xml.rest.model.ContextFileInfo;
 import eu.europa.ec.itb.xml.rest.model.Input;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
@@ -21,8 +20,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.LocaleUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
@@ -30,12 +32,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Objects;
+import java.nio.file.Path;
+import java.util.*;
 
 /**
  * REST controller to allow triggering the validator via its REST API.
@@ -44,6 +45,7 @@ import java.util.Objects;
 @RestController
 public class RestValidationController extends BaseRestController<DomainConfig, ApplicationConfig, FileManager, InputHelper> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RestValidationController.class);
     @Autowired
     private ApplicationContext ctx = null;
     @Autowired
@@ -124,9 +126,19 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
             var contentEmbeddingMethod = inputHelper.getEmbeddingMethod(in.getEmbeddingMethod());
             var externalSchemas = getExternalSchemas(domainConfig, in.getExternalSchemas(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, parentFolder);
             var externalSchematrons = getExternalSchemas(domainConfig, in.getExternalSchematrons(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, parentFolder);
+            var contextFiles = getContextFiles(domainConfig, in.getContextFiles(), validationType, parentFolder);
             var contentToValidate = inputHelper.validateContentToValidate(in.getContentToValidate(), contentEmbeddingMethod, parentFolder);
             // Validate.
-            XMLValidator validator = ctx.getBean(XMLValidator.class, contentToValidate, validationType, externalSchemas, externalSchematrons, domainConfig, locationAsPath, addInputToReport, localiser);
+            ValidationSpecs specs = ValidationSpecs.builder(contentToValidate, localiser, domainConfig, ctx)
+                    .withValidationType(validationType)
+                    .withExternalSchemas(externalSchemas)
+                    .withExternalSchematrons(externalSchematrons)
+                    .locationAsPath(locationAsPath)
+                    .addInputToReport(addInputToReport)
+                    .withContextFiles(contextFiles)
+                    .withTempFolder(parentFolder.toPath())
+                    .build();
+            XMLValidator validator = ctx.getBean(XMLValidator.class, specs);
             return validator.validateAll();
         } catch (ValidatorException | NotFoundException e) {
             // Localisation of the ValidatorException takes place in the ErrorHandler.
@@ -174,6 +186,49 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
             }
         }
         return outputs.toArray(new Output[] {});
+    }
+
+    /**
+     * Get the submitted context files.
+     *
+     * @param config The domain configuration.
+     * @param receivedContextFiles The received context files.
+     * @param validationType The validation type.
+     * @param parentFolder The temporary folder to consider.
+     * @return The list of context files.
+     * @throws IOException If an IO error occurs.
+     */
+    private List<ContextFileData> getContextFiles(DomainConfig config, List<ContextFileInfo> receivedContextFiles, String validationType, File parentFolder) throws IOException {
+        var contextFileConfigs = config.getContextFiles(validationType);
+        if (contextFileConfigs.isEmpty()) {
+            return Collections.emptyList();
+        } else {
+            int expectedContextFiles = contextFileConfigs.size();
+            if (expectedContextFiles != receivedContextFiles.size()) {
+                var exception = new ValidatorException("validator.label.exception.wrongContextFileCount");
+                LOG.error(exception.getMessageForLog());
+                throw exception;
+            } else {
+                int index = 0;
+                List<ContextFileData> contextFiles = new ArrayList<>();
+                for (var contextFileConfig: contextFileConfigs) {
+                    var targetFile = Path.of(parentFolder.getPath(), "contextFiles").resolve(contextFileConfig.path()).toFile();
+                    var receivedContextFile = receivedContextFiles.get(index).toFileContent();
+                    if (receivedContextFile.getEmbeddingMethod() != null) {
+                        switch (receivedContextFile.getEmbeddingMethod()) {
+                            case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
+                            case URI -> fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName());
+                            default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
+                        }
+                    } else {
+                        fileManager.getFileFromURLOrBase64(targetFile.getParentFile(), receivedContextFile.getContent(), null, null, targetFile.getName());
+                    }
+                    contextFiles.add(new ContextFileData(targetFile.toPath(), contextFileConfig));
+                    index += 1;
+                }
+                return contextFiles;
+            }
+        }
     }
 
 }

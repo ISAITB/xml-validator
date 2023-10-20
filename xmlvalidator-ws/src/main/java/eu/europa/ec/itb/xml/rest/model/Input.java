@@ -24,6 +24,8 @@ public class Input {
     private List<SchemaInfo> externalSchemas;
     @Schema(description = "Any user-provided Schematrons to consider for the validation (i.e. provided at the time of the call).")
     private List<SchemaInfo> externalSchematrons;
+    @Schema(description = "Any user-provided context files to consider for the validation (i.e. provided at the time of the call).")
+    private List<ContextFileInfo> contextFiles;
     @Schema(description = "Whether the locations reported for returned errors will be XPath expressions (default true). False will return the line number in the input.", defaultValue = "true")
     private Boolean locationAsPath;
     @Schema(description = "Whether to include the validated input in the resulting report's context section.", defaultValue = "false")
@@ -95,6 +97,20 @@ public class Input {
      */
     public void setExternalSchematrons(List<SchemaInfo> externalSchematrons) {
         this.externalSchematrons = externalSchematrons;
+    }
+
+    /**
+     * @return The set of user-provided context files.
+     */
+    public List<ContextFileInfo> getContextFiles() {
+        return contextFiles;
+    }
+
+    /**
+     * @param contextFiles The set of user-provided context files.
+     */
+    public void setContextFiles(List<ContextFileInfo> contextFiles) {
+        this.contextFiles = contextFiles;
     }
 
     /**

@@ -31,6 +31,7 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
     private String defaultEmbeddingMethodDescription;
     private String defaultExternalSchemaDescription;
     private String defaultExternalSchematronDescription;
+    private String defaultContextFilesDescription;
     private String defaultLocationAsPathDescription;
     private String defaultLocaleDescription;
     private String defaultAddInputToReportDescription;
@@ -232,6 +233,20 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
     }
 
     /**
+     * @return The web service description for the context files input.
+     */
+    public String getDefaultContextFilesDescription() {
+        return defaultContextFilesDescription;
+    }
+
+    /**
+     * @param defaultContextFilesDescription The web service description for the context files input.
+     */
+    public void setDefaultContextFilesDescription(String defaultContextFilesDescription) {
+        this.defaultContextFilesDescription = defaultContextFilesDescription;
+    }
+
+    /**
      * @return The web service description for the location as path input.
      */
     public String getDefaultLocationAsPathDescription() {
@@ -295,6 +310,7 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
         defaultLabels.put(ValidationConstants.INPUT_EMBEDDING_METHOD, defaultEmbeddingMethodDescription);
         defaultLabels.put(ValidationConstants.INPUT_EXTERNAL_SCHEMA, defaultExternalSchemaDescription);
         defaultLabels.put(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, defaultExternalSchematronDescription);
+        defaultLabels.put(ValidationConstants.INPUT_CONTEXT_FILES, defaultContextFilesDescription);
         defaultLabels.put(ValidationConstants.INPUT_LOCATION_AS_PATH, defaultLocationAsPathDescription);
         defaultLabels.put(ValidationConstants.INPUT_LOCALE, defaultLocaleDescription);
         defaultLabels.put(ValidationConstants.INPUT_ADD_INPUT_TO_REPORT, defaultAddInputToReportDescription);

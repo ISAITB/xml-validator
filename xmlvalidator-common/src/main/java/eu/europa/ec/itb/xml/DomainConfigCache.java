@@ -1,13 +1,21 @@
 package eu.europa.ec.itb.xml;
 
 import eu.europa.ec.itb.validation.commons.ValidatorChannel;
+import eu.europa.ec.itb.validation.commons.config.ParseUtils;
 import eu.europa.ec.itb.validation.commons.config.WebDomainConfigCache;
 import org.apache.commons.configuration2.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import static eu.europa.ec.itb.validation.commons.config.ParseUtils.addMissingDefaultValues;
 
@@ -78,7 +86,48 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         domainConfig.setMailInboundFolder(config.getString("validator.mailInboundFolder", "INBOX"));
         domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
         domainConfig.setIncludeAssertionID(config.getBoolean("validator.includeAssertionID", true));
+        // Context files - START
+        domainConfig.setContextFileDefaultConfig(ParseUtils.parseValueList("validator.defaultContextFile", config, getContextFileMapper(domainConfig, true)));
+        domainConfig.setContextFiles(ParseUtils.parseTypedValueList("validator.contextFile", domainConfig.getType(), config, getContextFileMapper(domainConfig, false)));
+        // Context files - END
         addMissingDefaultValues(domainConfig.getWebServiceDescription(), appConfig.getDefaultLabels());
+    }
+
+    /**
+     * Get the mapping function with which to populate a configuration entry for a context file.
+     *
+     * @param domainConfig The domain configuration.
+     * @param isDefaultConfig Whether the context file is a default one.
+     * @return The mapping function.
+     */
+    private Function<Map<String, String>, ContextFileConfig> getContextFileMapper(DomainConfig domainConfig, boolean isDefaultConfig) {
+        Path domainRootPath = Paths.get(appConfig.getResourceRoot(), domainConfig.getDomain());
+        final Counter counter = new Counter();
+        return (Map<String, String> values) -> {
+            Path contextFilePath;
+            Optional<Path> schemaPath;
+            if (!values.containsKey("path")) {
+                throw new IllegalStateException("The 'path' property is mandatory for configured context files.");
+            } else {
+                var path = Path.of(values.get("path")).normalize();
+                if (path.isAbsolute()) {
+                    throw new IllegalStateException("The 'path' property for configured context files cannot be an absolute path. Offending path was [%s]".formatted(path.toString()));
+                } else {
+                    contextFilePath = path;
+                }
+            }
+            if (values.containsKey("schema")) {
+                var resolvedSchema = domainRootPath.resolve(Path.of(values.get("schema")).normalize());
+                if (Files.notExists(resolvedSchema)) {
+                    throw new IllegalStateException("The 'schema' property for configured context files must point to an existing file. Offending path was [%s]".formatted(resolvedSchema.toString()));
+                } else {
+                    schemaPath = Optional.of(resolvedSchema);
+                }
+            } else {
+                schemaPath = Optional.empty();
+            }
+            return new ContextFileConfig(contextFilePath, schemaPath, values.containsKey("label"), values.containsKey("placeholder"), counter.getAndIncrement(), isDefaultConfig);
+        };
     }
 
     /**
@@ -97,6 +146,22 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
             channelName = ValidatorChannel.SOAP_API.getName();
         }
         return super.toValidatorChannel(supportedChannels, channelName);
+    }
+
+    /**
+     * Utility class to implement a persistent counter object.
+     */
+    private static class Counter {
+        int counter = 0;
+
+        /**
+         * @return The next counter value.
+         */
+        int getAndIncrement() {
+            int valueToReturn = counter;
+            counter += 1;
+            return valueToReturn;
+        }
     }
 
 }

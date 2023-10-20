@@ -14,12 +14,11 @@ import eu.europa.ec.itb.validation.commons.web.Constants;
 import eu.europa.ec.itb.validation.commons.web.dto.Translations;
 import eu.europa.ec.itb.validation.commons.web.dto.UploadResult;
 import eu.europa.ec.itb.validation.commons.web.locale.CustomLocaleResolver;
-import eu.europa.ec.itb.xml.ApplicationConfig;
-import eu.europa.ec.itb.xml.DomainConfig;
-import eu.europa.ec.itb.xml.DomainConfigCache;
-import eu.europa.ec.itb.xml.InputHelper;
+import eu.europa.ec.itb.xml.*;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -27,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -34,11 +34,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static eu.europa.ec.itb.validation.commons.web.Constants.*;
 
@@ -58,6 +58,8 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
     ApplicationConfig appConfig;
     @Autowired
     InputHelper inputHelper;
+    @Autowired
+    ApplicationContext applicationContext;
     @Autowired
     private CustomLocaleResolver localeResolver;
 
@@ -92,7 +94,62 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                         Pair.of("validator.label.externalSchematronPlaceholder", "external."+DomainConfig.ARTIFACT_TYPE_SCHEMATRON+".placeholder")
                 )
         ));
+        attributes.put("contextFileLabels", getContextFileLabels(localisationHelper, config));
         return new ModelAndView(VIEW_UPLOAD_FORM, attributes);
+    }
+
+    /**
+     * Get the labels to use for the generation of context file input controls.
+     *
+     * @param localisationHelper The localisation helper.
+     * @param config The domain configuration.
+     * @return The set of labels per validation type.
+     */
+    private Map<String, ContextFileLabels[]> getContextFileLabels(LocalisationHelper localisationHelper, DomainConfig config) {
+        // Map of validationType to labels.
+        var contextFiles = new HashMap<String, ContextFileLabels[]>();
+        for (var validationType: config.getType()) {
+            var fileConfig = config.getContextFiles(validationType);
+            if (!fileConfig.isEmpty()) {
+                var labels = new ArrayList<ContextFileLabels>();
+                for (var file: fileConfig) {
+                    String labelKeyToUse = contextFileKeyToUse(validationType, localisationHelper, "validator.label.contextFileLabel", file, file::hasLabel);
+                    String placeholderKeyToUse = contextFileKeyToUse(validationType, localisationHelper, "validator.label.contextFilePlaceholder", file, file::hasPlaceholder);
+                    labels.add(new ContextFileLabels(localisationHelper.localise(labelKeyToUse), localisationHelper.localise(placeholderKeyToUse)));
+                }
+                contextFiles.put(validationType, labels.toArray(new ContextFileLabels[] {}));
+            }
+        }
+        return contextFiles;
+    }
+
+    /**
+     * Get the label text to use for the given context file.
+     *
+     * @param validationType The validation type.
+     * @param localisationHelper The localisation helper.
+     * @param defaultKeyIfMissing The default key to use if a specific one is not configured.
+     * @param config The domain configuration.
+     * @param configuredKeyFn The function to get the configured key from the context file config object.
+     * @return The label text.
+     */
+    private String contextFileKeyToUse(String validationType, LocalisationHelper localisationHelper, String defaultKeyIfMissing, ContextFileConfig config, Supplier<Boolean> configuredKeyFn) {
+        String keyToUse = null;
+        if (configuredKeyFn.get()) {
+            String key;
+            if (config.defaultConfig()) {
+                key = "validator.defaultContextFile.%s.label".formatted(config.index());
+            } else {
+                key = "validator.contextFile.%s.%s.label".formatted(validationType, config.index());
+            }
+            if (localisationHelper.propertyExists(key)) {
+                keyToUse = key;
+            }
+        }
+        if (keyToUse == null) {
+            keyToUse = defaultKeyIfMissing;
+        }
+        return keyToUse;
     }
 
     /**
@@ -142,6 +199,9 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                      @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) String[] externalSchContentType,
                                      @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required= false) MultipartFile[] externalSchFiles,
                                      @RequestParam(value = "uri-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) String[] externalSchUri,
+                                     @RequestParam(value = "contentType-contextFile", required = false) String[] contextFileTypes,
+                                     @RequestParam(value = "inputFile-contextFile", required= false) MultipartFile[] contextFileFiles,
+                                     @RequestParam(value = "uri-contextFile", required = false) String[] contextFileUris,
                                      RedirectAttributes redirectAttributes,
                                      HttpServletRequest request,
                                      HttpServletResponse response) {
@@ -175,16 +235,25 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                 if (proceedToValidate) {
                     List<FileInfo> externalSchIS = new ArrayList<>();
                     List<FileInfo> externalSchemaIS = new ArrayList<>();
+                    List<ContextFileData> contextFiles = new ArrayList<>();
                     try {
                         externalSchemaIS = getExternalFiles(config, externalSchemaContentType, externalSchemaFiles, externalSchemaUri, config.getSchemaInfo(validationType), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, tempFolderForRequest);
                         externalSchIS = getExternalFiles(config, externalSchContentType, externalSchFiles, externalSchUri, config.getSchematronInfo(validationType), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, tempFolderForRequest);
+                        contextFiles = getContextFiles(config, validationType, contextFileTypes, contextFileFiles, contextFileUris, tempFolderForRequest);
                     } catch (Exception e) {
                         logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
                         result.setMessage(localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));
                         proceedToValidate = false;
                     }
                     if (proceedToValidate) {
-                        XMLValidator validator = beans.getBean(XMLValidator.class, inputFile, validationType, externalSchemaIS, externalSchIS, config, localisationHelper);
+                        var specs = ValidationSpecs.builder(inputFile, localisationHelper, config, applicationContext)
+                                .withValidationType(validationType)
+                                .withExternalSchemas(externalSchemaIS)
+                                .withExternalSchematrons(externalSchIS)
+                                .withContextFiles(contextFiles)
+                                .withTempFolder(tempFolderForRequest.toPath())
+                                .build();
+                        XMLValidator validator = beans.getBean(XMLValidator.class, specs);
                         TAR report = validator.validateAll();
                         TAR aggregateReport = Utils.toAggregatedTAR(report, localisationHelper);
                         config.applyMetadata(aggregateReport, validator.getValidationType());
@@ -238,9 +307,64 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
     }
 
     /**
+     * Get the submitted context files.
+     *
+     * @param config The domain configuration.
+     * @param validationType The validation type.
+     * @param contextFileTypes The content type for the files (URL or file upload).
+     * @param contextFileFiles The upload files.
+     * @param contextFileUris The URIs.
+     * @param parentFolder The temporary folder to consider.
+     * @return The list of context files.
+     * @throws IOException If an IO error occurs.
+     */
+    private List<ContextFileData> getContextFiles(DomainConfig config, String validationType, String[] contextFileTypes, MultipartFile[] contextFileFiles, String[] contextFileUris, File parentFolder) throws IOException {
+        var contextFileConfigs = config.getContextFiles(validationType);
+        if (contextFileConfigs.isEmpty()) {
+            return Collections.emptyList();
+        } else {
+            int expectedContextFiles = contextFileConfigs.size();
+            if (expectedContextFiles != contextFileTypes.length || expectedContextFiles != contextFileFiles.length || expectedContextFiles != contextFileUris.length) {
+                var exception = new ValidatorException("validator.label.exception.wrongContextFileCount");
+                logger.error(exception.getMessageForLog());
+                throw exception;
+            } else {
+                int index = 0;
+                List<ContextFileData> contextFiles = new ArrayList<>();
+                for (var contextFileConfig: contextFileConfigs) {
+                    var targetFile = Path.of(parentFolder.getPath(), "contextFiles").resolve(contextFileConfig.path()).toFile();
+                    switch (contextFileTypes[index]) {
+                        case CONTENT_TYPE_FILE -> {
+                            if (!contextFileFiles[index].isEmpty()) {
+                                try (var stream = contextFileFiles[index].getInputStream()) {
+                                    var file = fileManager.getFileFromInputStream(targetFile.getParentFile(), stream, FileManager.EXTERNAL_FILE, targetFile.getName());
+                                    contextFiles.add(new ContextFileData(file.toPath(), contextFileConfig));
+                                }
+                            }
+                        }
+                        case CONTENT_TYPE_URI -> {
+                            if (StringUtils.isNotBlank(contextFileUris[index])) {
+                                var file = fileManager.getFileFromURL(targetFile.getParentFile(), contextFileUris[index], "", targetFile.getName());
+                                contextFiles.add(new ContextFileData(file.toPath(), contextFileConfig));
+                            }
+                        }
+                        default -> {
+                            var exception = new ValidatorException("validator.label.exception.unexpectedContentType");
+                            logger.error(exception.getMessageForLog());
+                            throw exception;
+                        }
+                    }
+                    index += 1;
+                }
+                return contextFiles;
+            }
+        }
+    }
+
+    /**
      * Handle the upload form's submission when the user interface is minimal.
      *
-     * @see UploadController#handleUpload(String, MultipartFile, String, String, String, String, String[], MultipartFile[], String[], String[], MultipartFile[], String[], RedirectAttributes, HttpServletRequest, HttpServletResponse)
+     * @see UploadController#handleUpload(String, MultipartFile, String, String, String, String, String[], MultipartFile[], String[], String[], MultipartFile[], String[], String[], MultipartFile[], String[], RedirectAttributes, HttpServletRequest, HttpServletResponse)
      */
     @PostMapping(value = "/{domain}/uploadm", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -256,16 +380,19 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                       @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) String[] externalSch,
                                       @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required= false) MultipartFile[] externalSchFiles,
                                       @RequestParam(value = "uriToValidate-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) String[] externalSchUri,
+                                      @RequestParam(value = "contentType-contextFile", required = false) String[] contextFileTypes,
+                                      @RequestParam(value = "inputFile-contextFile", required= false) MultipartFile[] contextFileFiles,
+                                      @RequestParam(value = "uri-contextFile", required = false) String[] contextFileUris,
                                       RedirectAttributes redirectAttributes,
                                       HttpServletRequest request,
                                       HttpServletResponse response) {
-        return handleUpload(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, redirectAttributes, request, response);
+        return handleUpload(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, contextFileTypes, contextFileFiles, contextFileUris, redirectAttributes, request, response);
     }
 
     /**
      * Handle the upload form's submission when the user interface is embedded in another web page.
      *
-     * @see UploadController#handleUpload(String, MultipartFile, String, String, String, String, String[], MultipartFile[], String[], String[], MultipartFile[], String[], RedirectAttributes, HttpServletRequest, HttpServletResponse)
+     * @see UploadController#handleUpload(String, MultipartFile, String, String, String, String, String[], MultipartFile[], String[], String[], MultipartFile[], String[], String[], MultipartFile[], String[], RedirectAttributes, HttpServletRequest, HttpServletResponse)
      */
     @PostMapping(value = "/{domain}/upload", produces = MediaType.TEXT_HTML_VALUE)
     public ModelAndView handleUploadEmbedded(@PathVariable("domain") String domain,
@@ -280,11 +407,14 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                              @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) String[] externalSch,
                                              @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required= false) MultipartFile[] externalSchFiles,
                                              @RequestParam(value = "uriToValidate-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) String[] externalSchUri,
+                                             @RequestParam(value = "contentType-contextFile", required = false) String[] contextFileTypes,
+                                             @RequestParam(value = "inputFile-contextFile", required= false) MultipartFile[] contextFileFiles,
+                                             @RequestParam(value = "uri-contextFile", required = false) String[] contextFileUris,
                                              RedirectAttributes redirectAttributes,
                                              HttpServletRequest request,
                                              HttpServletResponse response) {
         var uploadForm = upload(domain, request, response);
-        var uploadResult = handleUpload(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, redirectAttributes, request, response);
+        var uploadResult = handleUpload(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, contextFileTypes, contextFileFiles, contextFileUris, redirectAttributes, request, response);
         uploadForm.getModel().put(Constants.PARAM_REPORT_DATA, writeResultToString(uploadResult));
         return uploadForm;
     }
@@ -292,7 +422,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
     /**
      * Handle the upload form's submission when the user interface is minimal and embedded in another web page.
      *
-     * @see UploadController#handleUpload(String, MultipartFile, String, String, String, String, String[], MultipartFile[], String[], String[], MultipartFile[], String[], RedirectAttributes, HttpServletRequest, HttpServletResponse)
+     * @see UploadController#handleUpload(String, MultipartFile, String, String, String, String, String[], MultipartFile[], String[], String[], MultipartFile[], String[], String[], MultipartFile[], String[], RedirectAttributes, HttpServletRequest, HttpServletResponse)
      */
     @PostMapping(value = "/{domain}/uploadm", produces = MediaType.TEXT_HTML_VALUE)
     public ModelAndView handleUploadMinimalEmbedded(@PathVariable("domain") String domain,
@@ -307,10 +437,13 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                              @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) String[] externalSch,
                                              @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required= false) MultipartFile[] externalSchFiles,
                                              @RequestParam(value = "uriToValidate-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) String[] externalSchUri,
+                                             @RequestParam(value = "contentType-contextFile", required = false) String[] contextFileTypes,
+                                             @RequestParam(value = "inputFile-contextFile", required= false) MultipartFile[] contextFileFiles,
+                                             @RequestParam(value = "uri-contextFile", required = false) String[] contextFileUris,
                                              RedirectAttributes redirectAttributes,
                                              HttpServletRequest request,
                                              HttpServletResponse response) {
-        return handleUploadEmbedded(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, redirectAttributes, request, response);
+        return handleUploadEmbedded(domain, file, uri, string, validationType, contentType, externalSchema, externalSchemaFiles, externalSchemaUri, externalSch, externalSchFiles, externalSchUri, contextFileTypes, contextFileFiles, contextFileUris, redirectAttributes, request, response);
     }
 
     /**

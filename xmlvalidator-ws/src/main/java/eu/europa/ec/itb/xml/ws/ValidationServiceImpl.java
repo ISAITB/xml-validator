@@ -6,16 +6,22 @@ import com.gitb.vs.GetModuleDefinitionResponse;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
 import com.gitb.vs.Void;
+import eu.europa.ec.itb.validation.commons.FileContent;
 import eu.europa.ec.itb.validation.commons.FileInfo;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.validation.commons.web.WebServiceContextProvider;
+import eu.europa.ec.itb.xml.ContextFileData;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.InputHelper;
+import eu.europa.ec.itb.xml.ValidationSpecs;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.ValidationConstants;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
+import jakarta.annotation.Resource;
+import jakarta.jws.WebParam;
+import jakarta.xml.ws.WebServiceContext;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.LocaleUtils;
 import org.slf4j.Logger;
@@ -26,10 +32,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Resource;
-import jakarta.jws.WebParam;
-import jakarta.xml.ws.WebServiceContext;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -78,7 +85,9 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
         if (inputHelper.supportsExternalArtifacts(domainConfig.getArtifactInfo(), DomainConfig.ARTIFACT_TYPE_SCHEMATRON)) {
             response.getModule().getInputs().getParam().add(Utils.createParameter(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, "list[map]", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON)));
         }
-        response.getModule().getInputs().getParam().add(Utils.createParameter(ValidationConstants.INPUT_LOCALE, "string", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_LOCALE)));
+        if (domainConfig.hasContextFiles()) {
+            response.getModule().getInputs().getParam().add(Utils.createParameter(ValidationConstants.INPUT_CONTEXT_FILES, "list[map]", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_CONTEXT_FILES)));
+        }
         return response;
     }
 
@@ -96,8 +105,18 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
             String validationType = inputHelper.validateValidationType(domainConfig, validateRequest, ValidationConstants.INPUT_TYPE);
             List<FileInfo> externalSchemas = inputHelper.validateExternalArtifacts(domainConfig, validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMA, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EMBEDDING_METHOD, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, tempFolderPath);
             List<FileInfo> externalSchematron = inputHelper.validateExternalArtifacts(domainConfig, validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EMBEDDING_METHOD, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, tempFolderPath);
+            List<ContextFileData> contextFiles = getContextFiles(domainConfig, validateRequest, validationType, tempFolderPath);
             // Proceed with the validation.
-            XMLValidator validator = ctx.getBean(XMLValidator.class, contentToValidate, validationType, externalSchemas, externalSchematron, domainConfig, locationAsPath, addInputToReport, localiser);
+            ValidationSpecs specs = ValidationSpecs.builder(contentToValidate, localiser, domainConfig, ctx)
+                    .withValidationType(validationType)
+                    .withExternalSchemas(externalSchemas)
+                    .withExternalSchematrons(externalSchematron)
+                    .locationAsPath(locationAsPath)
+                    .addInputToReport(addInputToReport)
+                    .withContextFiles(contextFiles)
+                    .withTempFolder(tempFolderPath.toPath())
+                    .build();
+            XMLValidator validator = ctx.getBean(XMLValidator.class, specs);
             TAR report = validator.validateAll();
             ValidationResponse result = new ValidationResponse();
             result.setReport(report);
@@ -148,6 +167,56 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
             return input.get(0).getValue();
         }
         return defaultIfMissing;
+    }
+
+    /**
+     * Get the submitted context files.
+     *
+     * @param config The domain configuration.
+     * @param validateRequest The received request.
+     * @param validationType The validation type.
+     * @param parentFolder The temporary folder to consider.
+     * @return The list of context files.
+     * @throws IOException If an IO error occurs.
+     */
+    private List<ContextFileData> getContextFiles(DomainConfig config, ValidateRequest validateRequest, String validationType, File parentFolder) throws IOException {
+        var contextFileConfigs = config.getContextFiles(validationType);
+        if (contextFileConfigs.isEmpty()) {
+            return Collections.emptyList();
+        } else {
+            int expectedContextFiles = contextFileConfigs.size();
+            var receivedContextFiles = collectContextFiles(validateRequest);
+            if (expectedContextFiles != receivedContextFiles.size()) {
+                var exception = new ValidatorException("validator.label.exception.wrongContextFileCount");
+                logger.error(exception.getMessageForLog());
+                throw exception;
+            } else {
+                int index = 0;
+                List<ContextFileData> contextFiles = new ArrayList<>();
+                for (var contextFileConfig: contextFileConfigs) {
+                    var targetFile = Path.of(parentFolder.getPath(), "contextFiles").resolve(contextFileConfig.path()).toFile();
+                    var receivedContextFile = receivedContextFiles.get(index);
+                    switch (receivedContextFile.getEmbeddingMethod()) {
+                        case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
+                        case URI -> fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName());
+                        default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
+                    }
+                    contextFiles.add(new ContextFileData(targetFile.toPath(), contextFileConfig));
+                    index += 1;
+                }
+                return contextFiles;
+            }
+        }
+    }
+
+    /**
+     * Collect the context files from the inputs.
+     *
+     * @param validateRequest The input request.
+     * @return The context files.
+     */
+    private List<FileContent> collectContextFiles(ValidateRequest validateRequest) {
+        return inputHelper.toExternalArtifactContents(validateRequest, ValidationConstants.INPUT_CONTEXT_FILES, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EMBEDDING_METHOD);
     }
 
     @Override

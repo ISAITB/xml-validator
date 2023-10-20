@@ -4,33 +4,32 @@ import com.gitb.tr.TAR;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.ValidatorChannel;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
-import eu.europa.ec.itb.xml.ApplicationConfig;
-import eu.europa.ec.itb.xml.DomainConfig;
-import eu.europa.ec.itb.xml.DomainConfigCache;
-import eu.europa.ec.itb.xml.InputHelper;
+import eu.europa.ec.itb.xml.*;
 import eu.europa.ec.itb.xml.upload.FileController;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
+import jakarta.annotation.PostConstruct;
+import jakarta.mail.*;
+import jakarta.mail.internet.MimeMessage;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.mail.*;
-import jakarta.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -51,7 +50,7 @@ public class MailHandler {
     @Autowired
     DomainConfigCache domainConfigCache;
     @Autowired
-    BeanFactory beans;
+    ApplicationContext applicationContext;
     @Autowired
     ApplicationConfig appConfig;
     @Autowired
@@ -135,8 +134,7 @@ public class MailHandler {
                                 Object contentObj = message.getContent();
                                 StringBuilder messageAdditionalText = new StringBuilder();
                                 try {
-                                    if (contentObj instanceof Multipart) {
-                                        Multipart content = (Multipart)contentObj;
+                                    if (contentObj instanceof Multipart content) {
                                         for (int i=0; i < content.getCount(); i++) {
                                             BodyPart part = content.getBodyPart(i);
                                             if (!StringUtils.isBlank(part.getFileName())) {
@@ -148,11 +146,14 @@ public class MailHandler {
                                                     String fileName = part.getFileName();
                                                     String validationType = inputHelper.validateValidationType(config, fileName.substring(0, fileName.indexOf('.')));
                                                     try (InputStream is = part.getInputStream()) {
-                                                        XMLValidator validator = beans.getBean(XMLValidator.class, is, validationType, config, new LocalisationHelper(config, Locale.ENGLISH));
+                                                        var input = Files.createTempFile("itb-", "-input");
+                                                        IOUtils.copy(is, Files.newOutputStream(input));
+                                                        ValidationSpecs specs = ValidationSpecs.builder(input.toFile(), new LocalisationHelper(config, Locale.ENGLISH), config, applicationContext).withValidationType(validationType).build();
+                                                        XMLValidator validator = applicationContext.getBean(XMLValidator.class, specs);
                                                         TAR report = validator.validateAll();
                                                         reports.add(new FileReport(part.getFileName(), report));
                                                     } catch (Exception e) {
-                                                        messageAdditionalText.append("Failed to validate file ["+part.getFileName()+"]: "+e.getMessage()+"\n");
+                                                        messageAdditionalText.append("Failed to validate file [%s]: %s\n".formatted(part.getFileName(), e.getMessage()));
                                                         logger.warn("Failed to validate file", e);
                                                     }
                                                 } else {
@@ -161,22 +162,22 @@ public class MailHandler {
                                             }
                                         }
                                         if (reports.isEmpty()) {
-                                            String msg = "No reports to send for ["+message.getSubject()+"]";
+                                            String msg = "No reports to send for [%s]".formatted(message.getSubject());
                                             messageAdditionalText.append(msg);
                                             logger.info(msg);
                                         }
                                     } else {
-                                        String msg = "Skipping message ["+message.getSubject()+"] as non-multipart";
+                                        String msg = "Skipping message [%s] as non-multipart".formatted(message.getSubject());
                                         messageAdditionalText.append(msg);
                                         logger.info(msg);
                                     }
                                 } catch (ValidatorException e) {
                                     // Send error response to sender.
-                                    messageAdditionalText.append("Failed to process message: "+e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))+"\n");
+                                    messageAdditionalText.append("Failed to process message: %s\n".formatted(e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))));
                                     e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
                                 } catch (Exception e) {
                                     // Send error response to sender.
-                                    messageAdditionalText.append("Failed to process message: "+e.getMessage()+"\n");
+                                    messageAdditionalText.append("Failed to process message: %s\n".formatted(e.getMessage()));
                                     e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
                                 } finally {
                                     logger.info("Sending email response");

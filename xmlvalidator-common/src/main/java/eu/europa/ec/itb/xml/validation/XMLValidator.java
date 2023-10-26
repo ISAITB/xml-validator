@@ -10,6 +10,7 @@ import com.helger.schematron.pure.SchematronResourcePure;
 import com.helger.schematron.svrl.SVRLMarshaller;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
+import com.helger.xml.transform.DefaultTransformURIResolver;
 import eu.europa.ec.itb.validation.commons.FileInfo;
 import eu.europa.ec.itb.validation.commons.ReportItemComparator;
 import eu.europa.ec.itb.validation.commons.Utils;
@@ -99,8 +100,8 @@ public class XMLValidator {
      * @param schematronFile The Schematron file.
      * @return The resolver.
      */
-    private javax.xml.transform.URIResolver getURIResolver(File schematronFile) {
-        return new URIResolver(specs.getResourceRootForDomainFileResolution(appConfig), specs.getValidationType(), schematronFile, specs.getDomainConfig());
+    private SchematronURIResolver getURIResolver(File schematronFile) {
+        return new SchematronURIResolver(specs.getResourceRootForDomainFileResolution(appConfig), specs.getValidationType(), schematronFile, specs.getDomainConfig());
     }
 
     /**
@@ -432,7 +433,13 @@ public class XMLValidator {
         if (schematronFileName.endsWith("xslt") || schematronFileName.endsWith("xsl")) {
             // Validate as XSLT.
             schematron = SchematronResourceXSLT.fromFile(schematronFile);
-            ((SchematronResourceXSLT) schematron).setURIResolver(getURIResolver(schematronFile));
+            var newResolver = getURIResolver(schematronFile);
+            SchematronResourceXSLT resource = (SchematronResourceXSLT) schematron;
+            var resolver = resource.getURIResolver();
+            if (resolver instanceof DefaultTransformURIResolver defaultResolver) {
+                newResolver.setDefaultBase(defaultResolver.getDefaultBase());
+            }
+            resource.setURIResolver(newResolver);
         } else {
             // Validate as raw schematron.
             convertXPathExpressions = true;

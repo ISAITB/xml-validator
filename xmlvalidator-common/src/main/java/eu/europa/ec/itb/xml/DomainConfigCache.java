@@ -3,18 +3,15 @@ package eu.europa.ec.itb.xml;
 import eu.europa.ec.itb.validation.commons.ValidatorChannel;
 import eu.europa.ec.itb.validation.commons.config.ParseUtils;
 import eu.europa.ec.itb.validation.commons.config.WebDomainConfigCache;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.configuration2.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 import static eu.europa.ec.itb.validation.commons.config.ParseUtils.addMissingDefaultValues;
@@ -88,9 +85,26 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         domainConfig.setIncludeAssertionID(config.getBoolean("validator.includeAssertionID", true));
         // Context files - START
         domainConfig.setContextFileDefaultConfig(ParseUtils.parseValueList("validator.defaultContextFile", config, getContextFileMapper(domainConfig, true)));
-        domainConfig.setContextFiles(ParseUtils.parseTypedValueList("validator.contextFile", domainConfig.getType(), config, getContextFileMapper(domainConfig, false)));
+        domainConfig.setContextFiles(parseTypeSpecificContextFiles("validator.contextFile", domainConfig.getType(), config, domainConfig));
         // Context files - END
         addMissingDefaultValues(domainConfig.getWebServiceDescription(), appConfig.getDefaultLabels());
+    }
+
+    /**
+     * Parse a map of validation type to list of objects using a helper function.
+     *
+     * @param key The common property key.
+     * @param types The validation types.
+     * @param config The configuration properties.
+     * @param domainConfig The currently parsed domain configuration.
+     * @return The map.
+     */
+    public Map<String, List<ContextFileConfig>> parseTypeSpecificContextFiles(String key, List<String> types, Configuration config, DomainConfig domainConfig) {
+        Map<String, List<ContextFileConfig>> configValues = new HashMap<>();
+        for (String type: types) {
+            configValues.put(type, ParseUtils.parseValueList(key + "." + type, config, getContextFileMapper(domainConfig, false)));
+        }
+        return configValues;
     }
 
     /**

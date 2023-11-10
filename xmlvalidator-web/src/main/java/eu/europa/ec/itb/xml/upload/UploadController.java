@@ -240,6 +240,8 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                         externalSchemaIS = getExternalFiles(config, externalSchemaContentType, externalSchemaFiles, externalSchemaUri, config.getSchemaInfo(validationType), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, tempFolderForRequest);
                         externalSchIS = getExternalFiles(config, externalSchContentType, externalSchFiles, externalSchUri, config.getSchematronInfo(validationType), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, tempFolderForRequest);
                         contextFiles = getContextFiles(config, validationType, contextFileTypes, contextFileFiles, contextFileUris, tempFolderForRequest);
+                    } catch (ValidatorException e) {
+                        throw e;
                     } catch (Exception e) {
                         logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
                         result.setMessage(localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));

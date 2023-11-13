@@ -1,7 +1,6 @@
 package eu.europa.ec.itb.xml.validation;
 
 import com.helger.xml.transform.DefaultTransformURIResolver;
-import eu.europa.ec.itb.xml.DomainConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +14,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 
 /**
  * URI resolver to lookup references resources from the local file system during Schematron processing.
@@ -23,24 +21,15 @@ import java.nio.file.Paths;
 public class SchematronURIResolver extends DefaultTransformURIResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(SchematronURIResolver.class);
-    private final DomainConfig domainConfig;
-    private final String validationType;
     private final File schematronFile;
-    private final String domainResourceRoot;
 
     /**
      * Constructor.
      *
-     * @param domainResourceRoot The resource root that contains the domain's resources (absolute path).
-     * @param validationType The current validation type.
      * @param schematronFile The root Schematron file.
-     * @param domainConfig The domain configuration.
      */
-    public SchematronURIResolver(String domainResourceRoot, String validationType, File schematronFile, DomainConfig domainConfig) {
-        this.domainResourceRoot = domainResourceRoot;
-        this.validationType = validationType;
+    public SchematronURIResolver(File schematronFile) {
         this.schematronFile = schematronFile;
-        this.domainConfig = domainConfig;
     }
 
     /**
@@ -49,15 +38,14 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
      * @return The root file.
      */
     private File getBaseFile() {
-        File baseFile = Paths.get(domainResourceRoot, domainConfig.getSchematronInfo(validationType).getLocalPath()).toFile();
-        if (baseFile.exists()) {
-            if (baseFile.isDirectory()) {
-                return baseFile;
+        if (schematronFile.exists()) {
+            if (schematronFile.isDirectory()) {
+                return schematronFile;
             } else { // File
-                return baseFile.getParentFile();
+                return schematronFile.getParentFile();
             }
         } else {
-            LOG.error("The root Schematron file could not be loaded [{}]", baseFile.getAbsolutePath());
+            LOG.error("The root Schematron file could not be loaded [{}]", schematronFile.getAbsolutePath());
             throw new IllegalStateException("The root Schematron file could not be loaded");
         }
     }

@@ -101,7 +101,7 @@ public class XMLValidator {
      * @return The resolver.
      */
     private SchematronURIResolver getURIResolver(File schematronFile) {
-        return new SchematronURIResolver(specs.getResourceRootForDomainFileResolution(appConfig), specs.getValidationType(), schematronFile, specs.getDomainConfig());
+        return new SchematronURIResolver(schematronFile);
     }
 
     /**

@@ -132,7 +132,7 @@ public class XMLValidator {
             List<TAR> reports = new ArrayList<>();
             for (FileInfo aSchemaFile: schemaFiles) {
                 logger.info("Validating against [{}]", aSchemaFile.getFile().getName());
-                TAR report = validateSchema(specs.getInputStreamForValidation(), aSchemaFile.getFile());
+                TAR report = validateSchema(specs.getInputStreamForValidation(false), aSchemaFile.getFile());
                 logReport(report, aSchemaFile.getFile().getName());
                 reports.add(report);
                 logger.info("Validated against [{}]", aSchemaFile.getFile().getName());
@@ -154,7 +154,7 @@ public class XMLValidator {
         // Create error handler.
         XSDReportHandler handler = new XSDReportHandler();
         // Resolve schema.
-        SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        SchemaFactory schemaFactory = Utils.secureSchemaFactory();
         schemaFactory.setErrorHandler(handler);
         schemaFactory.setResourceResolver(getXSDResolver(schemaFile.getParent()));
         Schema schema;
@@ -233,7 +233,7 @@ public class XMLValidator {
                 report.setContext(new AnyContent());
                 String inputXML;
                 try {
-                    inputXML = Files.readString(specs.getInputFileToUse().toPath(), StandardCharsets.UTF_8);
+                    inputXML = Files.readString(specs.getInputFileToReport().toPath(), StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
@@ -274,14 +274,14 @@ public class XMLValidator {
      */
     private TAR validateAgainstSchematron() throws XMLInvalidException {
         List<TAR> reports = new ArrayList<>();
-        List<FileInfo> schematronFiles = specs.getSchematronsToUse(fileManager, appConfig);
+        List<FileInfo> schematronFiles = specs.getSchematronsToUse();
         if (schematronFiles.isEmpty()) {
             logger.info("No schematrons to validate against");
             return null;
         } else {
             for (FileInfo aSchematronFile: schematronFiles) {
                 logger.info("Validating against [{}]", aSchematronFile.getFile().getName());
-                TAR report = validateSchematron(specs.getInputStreamForValidation(), aSchematronFile.getFile());
+                TAR report = validateSchematron(specs.getInputStreamForValidation(true), aSchematronFile.getFile());
                 logReport(report, aSchematronFile.getFile().getName());
                 reports.add(report);
                 logger.info("Validated against [{}]", aSchematronFile.getFile().getName());

@@ -16,14 +16,15 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
 
 import javax.xml.XMLConstants;
+import javax.xml.stream.XMLInputFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
-import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -49,6 +50,7 @@ public class ValidationSpecs {
 
     private File input;
     private File inputToUse;
+    private File schematronInputToUse;
     private LocalisationHelper localisationHelper;
     private DomainConfig domainConfig;
     private String validationType;
@@ -60,6 +62,8 @@ public class ValidationSpecs {
     private Path tempFolder;
     private List<FileInfo> schematronFilesToUse;
     private ApplicationContext applicationContext;
+    private XMLInputFactory xmlInputFactory;
+    private TransformerFactory transformerFactory;
 
     /**
      * Private constructor to prevent direct initialisation.
@@ -76,15 +80,184 @@ public class ValidationSpecs {
     /**
      * Open a stream to read the input content.
      *
+     * @param forSchematronValidation Whether this is called to validate Schematron rules.
      * @return The stream to read.
      * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    public InputStream getInputStreamForValidation() throws XMLInvalidException {
+    public InputStream getInputStreamForValidation(boolean forSchematronValidation) throws XMLInvalidException {
         try {
-            return Files.newInputStream(getInputFileToUse().toPath());
+            return Files.newInputStream(getInputFileToUse(forSchematronValidation).toPath());
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /**
+     * Get the input file to include as part of the validator's report.
+     *
+     * @return The path to the input file.
+     * @throws XMLInvalidException If the XML cannot be parsed.
+     */
+    public File getInputFileToReport() throws XMLInvalidException {
+        boolean schematronValidationTookPlace = schematronInputToUse != null;
+        return getInputFileToUse(schematronValidationTookPlace);
+    }
+
+    /**
+     * Get the input file to use for validations covering schema and schematron validations.
+     * <p/>
+     * This method applies any pre-processing needed, followed by pretty-printing (if pretty-printing would
+     * be necessary).
+     * <p/>
+     * Note that in the case of Schematrons it could be that we also need to combine context files with the main input.
+     * If so, this would take place after any pre-processing of the main input file.
+     *
+     * @return The preprocessed input.
+     */
+    public File getInputFileToUse(boolean forSchematronValidation) throws XMLInvalidException {
+        if (inputToUse == null || schematronInputToUse == null && forSchematronValidation) {
+            if (inputToUse == null) {
+                var expression = domainConfig.getInputPreprocessorPerType().get(validationType);
+                if (expression == null) {
+                    // No preprocessing needed.
+                    inputToUse = input;
+                } else {
+                    inputToUse = new File(input.getParentFile(), UUID.randomUUID() + ".xml");
+                    // A preprocessing XPath expression has been provided for the given validation type.
+                    XPathExpression xPath;
+                    try {
+                        xPath = new net.sf.saxon.xpath.XPathFactoryImpl().newXPath().compile(expression);
+                    } catch (XPathExpressionException e) {
+                        throw new ValidatorException("validator.label.exception.invalidInputPreprocessingExpression");
+                    }
+                    try (
+                            var inputStream = Files.newInputStream(input.toPath());
+                            var outputStream = Files.newOutputStream(inputToUse.toPath())
+                    ) {
+                        var result = xPath.evaluate(new StreamSource(inputStream), XPathConstants.NODE);
+                        if (result instanceof NodeInfo) {
+                            int resultKind = ((NodeInfo) result).getNodeKind();
+                            if (resultKind == Type.ELEMENT || resultKind == Type.DOCUMENT || resultKind == Type.NODE) {
+                                Utils.serialize((Source) result, outputStream);
+                            } else {
+                                throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
+                            }
+                        } else {
+                            throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
+                        }
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Unable to read input for preprocessing", e);
+                    } catch (XPathExpressionException e) {
+                        throw new XMLInvalidException(e);
+                    }
+                    inputToUse = replaceFile(input, inputToUse);
+                }
+                // We now see if we need also to pretty-print.
+                if (addInputToReport || !locationAsPath) {
+                    prettyPrintFile(inputToUse);
+                }
+            }
+            // The main input file is fully pre-processed at this point.
+            if (forSchematronValidation && schematronInputToUse == null) {
+                /*
+                 * We may have a different Schematron input if we have both of these applying:
+                 * 1. One or more context files configured for the selected validation type.
+                 * 2. A context file combination template.
+                 */
+                // Make sure the context files are validated and placed in the expected locations.
+                getSchematronsToUse();
+                String validationType = getValidationType();
+                List<ContextFileConfig> contextFilesToCombine =  domainConfig.getContextFiles(validationType)
+                        .stream()
+                        .filter((contextFile) -> contextFile.combinationPlaceholder().isPresent())
+                        .toList();
+                Optional<ContextFileCombinationTemplateConfig> combinationTemplate = domainConfig.getContextFileCombinationTemplate(validationType);
+                if (!contextFilesToCombine.isEmpty() && combinationTemplate.isPresent()) {
+                    Path combinationTemplatePath = tempDomainPath().resolve(combinationTemplate.get().configuredPath());
+                    // We need to combine the input and context file(s) based on the configured template.
+                    String combinationXslt = getContextFileCombinationXslt(contextFilesToCombine);
+                    File combinedInputFile = new File(inputToUse.getParentFile(), UUID.randomUUID() + ".xml");
+                    try (var fileReader = new FileReader(combinationTemplatePath.toFile())) {
+                        var reader = getXmlInputFactory().createXMLStreamReader(fileReader);
+                        var transformer = getTransformerFactory().newTransformer(new StAXSource(getXmlInputFactory().createXMLStreamReader(new StringReader(combinationXslt))));
+                        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                        transformer.transform(new StAXSource(reader), new StreamResult(combinedInputFile));
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Unable to generate combined input", e);
+                    }
+                    schematronInputToUse = combinedInputFile;
+                } else {
+                    // Schematron input is unchanged.
+                    schematronInputToUse = inputToUse;
+                }
+            }
+        }
+        return forSchematronValidation?schematronInputToUse:inputToUse;
+    }
+
+    /**
+     * Construct the XSLT file to use for processing the context file combination template.
+     *
+     * @param contextFilesToCombine The context files to combine.
+     * @return The XSLT content to use.
+     */
+    private String getContextFileCombinationXslt(List<ContextFileConfig> contextFilesToCombine) {
+        var combinationXslt = new StringBuilder("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                    <xsl:output method="xml" indent="yes"/>
+                    <xsl:template match="@* | node()">
+                      <xsl:copy>
+                        <xsl:apply-templates select="@* | node()"/>
+                      </xsl:copy>
+                    </xsl:template>
+                    <xsl:template match="*[normalize-space(string-join(./text())) = '${input}']/text()">
+                        <xsl:copy-of select="document('%s')" />
+                    </xsl:template>
+                """.formatted(inputToUse.toURI().toString())
+        );
+        for (var contextFile: contextFilesToCombine) {
+            if (contextFile.combinationPlaceholder().isPresent()) {
+                Path contextFilePathForValidation = tempDomainPath().resolve(contextFile.configuredPath());
+                combinationXslt.append("""
+                    <xsl:template match="*[normalize-space(string-join(./text())) = '${%s}']/text()">
+                        <xsl:copy-of select="document('%s')" />
+                    </xsl:template>
+                    """.formatted(contextFile.combinationPlaceholder().get(), contextFilePathForValidation.toUri().toString())
+                );
+            }
+        }
+        combinationXslt.append("</xsl:stylesheet>");
+        return combinationXslt.toString();
+    }
+
+    /**
+     * @return The overall application configuration.
+     */
+    private ApplicationConfig getApplicationConfig() {
+        return applicationContext.getBean(ApplicationConfig.class);
+    }
+
+    /**
+     * Pretty-print the provided file.
+     *
+     * @param fileToProcess The file to process.
+     */
+    private void prettyPrintFile(File fileToProcess) {
+        File prettyPrintedFile = new File(fileToProcess.getParentFile(), UUID.randomUUID() + ".xml");
+        try {
+            var reader = getXmlInputFactory().createXMLStreamReader(new FileReader(fileToProcess));
+            var transformer = getTransformerFactory().newTransformer();
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.transform(new StAXSource(reader), new StreamResult(prettyPrintedFile));
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to pretty-print input", e);
+        }
+        replaceFile(fileToProcess, prettyPrintedFile);
     }
 
     /**
@@ -96,60 +269,7 @@ public class ValidationSpecs {
      * @return The preprocessed input.
      */
     public File getInputFileToUse() throws XMLInvalidException {
-        if (inputToUse == null) {
-            var expression = domainConfig.getInputPreprocessorPerType().get(validationType);
-            if (expression == null) {
-                // No preprocessing needed.
-                inputToUse = input;
-            } else {
-                inputToUse = new File(input.getParentFile(), UUID.randomUUID() + ".xml");
-                // A preprocessing XPath expression has been provided for the given validation type.
-                XPathExpression xPath;
-                try {
-                    xPath = new net.sf.saxon.xpath.XPathFactoryImpl().newXPath().compile(expression);
-                } catch (XPathExpressionException e) {
-                    throw new ValidatorException("validator.label.exception.invalidInputPreprocessingExpression");
-                }
-                try (
-                        var inputStream = Files.newInputStream(input.toPath());
-                        var outputStream = Files.newOutputStream(inputToUse.toPath())
-                ) {
-                    var result = xPath.evaluate(new StreamSource(inputStream), XPathConstants.NODE);
-                    if (result instanceof NodeInfo) {
-                        int resultKind = ((NodeInfo) result).getNodeKind();
-                        if (resultKind == Type.ELEMENT || resultKind == Type.DOCUMENT || resultKind == Type.NODE) {
-                            Utils.serialize((Source) result, outputStream);
-                        } else {
-                            throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
-                        }
-                    } else {
-                        throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
-                    }
-                } catch (IOException e) {
-                    throw new IllegalStateException("Unable to read input for preprocessing", e);
-                } catch (XPathExpressionException e) {
-                    throw new XMLInvalidException(e);
-                }
-                inputToUse = replaceFile(input, inputToUse);
-            }
-            // We now see if we need also to pretty-print.
-            if (addInputToReport || !locationAsPath) {
-                File prettyPrintedFile = new File(inputToUse.getParentFile(), UUID.randomUUID() + ".xml");
-                try {
-                    var document = Utils.secureDocumentBuilder().parse(new InputSource(new FileReader(inputToUse)));
-                    var factory = Utils.secureTransformerFactory();
-                    var transformer = factory.newTransformer();
-                    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                    transformer.transform(new DOMSource(document), new StreamResult(prettyPrintedFile));
-                } catch (Exception e) {
-                    throw new IllegalStateException("Unable to pretty-print input", e);
-                }
-                replaceFile(inputToUse, prettyPrintedFile);
-            }
-        }
-        return inputToUse;
+        return getInputFileToUse(false);
     }
 
     /**
@@ -171,12 +291,11 @@ public class ValidationSpecs {
      * run, these will be resolvable by preconfigured schematrons and that also each validation will use its only copy of
      * all artifacts to avoid conflicts.
      *
-     * @param fileManager The file manager to use for artifact lookups.
-     * @param appConfig The application configuration.
      * @return The list of schematron files to use.
      */
-    public List<FileInfo> getSchematronsToUse(FileManager fileManager, ApplicationConfig appConfig) throws XMLInvalidException {
+    public List<FileInfo> getSchematronsToUse() {
         if (schematronFilesToUse == null) {
+            FileManager fileManager = applicationContext.getBean(FileManager.class);
             if (getContextFiles().isEmpty()) {
                 // No context files. Return preconfigured and user-provided schematrons from their normal locations.
                 List<FileInfo> schematronFiles = fileManager.getPreconfiguredValidationArtifacts(getDomainConfig(), getValidationType(), DomainConfig.ARTIFACT_TYPE_SCHEMATRON);
@@ -186,7 +305,7 @@ public class ValidationSpecs {
                 // We have context files. We need to copy everything in a temp folder specific to this validation run.
                 validateContextFiles();
                 List<FileInfo> schematronFiles = new ArrayList<>();
-                Path originalDomain = Path.of(appConfig.getResourceRoot(), getDomainConfig().getDomain());
+                Path originalDomain = Path.of(getApplicationConfig().getResourceRoot(), getDomainConfig().getDomain());
                 Path tmpDomain = tempDomainPath();
                 try {
                     // Copy domain folder to temporary folder. We copy the entire folder as we can't know if specific schematrons refer to other resources from the domain as relative paths (e.g. imports).
@@ -229,26 +348,32 @@ public class ValidationSpecs {
     }
 
     /**
+     * @return The XML input factory to use.
+     */
+    private XMLInputFactory getXmlInputFactory() {
+        if (xmlInputFactory == null) {
+            xmlInputFactory = Utils.secureXMLInputFactory();
+        }
+        return xmlInputFactory;
+    }
+
+    /**
+     * @return The transformer factory to use.
+     */
+    private TransformerFactory getTransformerFactory() {
+        if (transformerFactory == null) {
+            transformerFactory = TransformerFactory.newInstance();
+        }
+        return transformerFactory;
+    }
+
+    /**
      * Get the path for a temporary copy of the domain configuration folder.
      *
      * @return The path.
      */
     private Path tempDomainPath() {
         return Path.of(getTempFolder().toString(), getDomainConfig().getDomain()).toAbsolutePath();
-    }
-
-    /**
-     * Get the resource root to consider when resolving files within the domain.
-     *
-     * @param appConfig The application's configuration.
-     * @return The absolute path as a string.
-     */
-    public String getResourceRootForDomainFileResolution(ApplicationConfig appConfig) {
-        if (getContextFiles().isEmpty()) {
-            return Path.of(appConfig.getResourceRoot(), getDomainConfig().getDomain()).toFile().getAbsolutePath();
-        } else {
-            return tempDomainPath().toFile().getAbsolutePath();
-        }
     }
 
     /**
@@ -325,14 +450,14 @@ public class ValidationSpecs {
                 if (file.config().schema().isPresent()) {
                     var schemaFile = file.config().schema().get().toFile();
                     LOG.info("Validating context file against [{}]", schemaFile.getName());
-                    SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+                    SchemaFactory schemaFactory = Utils.secureSchemaFactory();
                     schemaFactory.setResourceResolver(applicationContext.getBean(XSDFileResolver.class, getValidationType(), getDomainConfig(), schemaFile.getParent()));
                     Schema schema;
                     try {
                         schemaFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, false);
                         schema = schemaFactory.newSchema(new StreamSource(new FileInputStream(schemaFile)));
                     } catch (Exception e) {
-                        throw new IllegalStateException(e);
+                        throw new IllegalStateException("Unexpected error while configuring schema for context file validation", e);
                     }
                     // Validate XML content against given XSD schema.
                     Validator validator = schema.newValidator();

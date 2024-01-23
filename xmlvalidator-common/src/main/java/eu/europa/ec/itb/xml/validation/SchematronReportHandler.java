@@ -8,6 +8,8 @@ import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.svrl.jaxb.Text;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.Utils;
+import jakarta.xml.bind.JAXBElement;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -15,7 +17,6 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import javax.xml.XMLConstants;
-import jakarta.xml.bind.JAXBElement;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -23,6 +24,7 @@ import javax.xml.xpath.XPathFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -117,7 +119,7 @@ public class SchematronReportHandler {
                 this.report.getReports().getInfoOrWarningOrError().addAll(element);
             }
             var element = SVRLHelper.getAllSuccessfulReports(this.svrlReport);
-            if (element.size() > 0) {
+            if (!element.isEmpty()) {
                 if (this.report.getResult() == TestResultType.SUCCESS) {
                     this.report.setResult(getErrorLevel(element));
                 }
@@ -193,7 +195,7 @@ public class SchematronReportHandler {
         } else if (content instanceof Iterable) {
             StringBuilder messageBuilder = new StringBuilder();
             for (var item: (Iterable<?>)content) {
-                if (messageBuilder.length() > 0) {
+                if (!messageBuilder.isEmpty()) {
                     messageBuilder.append(' ');
                 }
                 messageBuilder.append(diagnosticContentAsString(item));
@@ -214,7 +216,7 @@ public class SchematronReportHandler {
     private String getMessageText(AbstractSVRLMessage svrlMessage) {
         StringBuilder message = null;
         if (svrlMessage != null) {
-            var diagnostics = svrlMessage.getDiagnisticReferences();
+            var diagnostics = svrlMessage.getDiagnosticReferences();
             if (diagnostics.isNotEmpty()) {
                 for (var diagnostic: diagnostics) {
                     if (localiser.getLocale().getLanguage().equalsIgnoreCase(diagnostic.getLang()) && diagnostic.hasContentEntries()) {
@@ -266,10 +268,51 @@ public class SchematronReportHandler {
         Node locatedNode;
         try {
             locatedNode = (Node)xPath.evaluate(xpathExpressionConverted, this.node, XPathConstants.NODE);
-            return (String)locatedNode.getUserData("lineNumber");
+            if (locatedNode == null) {
+                var expressionWithWildcards = convertToWildCardXPathExpression(xpathExpression);
+                if (expressionWithWildcards.isPresent()) {
+                    locatedNode = (Node)xPath.evaluate(expressionWithWildcards.get(), this.node, XPathConstants.NODE);
+                }
+            }
+            if (locatedNode == null) {
+                return "0";
+            } else {
+                return (String)locatedNode.getUserData("lineNumber");
+            }
         } catch (Exception e) {
             logger.error("Unable to locate line for expression [{}] [{}]: {}", xpathExpression, xpathExpressionConverted, e.getMessage());
             return "0";
+        }
+    }
+
+    /**
+     * Adapt the provided XPath expression to change its path elements that don't have a prefix, to use a wildcard prefix.
+     *
+     * @param xpathExpression The XPath expression to process.
+     * @return The adapted XPath expression or empty if no change was made to the original expression.
+     */
+    private Optional<String> convertToWildCardXPathExpression(String xpathExpression) {
+        boolean changed = false;
+        String expressionToReturn = xpathExpression;
+        if (xpathExpression != null) {
+            String[] pathParts = StringUtils.split(xpathExpression, '/');
+            var builder = new StringBuilder();
+            for (var pathPart: pathParts) {
+                if (!builder.isEmpty()) {
+                    builder.append('/');
+                }
+                if (pathPart.indexOf(':') == -1) {
+                    changed = true;
+                    builder.append("*:");
+                }
+                builder.append(pathPart);
+            }
+            expressionToReturn = builder.toString();
+        }
+        if (changed) {
+            return Optional.of(expressionToReturn);
+        } else {
+            return Optional.empty();
         }
     }
 

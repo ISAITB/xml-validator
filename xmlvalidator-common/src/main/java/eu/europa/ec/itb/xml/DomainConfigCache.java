@@ -86,8 +86,44 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         // Context files - START
         domainConfig.setContextFileDefaultConfig(ParseUtils.parseValueList("validator.defaultContextFile", config, getContextFileMapper(domainConfig, true)));
         domainConfig.setContextFiles(parseTypeSpecificContextFiles("validator.contextFile", domainConfig.getType(), config, domainConfig));
+        parseContextFileCombinationTemplates(config, domainConfig);
         // Context files - END
         addMissingDefaultValues(domainConfig.getWebServiceDescription(), appConfig.getDefaultLabels());
+    }
+
+    /**
+     * Parse the context file combination templates (per type and default).
+     *
+     * @param config The configuration properties.
+     * @param domainConfig The currently parsed domain configuration.
+     */
+    private void parseContextFileCombinationTemplates(Configuration config, DomainConfig domainConfig) {
+        Map<String, String> pathStringsPerType = ParseUtils.parseMap("validator.contextFileCombinationTemplate", config, domainConfig.getType());
+        // Ensure that each configured path is valid and convert it to a Path.
+        Map<String, ContextFileCombinationTemplateConfig> pathsPerType = new HashMap<>();
+        Path domainRootPath = Paths.get(appConfig.getResourceRoot(), domainConfig.getDomain());
+        for (var entry: pathStringsPerType.entrySet()) {
+            var configuredPath = entry.getValue();
+            var resolvedPath = domainRootPath.resolve(Path.of(configuredPath)).normalize();
+            if (Files.notExists(resolvedPath)) {
+                throw new IllegalStateException("Context file combination template files must point to existing files. Offending path was [%s]".formatted(configuredPath));
+            } else if (!resolvedPath.startsWith(domainRootPath)) {
+                throw new IllegalStateException("Context file combination template files must be under the domain root folder. Offending path was [%s]".formatted(configuredPath));
+            }
+            pathsPerType.put(entry.getKey(), new ContextFileCombinationTemplateConfig(resolvedPath, configuredPath));
+        }
+        domainConfig.setContextFileCombinationTemplateMap(pathsPerType);
+        // Parse also the default combination template.
+        String defaultPath = config.getString("validator.defaultContextFileCombinationTemplate");
+        if (defaultPath != null) {
+            var resolvedPath = domainRootPath.resolve(Path.of(defaultPath)).normalize();
+            if (Files.notExists(resolvedPath)) {
+                throw new IllegalStateException("The default context file combination template must point to an existing file. Offending path was [%s]".formatted(defaultPath));
+            } else if (!resolvedPath.startsWith(domainRootPath)) {
+                throw new IllegalStateException("The default context file combination template must be under the domain root folder. Offending path was [%s]".formatted(defaultPath));
+            }
+            domainConfig.setContextFileCombinationDefaultTemplate(new ContextFileCombinationTemplateConfig(resolvedPath, defaultPath));
+        }
     }
 
     /**
@@ -120,12 +156,16 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         return (Map<String, String> values) -> {
             Path contextFilePath;
             Optional<Path> schemaPath;
+            String configuredPath;
             if (!values.containsKey("path")) {
                 throw new IllegalStateException("The 'path' property is mandatory for configured context files.");
             } else {
-                var path = Path.of(values.get("path")).normalize();
+                configuredPath = values.get("path");
+                var path = Path.of(configuredPath);
                 if (path.isAbsolute()) {
                     throw new IllegalStateException("The 'path' property for configured context files cannot be an absolute path. Offending path was [%s]".formatted(path.toString()));
+                } else if (!domainRootPath.resolve(path).normalize().startsWith(domainRootPath)) {
+                    throw new IllegalStateException("The 'path' property for configured context files cannot resolve to a path outside the domain root folder. Offending path was [%s]".formatted(path.toString()));
                 } else {
                     contextFilePath = path;
                 }
@@ -140,7 +180,15 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
             } else {
                 schemaPath = Optional.empty();
             }
-            return new ContextFileConfig(contextFilePath, schemaPath, values.containsKey("label"), values.containsKey("placeholder"), counter.getAndIncrement(), isDefaultConfig);
+            Optional<String> combinationPlaceholder = Optional.empty();
+            if (values.containsKey("combinationPlaceholder")) {
+                var placeholder = values.get("combinationPlaceholder");
+                if (DomainConfig.COMBINATION_PLACEHOLDER_INPUT.equals(placeholder)) {
+                    throw new IllegalStateException("Placeholder '%s' is reserved for the main validation input. Please select another placeholder value for context file [%s].".formatted(DomainConfig.COMBINATION_PLACEHOLDER_INPUT, configuredPath));
+                }
+                combinationPlaceholder = Optional.of(placeholder);
+            }
+            return new ContextFileConfig(contextFilePath, configuredPath, schemaPath, values.containsKey("label"), values.containsKey("placeholder"), combinationPlaceholder, counter.getAndIncrement(), isDefaultConfig);
         };
     }
 

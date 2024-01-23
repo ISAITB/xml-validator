@@ -7,6 +7,7 @@ import eu.europa.ec.itb.validation.commons.config.WebDomainConfig;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The configuration for a specific validation domain.
@@ -15,6 +16,7 @@ public class DomainConfig extends WebDomainConfig {
 
     public static final String ARTIFACT_TYPE_SCHEMA = "schema";
     public static final String ARTIFACT_TYPE_SCHEMATRON = "schematron";
+    public static final String COMBINATION_PLACEHOLDER_INPUT = "input";
 
     private String mailFrom;
     private boolean mailAuthEnable = true;
@@ -31,6 +33,42 @@ public class DomainConfig extends WebDomainConfig {
     private boolean includeAssertionID;
     private List<ContextFileConfig> contextFileConfigDefaultConfig;
     private Map<String, List<ContextFileConfig>> contextFileMap;
+    private ContextFileCombinationTemplateConfig contextFileCombinationDefaultTemplate;
+    private Map<String, ContextFileCombinationTemplateConfig> contextFileCombinationTemplateMap;
+
+    /**
+     * Get the context file combination template to apply for the given validation type.
+     *
+     * @param validationType The validation type.
+     * @return The template file to use.
+     */
+    public Optional<ContextFileCombinationTemplateConfig> getContextFileCombinationTemplate(String validationType) {
+        var template = getContextFileCombinationTemplateMap().get(validationType);
+        if (template == null) {
+            template = getContextFileCombinationDefaultTemplate();
+        }
+        return Optional.ofNullable(template);
+    }
+
+    /** @return The default template file to use for combining context files with input files (null if not applicable). */
+    public ContextFileCombinationTemplateConfig getContextFileCombinationDefaultTemplate() {
+        return contextFileCombinationDefaultTemplate;
+    }
+
+    /** @param contextFileCombinationDefaultTemplate The default template file to use for combining context files with input files (null if not applicable). */
+    public void setContextFileCombinationDefaultTemplate(ContextFileCombinationTemplateConfig contextFileCombinationDefaultTemplate) {
+        this.contextFileCombinationDefaultTemplate = contextFileCombinationDefaultTemplate;
+    }
+
+    /** @return The map of full validation types to context file combination template file. */
+    public Map<String, ContextFileCombinationTemplateConfig> getContextFileCombinationTemplateMap() {
+        return contextFileCombinationTemplateMap;
+    }
+
+    /** @param contextFileCombinationTemplateMap The map of full validation types to context file combination template file. */
+    public void setContextFileCombinationTemplateMap(Map<String, ContextFileCombinationTemplateConfig> contextFileCombinationTemplateMap) {
+        this.contextFileCombinationTemplateMap = contextFileCombinationTemplateMap;
+    }
 
     /**
      * @return True if the domain defines a validation type supporting or requiring user-provided XSDs.

@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * A namespace context to lookup and map namespaces based on prefix and URI.
  *
- * Implementation based on source found here: http://www.ibm.com/developerworks/library/x-nmspccontext/
+ * Implementation based on source found <a href="http://www.ibm.com/developerworks/library/x-nmspccontext/">here</a>.
  */
 public class DocumentNamespaceContext implements NamespaceContext {
 
@@ -21,13 +21,13 @@ public class DocumentNamespaceContext implements NamespaceContext {
 
     /**
      * This constructor parses the document and stores all namespaces it can
-     * find. If toplevelOnly is true, only namespaces in the root are used.
+     * find. If topLevelOnly is true, only namespaces in the root are used.
      *
      * @param document Source document.
-     * @param toplevelOnly Restriction of the search to enhance performance.
+     * @param topLevelOnly Restriction of the search to enhance performance.
      */
-    public DocumentNamespaceContext(Document document, boolean toplevelOnly) {
-        examineNode(document.getFirstChild(), toplevelOnly);
+    public DocumentNamespaceContext(Document document, boolean topLevelOnly) {
+        examineNode(document.getFirstChild(), topLevelOnly);
     }
 
     /**
@@ -60,7 +60,9 @@ public class DocumentNamespaceContext implements NamespaceContext {
     private void storeAttribute(Attr attribute) {
         // examine the attributes in namespace xmlns
         if (attribute.getNodeName().equals(XMLConstants.XMLNS_ATTRIBUTE)) {
-            putInCache(DEFAULT_NS, attribute.getNodeValue());
+            if (getNamespaceURI(DEFAULT_NS) == null) {
+                putInCache(DEFAULT_NS, attribute.getNodeValue());
+            }
         }
         if (attribute.getNamespaceURI() != null && attribute.getNamespaceURI().equals(XMLConstants.XMLNS_ATTRIBUTE_NS_URI)) {
             putInCache(attribute.getLocalName(), attribute.getNodeValue());

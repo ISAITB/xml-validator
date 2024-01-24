@@ -190,7 +190,8 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                                 reportGenerator.writeReport(
                                         xmlReportFile,
                                         pdfReportFile,
-                                        tarReport -> reportGenerator.getReportLabels(localiser, tarReport));
+                                        tarReport -> reportGenerator.getReportLabels(localiser, tarReport),
+                                        domainConfig.isRichTextReports());
                                 csvReportGenerator.writeReport(xmlReportFile, csvReportFile, localiser, domainConfig);
                                 summary.append("- Detailed reports in [").append(xmlReportFile.getAbsolutePath()).append("], [").append(pdfReportFile.getAbsolutePath()).append("] and [").append(csvReportFile.getAbsolutePath()).append("]\n");
                             } else if (report.getCounters() != null && (report.getCounters().getNrOfAssertions().longValue() + report.getCounters().getNrOfErrors().longValue() + report.getCounters().getNrOfWarnings().longValue()) <= domainConfig.getMaximumReportsForXmlOutput()) {

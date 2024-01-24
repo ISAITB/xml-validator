@@ -357,6 +357,7 @@ public class XMLValidator {
             overallResult = createFailureReport();
         }
         specs.getDomainConfig().applyMetadata(overallResult, getValidationType());
+        Utils.sanitizeIfNeeded(overallResult, specs.getDomainConfig());
         return overallResult;
     }
 

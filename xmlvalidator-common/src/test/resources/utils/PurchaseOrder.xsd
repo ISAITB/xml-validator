@@ -1,0 +1,49 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://itb.ec.europa.eu/sample/po.xsd" xmlns="http://itb.ec.europa.eu/sample/po.xsd" elementFormDefault="qualified">
+
+  <xs:element name="purchaseOrder" type="PurchaseOrderType"/>
+
+  <xs:element name="comment" type="xs:string"/>
+
+  <xs:complexType name="PurchaseOrderType">
+    <xs:sequence>
+      <xs:element name="shipTo" type="Address"/>
+      <xs:element name="billTo" type="Address"/>
+      <xs:element ref="comment" minOccurs="0"/>
+      <xs:element name="items"  type="Items"/>
+    </xs:sequence>
+    <xs:attribute name="orderDate" type="xs:date"/>
+  </xs:complexType>
+
+  <xs:complexType name="Address">
+    <xs:sequence>
+      <xs:element name="name"   type="xs:string"/>
+      <xs:element name="street" type="xs:string"/>
+      <xs:element name="city"   type="xs:string"/>
+      <xs:element name="zip"    type="xs:decimal"/>
+    </xs:sequence>
+    <xs:attribute name="country" type="CountryType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="Items">
+    <xs:sequence>
+      <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="productName" type="xs:string"/>
+            <xs:element name="quantity" type="xs:positiveInteger"/>
+            <xs:element name="priceEUR"    type="xs:decimal"/>
+            <xs:element ref="comment"   minOccurs="0"/>
+          </xs:sequence>
+          <xs:attribute name="partNum" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="CountryType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Z]{2}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>

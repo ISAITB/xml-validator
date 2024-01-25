@@ -44,6 +44,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static eu.europa.ec.itb.xml.util.Utils.secureSchemaValidation;
+
 /**
  * Component used to validate XML against XML Schema and Schematron files.
  */
@@ -146,7 +148,7 @@ public class XMLValidator {
         // Validate XML content against given XSD schema.
         var errorHandler = new XSDReportHandler();
         try (var schemaStream = Files.newInputStream(schemaFile.toPath())) {
-            Utils.secureSchemaValidation(inputStream, schemaStream, errorHandler, getXSDResolver(schemaFile.getParent()), specs.getLocalisationHelper().getLocale());
+            secureSchemaValidation(inputStream, schemaStream, errorHandler, getXSDResolver(schemaFile.getParent()), specs.getLocalisationHelper().getLocale());
         } catch (Exception e) {
             throw new XMLInvalidException(e);
         }

@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static eu.europa.ec.itb.xml.util.Utils.secureSchemaValidation;
+
 /**
  * Class used to wrap the specifications with which to carry out a validation.
  */
@@ -450,7 +452,7 @@ public class ValidationSpecs {
                             var inputStream = Files.newInputStream(file.file());
                             var schemaStream = Files.newInputStream(schemaFile.toPath())
                     ) {
-                        Utils.secureSchemaValidation(
+                        secureSchemaValidation(
                                 inputStream,
                                 schemaStream,
                                 errorHandler,

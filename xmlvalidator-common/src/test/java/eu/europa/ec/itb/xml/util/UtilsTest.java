@@ -69,15 +69,39 @@ class UtilsTest {
         });
         // With error handler.
         var errorHandler = mock(ErrorHandler.class);
-        assertThrows(XMLStreamException.class, () -> {
+        assertThrows(SAXException.class, () -> {
             try (
-                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xml.xml");
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xml.txt");
                     var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
             ) {
                 secureSchemaValidation(inputStream, schemaStream, errorHandler, null, null);
             }
         });
-        verify(errorHandler, never()).error(any(SAXParseException.class));
+        verify(errorHandler, atLeastOnce()).error(any(SAXParseException.class));
+    }
+
+    @Test
+    void testSchemaValidationMissingXML() throws SAXException {
+        // Without error handler.
+        assertThrows(XMLStreamException.class, () -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/missing.xml");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
+            ) {
+                secureSchemaValidation(inputStream, schemaStream, null, null, null);
+            }
+        });
+        // With error handler.
+        var errorHandler = mock(ErrorHandler.class);
+        assertThrows(XMLStreamException.class, () -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/missing.txt");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
+            ) {
+                secureSchemaValidation(inputStream, schemaStream, errorHandler, null, null);
+            }
+        });
+        verify(errorHandler, never()).error(any());
     }
 
     @Test
@@ -101,7 +125,7 @@ class UtilsTest {
                 secureSchemaValidation(inputStream, schemaStream, errorHandler, null, null);
             }
         });
-        verify(errorHandler, never()).error(any(SAXParseException.class));
+        verify(errorHandler, never()).error(any());
     }
 
 }

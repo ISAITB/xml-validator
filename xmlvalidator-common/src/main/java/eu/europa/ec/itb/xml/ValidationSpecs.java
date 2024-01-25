@@ -459,8 +459,8 @@ public class ValidationSpecs {
                                 applicationContext.getBean(XSDFileResolver.class, getValidationType(), getDomainConfig(), schemaFile.getParent()),
                                 getLocalisationHelper().getLocale()
                         );
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Unexpected error while configuring schema for context file validation", e);
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Context file could not be parsed.", e);
                     }
                     boolean contextFileIsValid = false;
                     Optional<BAR> errorToReport = Optional.empty();

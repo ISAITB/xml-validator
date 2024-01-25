@@ -34,8 +34,10 @@ public class Utils {
      * @param errorHandler The error handler to configure (optional).
      * @param resourceResolver The resource resolver to configure (optional).
      * @param locale The locale to use for th parsing (optional).
+     * @throws XMLStreamException If the input cannot be parsed as XML.
+     * @throws SAXException If the input is invalid (not thrown for regular errors if a custom errorHandler is provided).
      */
-    public static void secureSchemaValidation(InputStream inputToValidate, InputStream schemaToValidateWith, ErrorHandler errorHandler, LSResourceResolver resourceResolver, Locale locale) {
+    public static void secureSchemaValidation(InputStream inputToValidate, InputStream schemaToValidateWith, ErrorHandler errorHandler, LSResourceResolver resourceResolver, Locale locale) throws XMLStreamException, SAXException {
         /*
          * We create specifically a Xerces parser to allow localisation of output messages.
          * The security configuration for the Xerces parser involves:
@@ -45,12 +47,8 @@ public class Utils {
          * but we ensure secure processing by means of the secured underlying parser.
          */
         XMLSchemaFactory factory = new XMLSchemaFactory();
-        if (errorHandler != null) {
-            factory.setErrorHandler(errorHandler);
-        }
-        if (resourceResolver != null) {
-            factory.setResourceResolver(resourceResolver);
-        }
+        if (errorHandler != null) factory.setErrorHandler(errorHandler);
+        if (resourceResolver != null) factory.setResourceResolver(resourceResolver);
         Schema schema;
         try {
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
@@ -60,18 +58,17 @@ public class Utils {
         }
         Validator validator = schema.newValidator();
         try {
-            if (locale != null) {
-                validator.setProperty("http://apache.org/xml/properties/locale", locale);
-            }
-            validator.setErrorHandler(factory.getErrorHandler());
-            validator.setResourceResolver(factory.getResourceResolver());
+            if (locale != null) validator.setProperty("http://apache.org/xml/properties/locale", locale);
+            if (errorHandler != null) validator.setErrorHandler(errorHandler);
+            if (resourceResolver != null) validator.setResourceResolver(resourceResolver);
         } catch (SAXNotRecognizedException | SAXNotSupportedException e) {
             throw new IllegalStateException("Unable to configure schema validator", e);
         }
         try {
+            // If no custom error handler is set, the default implementation will throw an exception upon detected errors.
             validator.validate(new StAXSource(secureXMLInputFactory().createXMLStreamReader(inputToValidate)));
-        } catch (SAXException | IOException | XMLStreamException e) {
-            throw new IllegalStateException("Unable to validate input", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to read input stream", e);
         }
     }
 

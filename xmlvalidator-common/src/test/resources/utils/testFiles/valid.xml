@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<purchaseOrder xmlns="http://itb.ec.europa.eu/sample/po.xsd" orderDate="2018-01-22">
+    <shipTo country="BE">
+        <name>John Doe</name>
+        <street>Europa Avenue 123</street>
+        <city>Brussels</city>
+        <zip>1000</zip>
+    </shipTo>
+    <billTo country="BE">
+        <name>Jane Doe</name>
+        <street>Europa Avenue 210</street>
+        <city>Brussels</city>
+        <zip>1000</zip>
+    </billTo>
+    <comment>Send in one package please</comment>
+    <items>
+        <item partNum="XYZ-123876">
+            <productName>Mouse</productName>
+            <quantity>20</quantity>
+            <priceEUR>15.99</priceEUR>
+            <comment>Confirm this is wireless</comment>
+        </item>
+        <item partNum="ABC-32478">
+            <productName>Keyboard</productName>
+            <quantity>3</quantity>
+            <priceEUR>25.50</priceEUR>
+        </item>
+        <item partNum="ABC-32478">
+            <productName>Keyboard</productName>
+            <quantity>4</quantity>
+            <priceEUR>25.50</priceEUR>
+        </item>
+        <item partNum="ABC-32478">
+            <productName>Keyboard</productName>
+            <quantity>3</quantity>
+            <priceEUR>25.50</priceEUR>
+        </item>
+        <item partNum="ABC-32478">
+            <productName>Keyboard</productName>
+            <quantity>2</quantity>
+            <priceEUR>25.50</priceEUR>
+        </item>
+        <item partNum="ABC-32478">
+            <productName>Keyboard</productName>
+            <quantity>3</quantity>
+            <priceEUR>25.50</priceEUR>
+        </item>
+        <item partNum="ABC-32478">
+            <productName>Keyboard</productName>
+            <quantity>6</quantity>
+            <priceEUR>25.50</priceEUR>
+        </item>
+    </items>
+</purchaseOrder>

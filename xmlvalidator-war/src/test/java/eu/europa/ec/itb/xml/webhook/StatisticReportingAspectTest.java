@@ -1,16 +1,16 @@
 package eu.europa.ec.itb.xml.webhook;
 
+import eu.europa.ec.itb.validation.commons.config.ApplicationConfig;
 import eu.europa.ec.itb.validation.commons.web.dto.Translations;
 import eu.europa.ec.itb.validation.commons.web.dto.UploadResult;
 import eu.europa.ec.itb.xml.upload.UploadController;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.aspectj.lang.JoinPoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,7 +64,7 @@ class StatisticReportingAspectTest {
         };
         var aspect = new StatisticReportingAspect() {
             @Override
-            public void getUploadContext(JoinPoint joinPoint) {
+            public void getUploadMinimalContext(JoinPoint joinPoint) {
                 assertEquals("domain1", joinPoint.getArgs()[0]);
                 aspectCalled[0] = true;
             }

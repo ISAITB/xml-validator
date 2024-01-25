@@ -32,17 +32,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.ls.LSResourceResolver;
-import org.xml.sax.SAXNotRecognizedException;
-import org.xml.sax.SAXNotSupportedException;
 
-import javax.xml.XMLConstants;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -51,6 +43,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import static eu.europa.ec.itb.xml.util.Utils.secureSchemaValidation;
 
 /**
  * Component used to validate XML against XML Schema and Schematron files.
@@ -144,44 +138,21 @@ public class XMLValidator {
     /**
      * Validate the input against a single XSD.
      *
-     * @param inputSource The input to validate.
+     * @param inputStream The input to validate.
      * @param schemaFile The XSD to use.
      *
      * @return The TAR validation report.
      * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    private TAR validateSchema(InputStream inputSource, File schemaFile) throws XMLInvalidException {
-        // Create error handler.
-        XSDReportHandler handler = new XSDReportHandler();
-        // Resolve schema.
-        SchemaFactory schemaFactory = Utils.secureSchemaFactory();
-        schemaFactory.setErrorHandler(handler);
-        schemaFactory.setResourceResolver(getXSDResolver(schemaFile.getParent()));
-        Schema schema;
-        try {
-            schemaFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, false);
-            schema = schemaFactory.newSchema(new StreamSource(new FileInputStream(schemaFile)));
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+    private TAR validateSchema(InputStream inputStream, File schemaFile) throws XMLInvalidException {
         // Validate XML content against given XSD schema.
-        Validator validator = schema.newValidator();
-        try {
-            validator.setProperty("http://apache.org/xml/properties/locale", specs.getLocalisationHelper().getLocale());
-        } catch (SAXNotRecognizedException | SAXNotSupportedException e) {
-            throw new IllegalStateException("Unable to pass locale to validator", e);
-        }
-        validator.setErrorHandler(handler);
-        TAR report;
-        try {
-            // Use a StreamSource rather than a DomSource below to get the line & column number of possible errors.
-            StreamSource source = new StreamSource(inputSource);
-            validator.validate(source);
-            report = handler.createReport();
+        var errorHandler = new XSDReportHandler();
+        try (var schemaStream = Files.newInputStream(schemaFile.toPath())) {
+            secureSchemaValidation(inputStream, schemaStream, errorHandler, getXSDResolver(schemaFile.getParent()), specs.getLocalisationHelper().getLocale());
         } catch (Exception e) {
             throw new XMLInvalidException(e);
         }
-        return report;
+        return errorHandler.createReport();
     }
 
     /**

@@ -6,7 +6,9 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import javax.xml.stream.XMLStreamException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
@@ -19,41 +21,87 @@ import static org.mockito.Mockito.*;
 class UtilsTest {
 
     @Test
-    void testSecureSchemaValidator() throws SAXException {
-        var errorHandler = mock(ErrorHandler.class);
-        var resourceResolver = mock(LSResourceResolver.class);
-        // Test to ensure XXE is blocked.
-        String xmlToReject = """
-<?xml version="1.0"?>
-<!DOCTYPE replace [<!ENTITY xxe "Attack"> ]>
-<foo>
-  <bar>&xxe;</bar>
-</foo>
-                """;
-        assertThrows(IllegalStateException.class, () -> {
-            try (
-                    var inputStream = new ByteArrayInputStream(xmlToReject.getBytes(StandardCharsets.UTF_8));
-                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
-            ) {
-                secureSchemaValidation(inputStream, schemaStream, errorHandler, resourceResolver, Locale.FRENCH);
-            }
-        });
-        // Test to ensure non-XXE content is not blocked.
-        String xmlToParse = """
-<?xml version="1.0"?>
-<foo>
-  <bar>TEXT</bar>
-</foo>
-                """;
+    void testSchemaValidationValid() {
         assertDoesNotThrow(() -> {
             try (
-                    var inputStream = new ByteArrayInputStream(xmlToParse.getBytes(StandardCharsets.UTF_8));
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/valid.xml");
                     var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
             ) {
-                secureSchemaValidation(inputStream, schemaStream, errorHandler, resourceResolver, Locale.FRENCH);
+                secureSchemaValidation(inputStream, schemaStream, null, null, null);
+            }
+        });
+    }
+
+    @Test
+    void testSchemaValidationInvalidXSD() throws SAXException {
+        // Without error handler.
+        assertThrows(SAXException.class, () -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xsd.xml");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
+            ) {
+                secureSchemaValidation(inputStream, schemaStream, null, null, null);
+            }
+        });
+        // With error handler.
+        var errorHandler = mock(ErrorHandler.class);
+        assertDoesNotThrow(() -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xsd.xml");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
+            ) {
+                secureSchemaValidation(inputStream, schemaStream, errorHandler, null, null);
             }
         });
         verify(errorHandler, atLeastOnce()).error(any(SAXParseException.class));
+    }
+
+    @Test
+    void testSchemaValidationInvalidXML() throws SAXException {
+        // Without error handler.
+        assertThrows(XMLStreamException.class, () -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xml.xml");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
+            ) {
+                secureSchemaValidation(inputStream, schemaStream, null, null, null);
+            }
+        });
+        // With error handler.
+        var errorHandler = mock(ErrorHandler.class);
+        assertThrows(XMLStreamException.class, () -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xml.xml");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
+            ) {
+                secureSchemaValidation(inputStream, schemaStream, errorHandler, null, null);
+            }
+        });
+        verify(errorHandler, never()).error(any(SAXParseException.class));
+    }
+
+    @Test
+    void testSchemaValidationInvalidXXE() throws SAXException {
+        // Without error handler.
+        assertThrows(SAXException.class, () -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xxe.xml");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
+            ) {
+                secureSchemaValidation(inputStream, schemaStream, null, null, null);
+            }
+        });
+        // With error handler.
+        var errorHandler = mock(ErrorHandler.class);
+        assertThrows(SAXException.class, () -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xxe.xml");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
+            ) {
+                secureSchemaValidation(inputStream, schemaStream, errorHandler, null, null);
+            }
+        });
+        verify(errorHandler, never()).error(any(SAXParseException.class));
     }
 
 }

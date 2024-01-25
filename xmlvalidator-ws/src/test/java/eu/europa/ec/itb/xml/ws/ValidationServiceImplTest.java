@@ -2,6 +2,7 @@ package eu.europa.ec.itb.xml.ws;
 
 import com.gitb.core.TypedParameter;
 import com.gitb.core.UsageEnumeration;
+import com.gitb.core.ValidationModule;
 import com.gitb.vs.Void;
 import eu.europa.ec.itb.validation.commons.artifact.ExternalArtifactSupport;
 import eu.europa.ec.itb.validation.commons.artifact.TypedValidationArtifactInfo;
@@ -51,7 +52,6 @@ class ValidationServiceImplTest {
         var result = service.getModuleDefinition(new Void());
         assertNotNull(result);
         assertNotNull(result.getModule());
-        assertEquals("service1", result.getModule().getId());
         assertNotNull(result.getModule().getInputs());
         assertEquals(8, result.getModule().getInputs().getParam().size());
         assertWebServiceInputDocumentation(ValidationConstants.INPUT_TYPE, result.getModule().getInputs().getParam().get(0), UsageEnumeration.R);

@@ -16,10 +16,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.xml.sax.SAXNotRecognizedException;
-import org.xml.sax.SAXNotSupportedException;
 
-import javax.xml.XMLConstants;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
@@ -27,9 +24,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
@@ -450,41 +444,32 @@ public class ValidationSpecs {
                 if (file.config().schema().isPresent()) {
                     var schemaFile = file.config().schema().get().toFile();
                     LOG.info("Validating context file against [{}]", schemaFile.getName());
-                    SchemaFactory schemaFactory = Utils.secureSchemaFactory();
-                    schemaFactory.setResourceResolver(applicationContext.getBean(XSDFileResolver.class, getValidationType(), getDomainConfig(), schemaFile.getParent()));
-                    Schema schema;
-                    try {
-                        schemaFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, false);
-                        schema = schemaFactory.newSchema(new StreamSource(new FileInputStream(schemaFile)));
-                    } catch (Exception e) {
+                    // Validate XML content against given XSD schema.
+                    var errorHandler = new XSDReportHandler();
+                    try (
+                            var inputStream = Files.newInputStream(file.file());
+                            var schemaStream = Files.newInputStream(schemaFile.toPath())
+                    ) {
+                        Utils.secureSchemaValidation(
+                                inputStream,
+                                schemaStream,
+                                errorHandler,
+                                applicationContext.getBean(XSDFileResolver.class, getValidationType(), getDomainConfig(), schemaFile.getParent()),
+                                getLocalisationHelper().getLocale()
+                        );
+                    } catch (IOException e) {
                         throw new IllegalStateException("Unexpected error while configuring schema for context file validation", e);
                     }
-                    // Validate XML content against given XSD schema.
-                    Validator validator = schema.newValidator();
-                    try {
-                        validator.setProperty("http://apache.org/xml/properties/locale", getLocalisationHelper().getLocale());
-                    } catch (SAXNotRecognizedException | SAXNotSupportedException e) {
-                        throw new IllegalStateException("Unable to pass locale to validator", e);
-                    }
-                    XSDReportHandler handler = new XSDReportHandler();
-                    validator.setErrorHandler(handler);
                     boolean contextFileIsValid = false;
                     Optional<BAR> errorToReport = Optional.empty();
-                    try (var inputSource = Files.newInputStream(file.file())) {
-                        // Use a StreamSource rather than a DomSource below to get the line & column number of possible errors.
-                        StreamSource source = new StreamSource(inputSource);
-                        validator.validate(source);
-                        TAR report = handler.createReport();
-                        if (report.getResult() == TestResultType.SUCCESS) {
-                            contextFileIsValid = true;
-                        } else {
-                            var firstError = report.getReports().getInfoOrWarningOrError().stream().filter(item -> "error".equals(item.getName().getLocalPart())).findFirst();
-                            if (firstError.isPresent() && firstError.get().getValue() instanceof BAR errorItem) {
-                                errorToReport = Optional.of(errorItem);
-                            }
+                    TAR report = errorHandler.createReport();
+                    if (report.getResult() == TestResultType.SUCCESS) {
+                        contextFileIsValid = true;
+                    } else {
+                        var firstError = report.getReports().getInfoOrWarningOrError().stream().filter(item -> "error".equals(item.getName().getLocalPart())).findFirst();
+                        if (firstError.isPresent() && firstError.get().getValue() instanceof BAR errorItem) {
+                            errorToReport = Optional.of(errorItem);
                         }
-                    } catch (Exception e) {
-                        LOG.info("Context file could not be parsed.", e);
                     }
                     if (!contextFileIsValid) {
                         StringBuilder msgBuilder = new StringBuilder();

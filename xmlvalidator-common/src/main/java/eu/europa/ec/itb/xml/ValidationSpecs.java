@@ -20,6 +20,7 @@ import org.springframework.context.ApplicationContext;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static eu.europa.ec.itb.xml.util.Utils.secureSchemaValidation;
 
@@ -113,43 +115,13 @@ public class ValidationSpecs {
     public File getInputFileToUse(boolean forSchematronValidation) throws XMLInvalidException {
         if (inputToUse == null || schematronInputToUse == null && forSchematronValidation) {
             if (inputToUse == null) {
-                var expression = domainConfig.getInputPreprocessorPerType().get(validationType);
-                if (expression == null) {
-                    // No preprocessing needed.
-                    inputToUse = input;
-                } else {
-                    inputToUse = new File(input.getParentFile(), UUID.randomUUID() + ".xml");
-                    // A preprocessing XPath expression has been provided for the given validation type.
-                    XPathExpression xPath;
-                    try {
-                        xPath = new net.sf.saxon.xpath.XPathFactoryImpl().newXPath().compile(expression);
-                    } catch (XPathExpressionException e) {
-                        throw new ValidatorException("validator.label.exception.invalidInputPreprocessingExpression");
-                    }
-                    try (
-                            var inputStream = Files.newInputStream(input.toPath());
-                            var outputStream = Files.newOutputStream(inputToUse.toPath())
-                    ) {
-                        var result = xPath.evaluate(new StreamSource(inputStream), XPathConstants.NODE);
-                        if (result instanceof NodeInfo) {
-                            int resultKind = ((NodeInfo) result).getNodeKind();
-                            if (resultKind == Type.ELEMENT || resultKind == Type.DOCUMENT || resultKind == Type.NODE) {
-                                Utils.serialize((Source) result, outputStream);
-                            } else {
-                                throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
-                            }
-                        } else {
-                            throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
-                        }
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Unable to read input for preprocessing", e);
-                    } catch (XPathExpressionException e) {
-                        throw new XMLInvalidException(e);
-                    }
-                    inputToUse = replaceFile(input, inputToUse);
-                }
+                // Apply first preprocessing using XPath and then XSLT transformation (if any of these is defined).
+                FileProcessingResult preprocessingResult = applyInputPreprocessing(input);
+                FileProcessingResult transformationResult = applyInputTransformation(preprocessingResult.fileToUse());
+                inputToUse = transformationResult.fileToUse();
                 // We now see if we need also to pretty-print.
-                if (addInputToReport || !locationAsPath) {
+                // Note that if we made a XSLT transformation the input is already pretty-printed.
+                if ((addInputToReport || !locationAsPath) && !transformationResult.processingApplied()) {
                     prettyPrintFile(inputToUse);
                 }
             }
@@ -173,16 +145,7 @@ public class ValidationSpecs {
                     // We need to combine the input and context file(s) based on the configured template.
                     String combinationXslt = getContextFileCombinationXslt(contextFilesToCombine);
                     File combinedInputFile = new File(inputToUse.getParentFile(), UUID.randomUUID() + ".xml");
-                    try (var fileReader = new FileReader(combinationTemplatePath.toFile())) {
-                        var reader = getXmlInputFactory().createXMLStreamReader(fileReader);
-                        var transformer = getTransformerFactory().newTransformer(new StAXSource(getXmlInputFactory().createXMLStreamReader(new StringReader(combinationXslt))));
-                        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-                        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-                        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                        transformer.transform(new StAXSource(reader), new StreamResult(combinedInputFile));
-                    } catch (Exception e) {
-                        throw new IllegalStateException("Unable to generate combined input", e);
-                    }
+                    applyXsltTransformation(combinationTemplatePath, () -> new StringReader(combinationXslt), combinedInputFile.toPath());
                     schematronInputToUse = combinedInputFile;
                 } else {
                     // Schematron input is unchanged.
@@ -191,6 +154,103 @@ public class ValidationSpecs {
             }
         }
         return forSchematronValidation?schematronInputToUse:inputToUse;
+    }
+
+    /**
+     * Apply an XSLT transformation.
+     *
+     * @param inputFile The file to transform.
+     * @param xsltReader A function to supply the XSLT to make the transformation with (or null).
+     * @param outputFile The resulting file.
+     */
+    private void applyXsltTransformation(Path inputFile, Supplier<Reader> xsltReader, Path outputFile) {
+        try (var fileReader = new FileReader(inputFile.toFile())) {
+            var reader = getXmlInputFactory().createXMLStreamReader(fileReader);
+            Transformer transformer;
+            if (xsltReader == null) {
+                transformer = getTransformerFactory().newTransformer();
+            } else {
+                transformer = getTransformerFactory().newTransformer(new StAXSource(getXmlInputFactory().createXMLStreamReader(xsltReader.get())));
+            }
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.transform(new StAXSource(reader), new StreamResult(outputFile.toFile()));
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to apply XSLT transformation", e);
+        }
+    }
+
+    /**
+     * Apply XPath input preprocessing to the input file (if needed).
+     *
+     * @param originalFile The original file.
+     * @return The result.
+     * @throws XMLInvalidException If the XML could not be parsed.
+     */
+    private FileProcessingResult applyInputPreprocessing(File originalFile) throws XMLInvalidException {
+        File inputToReturn = originalFile;
+        boolean processingApplied = false;
+        var expression = domainConfig.getInputPreprocessorPerType().get(validationType);
+        if (expression != null) {
+            processingApplied = true;
+            inputToReturn = new File(originalFile.getParentFile(), UUID.randomUUID() + ".xml");
+            // A preprocessing XPath expression has been provided for the given validation type.
+            XPathExpression xPath;
+            try {
+                xPath = new net.sf.saxon.xpath.XPathFactoryImpl().newXPath().compile(expression);
+            } catch (XPathExpressionException e) {
+                throw new ValidatorException("validator.label.exception.invalidInputPreprocessingExpression");
+            }
+            try (
+                    var inputStream = Files.newInputStream(originalFile.toPath());
+                    var outputStream = Files.newOutputStream(inputToReturn.toPath())
+            ) {
+                var result = xPath.evaluate(new StreamSource(inputStream), XPathConstants.NODE);
+                if (result instanceof NodeInfo) {
+                    int resultKind = ((NodeInfo) result).getNodeKind();
+                    if (resultKind == Type.ELEMENT || resultKind == Type.DOCUMENT || resultKind == Type.NODE) {
+                        Utils.serialize((Source) result, outputStream);
+                    } else {
+                        throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
+                    }
+                } else {
+                    throw new ValidatorException("validator.label.exception.invalidInputPreprocessingResult");
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to read input for preprocessing", e);
+            } catch (XPathExpressionException e) {
+                throw new XMLInvalidException(e);
+            }
+            inputToReturn = replaceFile(originalFile, inputToReturn);
+        }
+        return new FileProcessingResult(inputToReturn, processingApplied);
+    }
+
+    /**
+     * Apply XSLT input transformation to the input file (if needed).
+     *
+     * @param originalFile The original file.
+     * @return The result.
+     */
+    private FileProcessingResult applyInputTransformation(File originalFile) {
+        File inputToReturn = originalFile;
+        boolean processingApplied = false;
+        Path xsltPath = domainConfig.getInputTransformerMap().get(validationType);
+        if (xsltPath != null) {
+            // We have a transformation to apply.
+            processingApplied = true;
+            inputToReturn = new File(originalFile.getParentFile(), UUID.randomUUID() + ".xml");
+            applyXsltTransformation(originalFile.toPath(), () -> {
+                try {
+                    return new FileReader(xsltPath.toFile());
+                } catch (FileNotFoundException e) {
+                    throw new IllegalStateException("Unable to read XSLT file for input transformation", e);
+                }
+            }, inputToReturn.toPath());
+            inputToReturn = replaceFile(originalFile, inputToReturn);
+        }
+        return new FileProcessingResult(inputToReturn, processingApplied);
     }
 
     /**
@@ -243,16 +303,7 @@ public class ValidationSpecs {
      */
     private void prettyPrintFile(File fileToProcess) {
         File prettyPrintedFile = new File(fileToProcess.getParentFile(), UUID.randomUUID() + ".xml");
-        try {
-            var reader = getXmlInputFactory().createXMLStreamReader(new FileReader(fileToProcess));
-            var transformer = getTransformerFactory().newTransformer();
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.transform(new StAXSource(reader), new StreamResult(prettyPrintedFile));
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to pretty-print input", e);
-        }
+        applyXsltTransformation(fileToProcess.toPath(), null, prettyPrintedFile.toPath());
         replaceFile(fileToProcess, prettyPrintedFile);
     }
 
@@ -633,4 +684,11 @@ public class ValidationSpecs {
 
     }
 
+    /**
+     * Record to report the result of an input processing action.
+     *
+     * @param fileToUse The file to use as a result of the processing (may also be unchanged).
+     * @param processingApplied Whether processing took place.
+     */
+    private record FileProcessingResult(File fileToUse, boolean processingApplied) {}
 }

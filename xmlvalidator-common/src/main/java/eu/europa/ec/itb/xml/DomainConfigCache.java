@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static eu.europa.ec.itb.validation.commons.config.ParseUtils.addMissingDefaultValues;
 
@@ -88,7 +89,39 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         domainConfig.setContextFiles(parseTypeSpecificContextFiles("validator.contextFile", domainConfig.getType(), config, domainConfig));
         parseContextFileCombinationTemplates(config, domainConfig);
         // Context files - END
+        // Input transformations - start
+        domainConfig.setInputTransformerMap(parseInputFileTransformers(ParseUtils.parseMap("validator.input.transformer", config, domainConfig.getType()), domainConfig));
+        // Input transformations - end
         addMissingDefaultValues(domainConfig.getWebServiceDescription(), appConfig.getDefaultLabels());
+    }
+
+    /**
+     * Calculate the domain configuration root folder.
+     *
+     * @param domainConfig The current configuration.
+     * @return The path.
+     */
+    private Path getDomainRootPath(DomainConfig domainConfig) {
+        return Paths.get(appConfig.getResourceRoot(), domainConfig.getDomain());
+    }
+
+    /**
+     * Parse and validate the configured input transformation files as relative paths.
+     *
+     * @param parsedPaths The configured paths.
+     * @param domainConfig The domain configuration.
+     * @return The path map.
+     */
+    private Map<String, Path> parseInputFileTransformers(Map<String, String> parsedPaths, DomainConfig domainConfig) {
+        Path domainRootPath = getDomainRootPath(domainConfig);
+        return parsedPaths.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> {
+            var path = domainRootPath.resolve(entry.getValue()).normalize();
+            if (!Files.exists(path) || !path.startsWith(domainRootPath)) {
+                throw new IllegalStateException("Input transformation files must exist as files under the domain root folder. Offending path was [%s]".formatted(entry.getValue()));
+            } else {
+                return path;
+            }
+        }));
     }
 
     /**
@@ -101,7 +134,7 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         Map<String, String> pathStringsPerType = ParseUtils.parseMap("validator.contextFileCombinationTemplate", config, domainConfig.getType());
         // Ensure that each configured path is valid and convert it to a Path.
         Map<String, ContextFileCombinationTemplateConfig> pathsPerType = new HashMap<>();
-        Path domainRootPath = Paths.get(appConfig.getResourceRoot(), domainConfig.getDomain());
+        Path domainRootPath = getDomainRootPath(domainConfig);
         for (var entry: pathStringsPerType.entrySet()) {
             var configuredPath = entry.getValue();
             var resolvedPath = domainRootPath.resolve(Path.of(configuredPath)).normalize();
@@ -151,7 +184,7 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
      * @return The mapping function.
      */
     private Function<Map<String, String>, ContextFileConfig> getContextFileMapper(DomainConfig domainConfig, boolean isDefaultConfig) {
-        Path domainRootPath = Paths.get(appConfig.getResourceRoot(), domainConfig.getDomain());
+        Path domainRootPath = getDomainRootPath(domainConfig);
         final Counter counter = new Counter();
         return (Map<String, String> values) -> {
             Path contextFilePath;

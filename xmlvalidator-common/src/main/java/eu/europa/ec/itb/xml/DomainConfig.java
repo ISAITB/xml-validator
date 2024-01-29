@@ -5,6 +5,7 @@ import eu.europa.ec.itb.validation.commons.artifact.TypedValidationArtifactInfo;
 import eu.europa.ec.itb.validation.commons.artifact.ValidationArtifactInfo;
 import eu.europa.ec.itb.validation.commons.config.WebDomainConfig;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,17 @@ public class DomainConfig extends WebDomainConfig {
     private Map<String, List<ContextFileConfig>> contextFileMap;
     private ContextFileCombinationTemplateConfig contextFileCombinationDefaultTemplate;
     private Map<String, ContextFileCombinationTemplateConfig> contextFileCombinationTemplateMap;
+    private Map<String, Path> inputTransformerMap;
+
+    /** @return The map of full validation types to XSLT files for input transformation. */
+    public Map<String, Path> getInputTransformerMap() {
+        return inputTransformerMap;
+    }
+
+    /** @param inputTransformerMap The map of full validation types to XSLT files for input transformation. */
+    public void setInputTransformerMap(Map<String, Path> inputTransformerMap) {
+        this.inputTransformerMap = inputTransformerMap;
+    }
 
     /**
      * Get the context file combination template to apply for the given validation type.

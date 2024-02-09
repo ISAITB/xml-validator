@@ -1,5 +1,6 @@
 addListener('VALIDATION_TYPE_CHANGED', updateContextFiles);
 addListener('SUBMIT_STATUS_VALIDATED', validateSubmitStatus);
+addListener('BEFORE_SUBMIT', prepareContextFileCodeEditors);
 
 function updateContextFiles(eventType, eventData) {
     clearContextFiles()
@@ -34,6 +35,7 @@ function addContextFile(index, labelText, placeholderText) {
                     "<select class='form-control contentTypeChangedContextFile' id='contentType-"+elementId+"' data-element-id='"+elementId+"' name='contentType-contextFile'>"+
                         "<option value='fileType' selected='true'>"+_config.externalArtifactFileLabel+"</option>"+
                         "<option value='uriType'>"+_config.externalArtifactURILabel+"</option>"+
+                        "<option value='stringType'>"+_config.externalArtifactTextLabel+"</option>"+
                     "</select>"+
                 "</div>"+
                 "<div class='col-sm-10'>" +
@@ -49,6 +51,10 @@ function addContextFile(index, labelText, placeholderText) {
                         "<div class='col-sm-12 hidden' id='uriContainer-"+elementId+"'>"+
                             "<input type='text' class='form-control inputChangedContextFile' id='uri-"+elementId+"' name='uri-contextFile' data-element-id='"+elementId+"'>"+
                         "</div>"+
+                        "<div class='col-sm-12 hidden' id='stringContainer-"+elementId+"'>"+
+                            "<textarea id='text-editor-"+elementId+"' class='form-control inputChangedContextFile'></textarea>"+
+                            "<input type='hidden' id='text-editor-value-"+elementId+"' name='text-contextFile' data-element-id='"+elementId+"'>"+
+                        "</div>"+
                         "<input type='file' class='inputFile inputChangedContextFile' id='inputFile-"+elementId+"' name='inputFile-contextFile' data-element-id='"+elementId+"'/>" +
                     "</div>"+
                 "</div>"+
@@ -56,6 +62,15 @@ function addContextFile(index, labelText, placeholderText) {
         "</div>" +
     "</div>"
     $(".context-files").append(elements);
+    // Activate code editor.
+    if (document.getElementById("text-editor-"+elementId) !== null){
+        CodeMirror.fromTextArea(document.getElementById("text-editor-"+elementId), {
+            mode: _config.codeTypeObj,
+            lineNumbers: true
+        }).on('change', function(){
+            inputChangedContextFile(elementId);
+        });
+    }
 }
 
 function contentTypeChangedContextFile(elementId) {
@@ -63,9 +78,20 @@ function contentTypeChangedContextFile(elementId) {
 	if (type == "uriType"){
 		$("#uriContainer-"+elementId).removeClass('hidden');
 		$("#fileContainer-"+elementId).addClass('hidden');
+		$("#stringContainer-"+elementId).addClass('hidden');
 	} else if (type == "fileType"){
 		$("#fileContainer-"+elementId).removeClass('hidden');
 		$("#uriContainer-"+elementId).addClass('hidden');
+		$("#stringContainer-"+elementId).addClass('hidden');
+	} else if (type == "stringType") {
+		$("#stringContainer-"+elementId).removeClass('hidden');
+		$("#fileContainer-"+elementId).addClass('hidden');
+		$("#uriContainer-"+elementId).addClass('hidden');
+		setTimeout(function() {
+            var codeMirror = getCodeMirrorNative('#text-editor-'+elementId)
+            codeMirror.refresh();
+            updateSubmitStatus();
+		}, 0);
 	}
 	checkForSubmit();
 }
@@ -86,13 +112,18 @@ function clearContextFiles() {
 	checkForSubmit();
 }
 
+function getContextFileCount() {
+    var validationType = getCompleteValidationType();
+    var contextFileCount = 0;
+    if (contextFiles[validationType]) {
+        contextFileCount = contextFiles[validationType].length
+    }
+    return contextFileCount;
+}
+
 function validateSubmitStatus() {
     setTimeout(function() {
-        var validationType = getCompleteValidationType();
-        var contextFileCount = 0;
-        if (contextFiles[validationType]) {
-            contextFileCount = contextFiles[validationType].length
-        }
+        var contextFileCount = getContextFileCount();
         if (contextFileCount > 0) {
             var submitButton;
             if (_config.isMinimalUI) {
@@ -103,9 +134,10 @@ function validateSubmitStatus() {
             if (!submitButton.is(":disabled")) {
                 for (var i=0; i < contextFileCount; i++) {
                     var elementId = toContextFileElementId(i)
-                    var contentType = $("#contentType-"+elementId).val();;
+                    var contentType = $("#contentType-"+elementId).val();
                     if ((contentType == "uriType" && !$("#uri-"+elementId).val()) ||
-                        (contentType == "fileType" && !$("#inputFileName-"+elementId).val())) {
+                        (contentType == "fileType" && !$("#inputFileName-"+elementId).val()) ||
+                        (contentType == "stringType" && !getCodeMirrorNative('#text-editor-'+elementId).getDoc().getValue())) {
                         submitButton.prop('disabled', true);
                         break;
                     }
@@ -113,4 +145,17 @@ function validateSubmitStatus() {
             }
         }
     }, 1)
+}
+
+function prepareContextFileCodeEditors() {
+    var contextFileCount = getContextFileCount();
+    for (var i=0; i < contextFileCount; i++) {
+        var elementId = toContextFileElementId(i);
+        var contentType = $("#contentType-"+elementId).val();
+        if (contentType == "stringType") {
+            $("#text-editor-value-"+elementId).val(getCodeMirrorNative('#text-editor-'+elementId).getDoc().getValue());
+        } else {
+            $("#text-editor-value-"+elementId).val('');
+        }
+    }
 }

@@ -252,7 +252,7 @@ public class XMLValidator {
         } else {
             for (FileInfo aSchematronFile: schematronFiles) {
                 logger.info("Validating against [{}]", aSchematronFile.getFile().getName());
-                TAR report = validateSchematron(specs.getInputStreamForValidation(true), aSchematronFile.getFile());
+                TAR report = validateSchematron(aSchematronFile.getFile());
                 logReport(report, aSchematronFile.getFile().getName());
                 reports.add(report);
                 logger.info("Validated against [{}]", aSchematronFile.getFile().getName());
@@ -390,49 +390,81 @@ public class XMLValidator {
     }
 
     /**
+     * Treat the schematron file as XSLT.
+     *
+     * @param schematronFile The schematron file.
+     * @return The schematron.
+     */
+    private ISchematronResource schematronAsXSLT(File schematronFile) {
+        var schematron = SchematronResourceXSLT.fromFile(schematronFile);
+        var newResolver = getURIResolver(schematronFile);
+        var resolver = schematron.getURIResolver();
+        if (resolver instanceof DefaultTransformURIResolver defaultResolver) {
+            newResolver.setDefaultBase(defaultResolver.getDefaultBase());
+        }
+        schematron.setURIResolver(newResolver);
+        return schematron;
+    }
+
+    /**
+     * Treat the schematron file as raw/pure schematron.
+     *
+     * @param schematronFile The schematron file.
+     * @return The schematron.
+     */
+    private ISchematronResource schematronAsRaw(File schematronFile) {
+        return SchematronResourcePure.fromFile(schematronFile);
+    }
+
+    /**
+     * Apply the schematron validation.
+     *
+     * @param schematron The schematron to use.
+     * @return The validation output.
+     * @throws Exception If a schematron validation error occurred.
+     */
+    private SchematronOutputType applySchematron(ISchematronResource schematron) throws Exception {
+        Document svrlDocument = schematron.applySchematronValidation(new DOMSource(specs.inputAsDocumentForSchematronValidation()));
+        if (svrlDocument == null) {
+            throw new IllegalArgumentException("SVRL output was null");
+        }
+        var marshaller = new SVRLMarshaller(false);
+        return marshaller.read(svrlDocument);
+    }
+
+    /**
      * Validate the XML input against a single Schematron file.
      *
-     * @param inputSource The input to validate.
      * @param schematronFile The Schematron file.
      * @return The validation report.
      */
-    private TAR validateSchematron(InputStream inputSource, File schematronFile) {
-        Document schematronInput;
+    private TAR validateSchematron(File schematronFile) {
         SchematronOutputType svrlOutput;
         boolean convertXPathExpressions = false;
         String schematronFileName = schematronFile.getName().toLowerCase();
-        ISchematronResource schematron;
-        if (schematronFileName.endsWith("xslt") || schematronFileName.endsWith("xsl")) {
-            // Validate as XSLT.
-            schematron = SchematronResourceXSLT.fromFile(schematronFile);
-            var newResolver = getURIResolver(schematronFile);
-            SchematronResourceXSLT resource = (SchematronResourceXSLT) schematron;
-            var resolver = resource.getURIResolver();
-            if (resolver instanceof DefaultTransformURIResolver defaultResolver) {
-                newResolver.setDefaultBase(defaultResolver.getDefaultBase());
-            }
-            resource.setURIResolver(newResolver);
-        } else {
-            // Validate as raw schematron.
-            convertXPathExpressions = true;
-            schematron = SchematronResourcePure.fromFile(schematronFile);
-        }
         try {
-            schematronInput = Utils.readXMLWithLineNumbers(inputSource);
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to parse input file.", e);
-        }
-        try {
-            Document svrlDocument = schematron.applySchematronValidation(new DOMSource(schematronInput));
-            if (svrlDocument == null) {
-                throw new IllegalStateException("SVRL output was null");
+            if (schematronFileName.endsWith("xslt") || schematronFileName.endsWith("xsl")) {
+                // Validate as XSLT.
+                svrlOutput = applySchematron(schematronAsXSLT(schematronFile));
+            } else if (schematronFileName.endsWith("sch")) {
+                // Validate as raw schematron.
+                convertXPathExpressions = true;
+                svrlOutput = applySchematron(schematronAsRaw(schematronFile));
+            } else {
+                // We're not certain - validate as raw and if that fails validate as XSLT.
+                try {
+                    convertXPathExpressions = true;
+                    svrlOutput = applySchematron(schematronAsRaw(schematronFile));
+                } catch (Exception e) {
+                    // Try also as XSLT.
+                    convertXPathExpressions = false;
+                    svrlOutput = applySchematron(schematronAsXSLT(schematronFile));
+                }
             }
-            SVRLMarshaller marshaller = new SVRLMarshaller(false);
-            svrlOutput = marshaller.read(svrlDocument);
         } catch (Exception e) {
             throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
         }
-        SchematronReportHandler handler = new SchematronReportHandler(schematronInput, svrlOutput, convertXPathExpressions, specs.getDomainConfig().isIncludeTestDefinition(), specs.getDomainConfig().isIncludeAssertionID(), specs.isLocationAsPath(), specs.getLocalisationHelper());
+        SchematronReportHandler handler = new SchematronReportHandler(specs.inputAsDocumentForSchematronValidation(), svrlOutput, convertXPathExpressions, specs.getDomainConfig().isIncludeTestDefinition(), specs.getDomainConfig().isIncludeAssertionID(), specs.isLocationAsPath(), specs.getLocalisationHelper());
         return handler.createReport();
     }
 

@@ -16,6 +16,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
+import org.w3c.dom.Document;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.transform.OutputKeys;
@@ -62,6 +63,7 @@ public class ValidationSpecs {
     private ApplicationContext applicationContext;
     private XMLInputFactory xmlInputFactory;
     private TransformerFactory transformerFactory;
+    private Document schematronInputAsDocument;
 
     /**
      * Private constructor to prevent direct initialisation.
@@ -545,6 +547,22 @@ public class ValidationSpecs {
                 }
             }
         }
+    }
+
+    /**
+     * Get the input document as a DOM document with defined lined numbers.
+     *
+     * @return The document.
+     */
+    public Document inputAsDocumentForSchematronValidation() {
+        if (schematronInputAsDocument == null) {
+            try {
+                schematronInputAsDocument = Utils.readXMLWithLineNumbers(getInputStreamForValidation(true));
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to parse input file.", e);
+            }
+        }
+        return schematronInputAsDocument;
     }
 
     /**

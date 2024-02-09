@@ -24,7 +24,7 @@ class StatisticReportingAspectTest {
         // Use subclasses as AspectJ proxies cannot be made over Mockito mocks and spies.
         var target = new UploadController() {
             @Override
-            public UploadResult<Translations> handleUpload(String domain, MultipartFile file, String uri, String string, String validationType, String contentType, String[] externalSchemaContentType, MultipartFile[] externalSchemaFiles, String[] externalSchemaUri, String[] externalSchContentType, MultipartFile[] externalSchFiles, String[] externalSchUri, String[] contextFileTypes, MultipartFile[] contextFileFiles, String[] contextFileUris, RedirectAttributes redirectAttributes, HttpServletRequest request, HttpServletResponse response) {
+            public UploadResult<Translations> handleUpload(String domain, MultipartFile file, String uri, String string, String validationType, String contentType, String[] externalSchemaContentType, MultipartFile[] externalSchemaFiles, String[] externalSchemaUri, String[] externalSchemaString, String[] externalSchContentType, MultipartFile[] externalSchFiles, String[] externalSchUri, String[] externalSchString, String[] contextFileTypes, MultipartFile[] contextFileFiles, String[] contextFileUris, String[] contextFileStrings, RedirectAttributes redirectAttributes, HttpServletRequest request, HttpServletResponse response) {
                 assertEquals("domain1", domain);
                 assertTrue(aspectCalled[0]); // We expect the aspect to have been called before the method.
                 // We only want to check if this was called.
@@ -42,7 +42,7 @@ class StatisticReportingAspectTest {
         var aspectFactory = new AspectJProxyFactory(target);
         aspectFactory.addAspect(aspect);
         UploadController controller = aspectFactory.getProxy();
-        controller.handleUpload("domain1", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        controller.handleUpload("domain1", null, null, null, null, null, null,  null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         assertTrue(aspectCalled[0]);
         assertTrue(targetCalled[0]);
     }
@@ -54,7 +54,7 @@ class StatisticReportingAspectTest {
         // Use subclasses as AspectJ proxies cannot be made over Mockito mocks and spies.
         var target = new UploadController() {
             @Override
-            public UploadResult<Translations> handleUploadMinimal(String domain, MultipartFile file, String uri, String string, String validationType, String contentType, String[] externalSchema, MultipartFile[] externalSchemaFiles, String[] externalSchemaUri, String[] externalSch, MultipartFile[] externalSchFiles, String[] externalSchUri, String[] contextFileTypes, MultipartFile[] contextFileFiles, String[] contextFileUris, RedirectAttributes redirectAttributes, HttpServletRequest request, HttpServletResponse response) {
+            public UploadResult<Translations> handleUploadMinimal(String domain, MultipartFile file, String uri, String string, String validationType, String contentType, String[] externalSchemaContentType, MultipartFile[] externalSchemaFiles, String[] externalSchemaUri, String[] externalSchemaString, String[] externalSchContentType, MultipartFile[] externalSchFiles, String[] externalSchUri, String[] externalSchString, String[] contextFileTypes, MultipartFile[] contextFileFiles, String[] contextFileUris, String[] contextFileStrings, RedirectAttributes redirectAttributes, HttpServletRequest request, HttpServletResponse response) {
                 assertEquals("domain1", domain);
                 assertTrue(aspectCalled[0]); // We expect the aspect to have been called before the method.
                 // We only want to check if this was called.
@@ -72,7 +72,7 @@ class StatisticReportingAspectTest {
         var aspectFactory = new AspectJProxyFactory(target);
         aspectFactory.addAspect(aspect);
         UploadController controller = aspectFactory.getProxy();
-        controller.handleUploadMinimal("domain1", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        controller.handleUploadMinimal("domain1", null, null,  null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         assertTrue(aspectCalled[0]);
         assertTrue(targetCalled[0]);
     }

@@ -32,7 +32,6 @@ public class DomainConfig extends WebDomainConfig {
     private String mailInboundFolder;
     private boolean includeTestDefinition;
     private boolean includeAssertionID;
-    private boolean mapCautionToInformationMessage;
     private List<ContextFileConfig> contextFileConfigDefaultConfig;
     private Map<String, List<ContextFileConfig>> contextFileMap;
     private ContextFileCombinationTemplateConfig contextFileCombinationDefaultTemplate;
@@ -363,17 +362,4 @@ public class DomainConfig extends WebDomainConfig {
         this.mailInboundFolder = mailInboundFolder;
     }
 
-    /**
-     * @return Whether assertions with role CAUTION should be treated as information messages.
-     */
-    public boolean isMapCautionToInformationMessage() {
-        return mapCautionToInformationMessage;
-    }
-
-    /**
-     * @param mapCautionToInformationMessage Whether assertions with role CAUTION should be treated as information messages.
-     */
-    public void setMapCautionToInformationMessage(boolean mapCautionToInformationMessage) {
-        this.mapCautionToInformationMessage = mapCautionToInformationMessage;
-    }
 }

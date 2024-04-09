@@ -39,6 +39,7 @@ public class SchematronReportHandler {
     private final SchematronOutputType svrlReport;
     private final boolean locationAsPath;
     private final LocalisationHelper localiser;
+    private final boolean mapCautionToInformationMessage;
     private NamespaceContext namespaceContext;
     private XPathFactory xpathFactory;
     private Boolean hasDefaultNamespace;
@@ -58,9 +59,10 @@ public class SchematronReportHandler {
      * @param includeAssertionID True if the assertion IDs per report item should be included.
      * @param locationAsPath True if report item locations should be XPath expressions. If not the line numbers will be
      *                       calculated and recorded instead.
+     * @param mapCautionToInformationMessage Whether assertions with role CAUTION should be treated as information messages.
      * @param localiser Helper class for translations.
      */
-    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean includeAssertionID, boolean locationAsPath, LocalisationHelper localiser) {
+    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean includeAssertionID, boolean locationAsPath, boolean mapCautionToInformationMessage, LocalisationHelper localiser) {
         this.node = node;
         this.svrlReport = svrl;
         report = new TAR();
@@ -72,6 +74,7 @@ public class SchematronReportHandler {
         this.includeTest = includeTest;
         this.includeAssertionID = includeAssertionID;
         this.locationAsPath = locationAsPath;
+        this.mapCautionToInformationMessage = mapCautionToInformationMessage;
         this.localiser = localiser;
     }
 
@@ -170,7 +173,11 @@ public class SchematronReportHandler {
             } else if (level == EErrorLevel.INFO.getNumericLevel()) {
                 element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(reportItem);
             } else if (level == EErrorLevel.WARN.getNumericLevel()) {
-                element = this.objectFactory.createTestAssertionGroupReportsTypeWarning(reportItem);
+                if (mapCautionToInformationMessage && "caution".equalsIgnoreCase(message.getRole())) {
+                    element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(reportItem);
+                } else {
+                    element = this.objectFactory.createTestAssertionGroupReportsTypeWarning(reportItem);
+                }
             } else { // ERROR, FATAL_ERROR
                 element = this.objectFactory.createTestAssertionGroupReportsTypeError(reportItem);
             }

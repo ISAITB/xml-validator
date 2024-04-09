@@ -92,6 +92,7 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         // Input transformations - start
         domainConfig.setInputTransformerMap(parseInputFileTransformers(ParseUtils.parseMap("validator.input.transformer", config, domainConfig.getType()), domainConfig));
         // Input transformations - end
+        domainConfig.setMapCautionToInformationMessage(config.getBoolean("validator.mapCautionToInformationMessage", false));
         addMissingDefaultValues(domainConfig.getWebServiceDescription(), appConfig.getDefaultLabels());
     }
 

@@ -464,7 +464,7 @@ public class XMLValidator {
         } catch (Exception e) {
             throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
         }
-        SchematronReportHandler handler = new SchematronReportHandler(specs.inputAsDocumentForSchematronValidation(), svrlOutput, convertXPathExpressions, specs.getDomainConfig().isIncludeTestDefinition(), specs.getDomainConfig().isIncludeAssertionID(), specs.isLocationAsPath(), specs.getLocalisationHelper());
+        SchematronReportHandler handler = new SchematronReportHandler(specs.inputAsDocumentForSchematronValidation(), svrlOutput, convertXPathExpressions, specs.getDomainConfig().isIncludeTestDefinition(), specs.getDomainConfig().isIncludeAssertionID(), specs.isLocationAsPath(), specs.getDomainConfig().isMapCautionToInformationMessage(), specs.getLocalisationHelper());
         return handler.createReport();
     }
 

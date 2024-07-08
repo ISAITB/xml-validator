@@ -87,7 +87,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
             @Parameter(required = true, name = "domain", description = "A fixed value corresponding to the specific validation domain.",
                     examples = {
                             @ExampleObject(name="order", summary="Sample 'order' configuration", value="order", description = "The domain value to use for the demo 'order' validator at https://www.itb.ec.europe.eu/order/upload."),
-                            @ExampleObject(name="any", summary="Generic 'any' configuration", value = "any", description = "The domain value to use for the generic 'any' validator at https://www.itb.ec.europe.eu/xml/upload used to validate XML with user-provided XSDs and Schematron.")
+                            @ExampleObject(name="xml", summary="Generic 'xml' configuration", value = "xml", description = "The domain value to use for the generic 'xml' validator at https://www.itb.ec.europe.eu/xml/upload used to validate XML with user-provided XSDs and Schematron.")
                     }
             )
             @PathVariable("domain") String domain,
@@ -115,7 +115,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
                                         "validationType": "large"
                                     }
                                     """),
-                                    @ExampleObject(name="any", summary = "Validate remote URI with user-provided XSD and Schematron", description = "Validate content provided as a URI and using a user-provided XSD and Schematron, with the generic 'any' validator (see https://www.itb.ec.europe.eu/xml/upload). To try it out select also 'any' for the 'domain' parameter.", value = """
+                                    @ExampleObject(name="xml", summary = "Validate remote URI with user-provided XSD and Schematron", description = "Validate content provided as a URI and using a user-provided XSD and Schematron, with the generic 'xml' validator (see https://www.itb.ec.europe.eu/xml/upload). To try it out select also 'xml' for the 'domain' parameter.", value = """
                                     {
                                         "contentToValidate": "https://www.itb.ec.europa.eu/files/samples/xml/sample-invalid.xml",
                                         "embeddingMethod": "URL",
@@ -218,7 +218,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
             @Parameter(required = true, name = "domain", description = "A fixed value corresponding to the specific validation domain.",
                     examples = {
                             @ExampleObject(name="order", summary="Sample 'order' configuration", value="order", description = "The domain value to use for the demo 'order' validator at https://www.itb.ec.europe.eu/order/upload."),
-                            @ExampleObject(name="any", summary="Generic 'any' configuration", value = "any", description = "The domain value to use for the generic 'any' validator at https://www.itb.ec.europe.eu/xml/upload used to validate XML with user-provided XSDs and Schematron.")
+                            @ExampleObject(name="xml", summary="Generic 'xml' configuration", value = "xml", description = "The domain value to use for the generic 'xml' validator at https://www.itb.ec.europe.eu/xml/upload used to validate XML with user-provided XSDs and Schematron.")
                     }
             )
             @PathVariable("domain") String domain,
@@ -240,7 +240,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
                                         }
                                     ]
                                     """),
-                                    @ExampleObject(name="any", summary = "Validate remote URIs with user-provided XSD and Schematron", description = "Validate content provided as URIs and using user-provided XSD and Schematron, with the generic 'any' validator (see https://www.itb.ec.europe.eu/shacl/any/upload). To try it out select also 'any' for the 'domain' parameter.", value = """
+                                    @ExampleObject(name="xml", summary = "Validate remote URIs with user-provided XSD and Schematron", description = "Validate content provided as URIs and using user-provided XSD and Schematron, with the generic 'xml' validator (see https://www.itb.ec.europe.eu/xml/upload). To try it out select also 'xml' for the 'domain' parameter.", value = """
                                     [
                                         {
                                             "contentToValidate": "https://www.itb.ec.europa.eu/files/samples/xml/sample-invalid.xml",

@@ -170,12 +170,7 @@ public class SchematronReportHandler {
             } else if (level == EErrorLevel.INFO.getNumericLevel()) {
                 element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(reportItem);
             } else if (level == EErrorLevel.WARN.getNumericLevel()) {
-                // Temporary fix until release ph-schematron v8.0.1 corrects this. Assertions with "CAUTION" role should be treated as information messages.
-                if ("caution".equalsIgnoreCase(message.getRole())) {
-                    element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(reportItem);
-                } else {
-                    element = this.objectFactory.createTestAssertionGroupReportsTypeWarning(reportItem);
-                }
+                element = this.objectFactory.createTestAssertionGroupReportsTypeWarning(reportItem);
             } else { // ERROR, FATAL_ERROR
                 element = this.objectFactory.createTestAssertionGroupReportsTypeError(reportItem);
             }

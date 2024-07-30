@@ -1,6 +1,7 @@
 package eu.europa.ec.itb.xml.util;
 
 import eu.europa.ec.itb.validation.commons.BaseFileManager;
+import eu.europa.ec.itb.validation.commons.FileInfo;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
@@ -20,6 +21,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
@@ -213,7 +215,7 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
     }
 
     /**
-     * @see BaseFileManager#getFileFromURL(File, String, String, String, File, String, String)
+     * @see BaseFileManager#getExternalValidationArtifacts(eu.europa.ec.itb.validation.commons.config.DomainConfig, String, String, File, List)
      *
      * In case of XML schemas ensure that imported schemas are also downloaded and cached.
      *
@@ -224,14 +226,15 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
      * @param preprocessorFile An optional file for a preprocessing resource to be used to determine the final loaded file.
      * @param preprocessorOutputExtension The file extension for the file produced via preprocessing (if applicable).
      * @param artifactType The type of validation artifact.
+     * @param acceptedContentTypes A (nullable) list of content types to accept for the request.
      * @return The stored file.
      * @throws IOException If the file could not be retrieved or stored.
      */
     @Override
-    public File getFileFromURL(File targetFolder, String url, String extension, String fileName, File preprocessorFile, String preprocessorOutputExtension, String artifactType) throws IOException {
-        File savedFile = super.getFileFromURL(targetFolder, url, extension, fileName, preprocessorFile, preprocessorOutputExtension, artifactType);
+    public FileInfo getFileFromURL(File targetFolder, String url, String extension, String fileName, File preprocessorFile, String preprocessorOutputExtension, String artifactType, List<String> acceptedContentTypes) throws IOException {
+        FileInfo savedFile = super.getFileFromURL(targetFolder, url, extension, fileName, preprocessorFile, preprocessorOutputExtension, artifactType, acceptedContentTypes);
         if (DomainConfig.ARTIFACT_TYPE_SCHEMA.equals(artifactType)) {
-            retrieveSchemasForImports(url, new File(savedFile.getParent(), "import"));
+            retrieveSchemasForImports(url, new File(savedFile.getFile().getParent(), "import"));
         }
         return savedFile;
     }

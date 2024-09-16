@@ -71,6 +71,15 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    @GetMapping(value = {"/rest/api/healthcheck", "/{domain}/api/healthcheck"}, consumes = MediaType.ALL_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> healthCheck(@PathVariable(value = "domain", required = false) String domain) {
+        return super.healthCheck(domain);
+    }
+
+    /**
      * Service to trigger one validation for the provided input and settings.
      *
      * @param domain The relevant domain for the validation.

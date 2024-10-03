@@ -101,7 +101,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
             ValueEmbeddingEnumeration contentEmbeddingMethod = inputHelper.validateContentEmbeddingMethod(validateRequest, ValidationConstants.INPUT_EMBEDDING_METHOD);
             boolean locationAsPath = getInputAsBoolean(validateRequest, ValidationConstants.INPUT_LOCATION_AS_PATH, false);
             boolean addInputToReport = getInputAsBoolean(validateRequest, ValidationConstants.INPUT_ADD_INPUT_TO_REPORT, true);
-            File contentToValidate = inputHelper.validateContentToValidate(validateRequest, ValidationConstants.INPUT_XML, contentEmbeddingMethod, null, tempFolderPath);
+            File contentToValidate = inputHelper.validateContentToValidate(validateRequest, ValidationConstants.INPUT_XML, contentEmbeddingMethod, null, tempFolderPath, domainConfig.getHttpVersion());
             String validationType = inputHelper.validateValidationType(domainConfig, validateRequest, ValidationConstants.INPUT_TYPE);
             List<FileInfo> externalSchemas = inputHelper.validateExternalArtifacts(domainConfig, validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMA, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EMBEDDING_METHOD, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, tempFolderPath);
             List<FileInfo> externalSchematron = inputHelper.validateExternalArtifacts(domainConfig, validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMATRON, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EMBEDDING_METHOD, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, tempFolderPath);
@@ -198,7 +198,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
                     var receivedContextFile = receivedContextFiles.get(index);
                     switch (receivedContextFile.getEmbeddingMethod()) {
                         case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
-                        case URI -> fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName());
+                        case URI -> fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), domainConfig.getHttpVersion());
                         default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
                     }
                     contextFiles.add(new ContextFileData(targetFile.toPath(), contextFileConfig));

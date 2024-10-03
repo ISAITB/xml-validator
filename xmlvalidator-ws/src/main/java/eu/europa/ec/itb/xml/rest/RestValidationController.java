@@ -186,7 +186,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
             var externalSchemas = getExternalSchemas(domainConfig, in.getExternalSchemas(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, parentFolder);
             var externalSchematrons = getExternalSchemas(domainConfig, in.getExternalSchematrons(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, parentFolder);
             var contextFiles = getContextFiles(domainConfig, in.getContextFiles(), validationType, parentFolder);
-            var contentToValidate = inputHelper.validateContentToValidate(in.getContentToValidate(), contentEmbeddingMethod, null, parentFolder);
+            var contentToValidate = inputHelper.validateContentToValidate(in.getContentToValidate(), contentEmbeddingMethod, null, parentFolder, domainConfig.getHttpVersion());
             // Validate.
             ValidationSpecs specs = ValidationSpecs.builder(contentToValidate, localiser, domainConfig, ctx)
                     .withValidationType(validationType)
@@ -331,11 +331,11 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
                     if (receivedContextFile.getEmbeddingMethod() != null) {
                         switch (receivedContextFile.getEmbeddingMethod()) {
                             case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
-                            case URI -> fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName());
+                            case URI -> fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), config.getHttpVersion());
                             default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
                         }
                     } else {
-                        fileManager.getFileFromURLOrBase64(targetFile.getParentFile(), receivedContextFile.getContent(), null, null, targetFile.getName());
+                        fileManager.getFileFromURLOrBase64(targetFile.getParentFile(), receivedContextFile.getContent(), null, null, targetFile.getName(), config.getHttpVersion());
                     }
                     contextFiles.add(new ContextFileData(targetFile.toPath(), contextFileConfig));
                     index += 1;

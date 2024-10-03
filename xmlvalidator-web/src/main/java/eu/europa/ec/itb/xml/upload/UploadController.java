@@ -38,6 +38,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Supplier;
@@ -239,7 +240,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
             try {
                 File inputFile = null;
                 try {
-                    inputFile = saveInput(contentType, file, uri, string, tempFolderForRequest);
+                    inputFile = saveInput(contentType, file, uri, string, tempFolderForRequest, config.getHttpVersion());
                     if (inputFile == null || !fileManager.checkFileType(inputFile)) {
                         proceedToValidate = false;
                         result.setMessage(localisationHelper.localise("validator.label.exception.providedInputNotXML"));
@@ -370,7 +371,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                         }
                         case CONTENT_TYPE_URI -> {
                             if (StringUtils.isNotBlank(contextFileUris[index])) {
-                                var file = fileManager.getFileFromURL(targetFile.getParentFile(), contextFileUris[index], "", targetFile.getName());
+                                var file = fileManager.getFileFromURL(targetFile.getParentFile(), contextFileUris[index], "", targetFile.getName(), config.getHttpVersion());
                                 contextFiles.add(new ContextFileData(file.toPath(), contextFileConfig));
                             }
                         }
@@ -516,7 +517,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                         }
                     } else {
                         if (StringUtils.isNotBlank(externalUri[i])) {
-                            file = fileManager.getFileFromURL(parentFolder, externalUri[i], null, null, artifactType);
+                            file = fileManager.getFileFromURL(parentFolder, externalUri[i], null, null, artifactType, domainConfig.getHttpVersion());
                         }
                     }
                     if (file != null) {
@@ -591,10 +592,11 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
      * @param uri The input as a URI.
      * @param string The input as directly provided text
      * @param parentFolder The temp folder to store the file in.
+     * @param httpVersion The HTTP version to use.
      * @return The stored file.
      * @throws IOException If an IO error occurs.
      */
-    private File saveInput(String inputType, MultipartFile file, String uri, String string, File parentFolder) throws IOException {
+    private File saveInput(String inputType, MultipartFile file, String uri, String string, File parentFolder, HttpClient.Version httpVersion) throws IOException {
         File inputFile;
         switch (inputType) {
             case CONTENT_TYPE_FILE:
@@ -603,7 +605,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                 }
                 break;
             case CONTENT_TYPE_URI:
-                inputFile = fileManager.getFileFromURL(parentFolder, uri);
+                inputFile = fileManager.getFileFromURL(parentFolder, uri, httpVersion);
                 break;
             case CONTENT_TYPE_STRING:
                 inputFile = fileManager.getFileFromString(parentFolder, string);

@@ -72,7 +72,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
         if (isValidURL(contentPath)) {
             // Value is a URL.
             try {
-                fileToUse = fileManager.getFileFromURL(parentFolder, contentPath, fileName);
+                fileToUse = fileManager.getFileFromURL(parentFolder, contentPath, fileName, domainConfig.getHttpVersion());
             } catch (IOException e) {
                 throw new ValidatorException("validator.label.exception.unableToReadFileFromURL", e, contentPath);
             }

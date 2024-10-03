@@ -17,6 +17,7 @@ import org.apache.xerces.xs.XSNamespaceItemList;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.net.http.HttpClient;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -215,7 +216,7 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
     }
 
     /**
-     * @see BaseFileManager#getExternalValidationArtifacts(eu.europa.ec.itb.validation.commons.config.DomainConfig, String, String, File, List)
+     * @see BaseFileManager#getExternalValidationArtifacts(eu.europa.ec.itb.validation.commons.config.DomainConfig, String, String, File, List, HttpClient.Version)
      *
      * In case of XML schemas ensure that imported schemas are also downloaded and cached.
      *
@@ -227,14 +228,15 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
      * @param preprocessorOutputExtension The file extension for the file produced via preprocessing (if applicable).
      * @param artifactType The type of validation artifact.
      * @param acceptedContentTypes A (nullable) list of content types to accept for the request.
+     * @param httpVersion The HTTP version to use.
      * @return The stored file.
      * @throws IOException If the file could not be retrieved or stored.
      */
     @Override
-    public FileInfo getFileFromURL(File targetFolder, String url, String extension, String fileName, File preprocessorFile, String preprocessorOutputExtension, String artifactType, List<String> acceptedContentTypes) throws IOException {
-        FileInfo savedFile = super.getFileFromURL(targetFolder, url, extension, fileName, preprocessorFile, preprocessorOutputExtension, artifactType, acceptedContentTypes);
+    public FileInfo getFileFromURL(File targetFolder, String url, String extension, String fileName, File preprocessorFile, String preprocessorOutputExtension, String artifactType, List<String> acceptedContentTypes, HttpClient.Version httpVersion) throws IOException {
+        FileInfo savedFile = super.getFileFromURL(targetFolder, url, extension, fileName, preprocessorFile, preprocessorOutputExtension, artifactType, acceptedContentTypes, httpVersion);
         if (DomainConfig.ARTIFACT_TYPE_SCHEMA.equals(artifactType)) {
-            retrieveSchemasForImports(url, new File(savedFile.getFile().getParent(), "import"));
+            retrieveSchemasForImports(url, new File(savedFile.getFile().getParent(), "import"), httpVersion);
         }
         return savedFile;
     }
@@ -244,8 +246,9 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
      *
      * @param rootURI The URI.
      * @param rootFolder The folder.
+     * @param httpVersion The HTTP version to use.
      */
-    private void retrieveSchemasForImports(String rootURI, File rootFolder) {
+    private void retrieveSchemasForImports(String rootURI, File rootFolder, HttpClient.Version httpVersion) {
         XMLSchemaLoader xsdLoader = new XMLSchemaLoader();
         XSModel xsdModel = xsdLoader.loadURI(rootURI);
         XSNamespaceItemList xsdNamespaceItemList = xsdModel.getNamespaceItems();
@@ -257,7 +260,7 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
                 if(!documentLocations.contains(sl.item(k))) {
                     String currentLocation = (String)sl.get(k);
                     try {
-                        getFileFromURL(rootFolder, currentLocation);
+                        getFileFromURL(rootFolder, currentLocation, httpVersion);
                         documentLocations.add(currentLocation);
                     } catch (IOException e) {
                         throw new ValidatorException("validator.label.exception.loadingRemoteSchemas", e);

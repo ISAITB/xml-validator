@@ -10,6 +10,8 @@
 
 # XML validator
 
+![Banner](https://www.itb.ec.europa.eu/files/banners/xmlvalidator_banner.png)
+
 The **XML validator** is a web application to validate XML data against [XML Schema](https://www.w3.org/standards/xml/schema) and [Schematron](https://schematron.com/).
 The application provides a fully reusable core that requires only configuration to determine the supported specifications,
 configured validation types and other validator customisations. The web application allows validation via:

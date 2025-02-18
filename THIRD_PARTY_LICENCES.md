@@ -38,6 +38,7 @@ build. These libraries are used as-is, with no modifications to source code.
 | GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf Core Renderer | com.openhtmltopdf:openhtmltopdf-core | 1.0.10 | https://github.com/danfickle/openhtmltopdf/openhtmltopdf-core |
 | GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf PDF Rendering (Apache PDF-BOX 2) | com.openhtmltopdf:openhtmltopdf-pdfbox | 1.0.10 | https://github.com/danfickle/openhtmltopdf/openhtmltopdf-pdfbox |
 | GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf slf4j Support | com.openhtmltopdf:openhtmltopdf-slf4j | 1.0.10 | https://github.com/danfickle/openhtmltopdf/openhtmltopdf-slf4j |
+| GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf SVG Support | com.openhtmltopdf:openhtmltopdf-svg-support | 1.0.10 | https://github.com/danfickle/openhtmltopdf/openhtmltopdf-svg-support |
 | Eclipse Distribution License - v1.0 | istack common utility code runtime | com.sun.istack:istack-commons-runtime | 4.1.2 | https://projects.eclipse.org/projects/ee4j/istack-commons/istack-commons-runtime |
 | Eclipse Distribution License - v1.0 | Old JAXB Core | com.sun.xml.bind:jaxb-core | 4.0.5 | https://eclipse-ee4j.github.io/jaxb-ri/ |
 | Eclipse Distribution License - v1.0 | Old JAXB Runtime | com.sun.xml.bind:jaxb-impl | 4.0.4 | https://eclipse-ee4j.github.io/jaxb-ri/ |
@@ -45,6 +46,7 @@ build. These libraries are used as-is, with no modifications to source code.
 | Apache License, Version 2.0 | Apache Commons Codec | commons-codec:commons-codec | 1.17.2 | https://commons.apache.org/proper/commons-codec/ |
 | Apache License, Version 2.0 | Apache Commons Collections | commons-collections:commons-collections | 3.2.2 | http://commons.apache.org/collections/ |
 | Apache License, Version 2.0 | Apache Commons IO | commons-io:commons-io | 2.17.0 | https://commons.apache.org/proper/commons-io/ |
+| Apache License, Version 2.0 | Logging | commons-logging:commons-logging | 1.0.4 | http://jakarta.apache.org/commons/logging/ |
 | Apache License, Version 2.0 | PDFBox-Graphics2d | de.rototor.pdfbox:graphics2d | 0.32 | https://github.com/rototor/pdfbox-graphics2d/graphics2d |
 | European Union Public Licence (EUPL) Version 1.2 | gitb-types-jakarta | eu.europa.ec.itb:gitb-types-jakarta | 1.24.4 | https://joinup.ec.europa.eu/solution/interoperability-test-bed/about/gitb-types-jakarta |
 | MIT License | ClassGraph | io.github.classgraph:classgraph | 4.8.149 | https://github.com/classgraph/classgraph |
@@ -54,9 +56,9 @@ build. These libraries are used as-is, with no modifications to source code.
 | Apache License, Version 2.0 | swagger-core-jakarta | io.swagger.core.v3:swagger-core-jakarta | 2.2.25 | https://github.com/swagger-api/swagger-core/modules/swagger-core-jakarta |
 | Apache License, Version 2.0 | swagger-models-jakarta | io.swagger.core.v3:swagger-models-jakarta | 2.2.25 | https://github.com/swagger-api/swagger-core/modules/swagger-models-jakarta |
 | Eclipse Distribution License - v1.0 | Jakarta Activation API | jakarta.activation:jakarta.activation-api | 2.1.2 | https://github.com/jakartaee/jaf-api |
-| Eclipse Public License - v1.0, GNU General Public License (GPL), Version 2 (with Classpath Exception) | Jakarta Annotations API | jakarta.annotation:jakarta.annotation-api | 2.1.1 | https://projects.eclipse.org/projects/ee4j.ca |
+| Eclipse Public License - v2.0, GNU General Public License (GPL), Version 2 (with Classpath Exception) | Jakarta Annotations API | jakarta.annotation:jakarta.annotation-api | 2.1.1 | https://projects.eclipse.org/projects/ee4j.ca |
 | Eclipse Distribution License - v1.0 | Jakarta Web Services Metadata API | jakarta.jws:jakarta.jws-api | 3.0.0 | https://github.com/eclipse-ee4j/jws-api |
-| Eclipse Distribution License - v1.0, Eclipse Public License - v1.0, GNU General Public License (GPL), Version 2 (with Classpath Exception) | Jakarta Mail API | jakarta.mail:jakarta.mail-api | 2.1.3 | https://projects.eclipse.org/projects/ee4j/jakarta.mail-api |
+| Eclipse Distribution License - v1.0, Eclipse Public License - v2.0, GNU General Public License (GPL), Version 2 (with Classpath Exception) | Jakarta Mail API | jakarta.mail:jakarta.mail-api | 2.1.3 | https://projects.eclipse.org/projects/ee4j/jakarta.mail-api |
 | Apache License, Version 2.0 | Jakarta Bean Validation API | jakarta.validation:jakarta.validation-api | 3.0.2 | https://beanvalidation.org |
 | Eclipse Distribution License - v1.0 | Jakarta XML Binding API | jakarta.xml.bind:jakarta.xml.bind-api | 4.0.2 | https://github.com/jakartaee/jaxb-api/jakarta.xml.bind-api |
 | Eclipse Distribution License - v1.0 | Jakarta SOAP with Attachments API | jakarta.xml.soap:jakarta.xml.soap-api | 3.0.2 | https://github.com/jakartaee/saaj-api |
@@ -93,13 +95,32 @@ build. These libraries are used as-is, with no modifications to source code.
 | Apache License, Version 2.0 | tomcat-embed-el | org.apache.tomcat.embed:tomcat-embed-el | 10.1.34 | https://tomcat.apache.org/ |
 | Apache License, Version 2.0 | tomcat-embed-websocket | org.apache.tomcat.embed:tomcat-embed-websocket | 10.1.34 | https://tomcat.apache.org/ |
 | Apache License, Version 2.0 | XmlSchema Core | org.apache.ws.xmlschema:xmlschema-core | 2.3.1 | https://ws.apache.org/commons/xmlschema20/xmlschema-core/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-anim | org.apache.xmlgraphics:batik-anim | 1.17 | http://xmlgraphics.apache.org/batik/batik-anim/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-awt-util | org.apache.xmlgraphics:batik-awt-util | 1.17 | http://xmlgraphics.apache.org/batik/batik-awt-util/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-bridge | org.apache.xmlgraphics:batik-bridge | 1.17 | http://xmlgraphics.apache.org/batik/batik-bridge/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-codec | org.apache.xmlgraphics:batik-codec | 1.17 | http://xmlgraphics.apache.org/batik/batik-codec/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-constants | org.apache.xmlgraphics:batik-constants | 1.17 | http://xmlgraphics.apache.org/batik/batik-constants/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-css | org.apache.xmlgraphics:batik-css | 1.17 | http://xmlgraphics.apache.org/batik/batik-css/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-dom | org.apache.xmlgraphics:batik-dom | 1.17 | http://xmlgraphics.apache.org/batik/batik-dom/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-ext | org.apache.xmlgraphics:batik-ext | 1.17 | http://xmlgraphics.apache.org/batik/batik-ext/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-gvt | org.apache.xmlgraphics:batik-gvt | 1.17 | http://xmlgraphics.apache.org/batik/batik-gvt/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-i18n | org.apache.xmlgraphics:batik-i18n | 1.17 | http://xmlgraphics.apache.org/batik/batik-i18n/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-parser | org.apache.xmlgraphics:batik-parser | 1.17 | http://xmlgraphics.apache.org/batik/batik-parser/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-script | org.apache.xmlgraphics:batik-script | 1.17 | http://xmlgraphics.apache.org/batik/batik-script/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-shared-resources | org.apache.xmlgraphics:batik-shared-resources | 1.17 | http://xmlgraphics.apache.org/batik/batik-shared-resources/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-svg-dom | org.apache.xmlgraphics:batik-svg-dom | 1.17 | http://xmlgraphics.apache.org/batik/batik-svg-dom/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-svggen | org.apache.xmlgraphics:batik-svggen | 1.17 | http://xmlgraphics.apache.org/batik/batik-svggen/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-transcoder | org.apache.xmlgraphics:batik-transcoder | 1.17 | http://xmlgraphics.apache.org/batik/batik-transcoder/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-util | org.apache.xmlgraphics:batik-util | 1.17 | http://xmlgraphics.apache.org/batik/batik-util/ |
+| Apache License, Version 2.0 | org.apache.xmlgraphics:batik-xml | org.apache.xmlgraphics:batik-xml | 1.17 | http://xmlgraphics.apache.org/batik/batik-xml/ |
+| Apache License, Version 2.0 | Apache XML Graphics Commons | org.apache.xmlgraphics:xmlgraphics-commons | 2.6 | http://xmlgraphics.apache.org/commons/ |
 | Eclipse Public License - v1.0 | AspectJ weaver | org.aspectj:aspectjweaver | 1.9.6 | https://www.eclipse.org/aspectj/ |
 | Apache License, Version 2.0 | attoparser | org.attoparser:attoparser | 2.0.7.RELEASE | https://www.attoparser.org |
 | MIT License | Checker Qual | org.checkerframework:checker-qual | 3.43.0 | https://checkerframework.org/ |
 | The 2-Clause BSD License | Stax2 API | org.codehaus.woodstox:stax2-api | 4.2.2 | http://github.com/FasterXML/stax2-api |
 | Eclipse Distribution License - v1.0 | Angus Activation Registries | org.eclipse.angus:angus-activation | 2.0.2 | https://github.com/eclipse-ee4j/angus-activation/angus-activation |
-| Eclipse Distribution License - v1.0, Eclipse Public License - v1.0, GNU General Public License (GPL), Version 2 (with Classpath Exception) | Angus Mail Provider | org.eclipse.angus:angus-mail | 2.0.3 | http://eclipse-ee4j.github.io/angus-mail/angus-mail |
-| Eclipse Distribution License - v1.0, Eclipse Public License - v1.0, GNU General Public License (GPL), Version 2 (with Classpath Exception) | Angus Mail default provider | org.eclipse.angus:jakarta.mail | 2.0.3 | http://eclipse-ee4j.github.io/angus-mail/jakarta.mail |
+| Eclipse Distribution License - v1.0, Eclipse Public License - v2.0, GNU General Public License (GPL), Version 2 (with Classpath Exception) | Angus Mail Provider | org.eclipse.angus:angus-mail | 2.0.3 | http://eclipse-ee4j.github.io/angus-mail/angus-mail |
+| Eclipse Distribution License - v1.0, Eclipse Public License - v2.0, GNU General Public License (GPL), Version 2 (with Classpath Exception) | Angus Mail default provider | org.eclipse.angus:jakarta.mail | 2.0.3 | http://eclipse-ee4j.github.io/angus-mail/jakarta.mail |
 | Apache License, Version 2.0 | Apache FreeMarker | org.freemarker:freemarker | 2.3.32 | https://freemarker.apache.org/ |
 | Eclipse Distribution License - v1.0 | JAXB Core | org.glassfish.jaxb:jaxb-core | 4.0.5 | https://eclipse-ee4j.github.io/jaxb-ri/ |
 | Eclipse Distribution License - v1.0 | JAXB Runtime | org.glassfish.jaxb:jaxb-runtime | 4.0.5 | https://eclipse-ee4j.github.io/jaxb-ri/ |
@@ -154,6 +175,7 @@ build. These libraries are used as-is, with no modifications to source code.
 | Common Public License 1.0 | WSDL4J | wsdl4j:wsdl4j | 1.6.3 | http://sf.net/projects/wsdl4j |
 | Apache License, Version 2.0 | Xerces2-j | xerces:xercesImpl | 2.12.2 | https://xerces.apache.org/xerces2-j/ |
 | Apache License, Version 2.0, The SAX License, The W3C License | XML Commons External Components XML APIs | xml-apis:xml-apis | 1.4.01 | http://xml.apache.org/commons/components/external/ |
+| Apache License, Version 2.0 | XML Commons External Components XML APIs Extensions | xml-apis:xml-apis-ext | 1.3.04 | http://xml.apache.org/commons/components/external/ |
 | Apache License, Version 2.0 | XML Commons Resolver Component | xml-resolver:xml-resolver | 1.2 | http://xml.apache.org/commons/components/resolver/ |
 
 ## Specific licences

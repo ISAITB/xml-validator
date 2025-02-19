@@ -10,6 +10,9 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.apache.xerces.impl.xs.XMLSchemaLoader;
+import org.apache.xerces.util.XMLCatalogResolver;
+import org.apache.xerces.xni.XMLResourceIdentifier;
+import org.apache.xerces.xni.XNIException;
 import org.apache.xerces.xs.StringList;
 import org.apache.xerces.xs.XSModel;
 import org.apache.xerces.xs.XSNamespaceItem;
@@ -250,23 +253,42 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
      */
     private void retrieveSchemasForImports(String rootURI, File rootFolder, HttpClient.Version httpVersion) {
         XMLSchemaLoader xsdLoader = new XMLSchemaLoader();
-        XSModel xsdModel = xsdLoader.loadURI(rootURI);
-        XSNamespaceItemList xsdNamespaceItemList = xsdModel.getNamespaceItems();
         Set<String> documentLocations = new HashSet<>();
-        for (int i=0; i<xsdNamespaceItemList.getLength(); i++) {
-            XSNamespaceItem xsdItem = (XSNamespaceItem) xsdNamespaceItemList.get(i);
-            StringList sl = xsdItem.getDocumentLocations();
-            for(int k=0; k<sl.getLength(); k++) {
-                if(!documentLocations.contains(sl.item(k))) {
-                    String currentLocation = (String)sl.get(k);
+        // Use a custom resolver as this will handle XSDs as well as DTDs.
+        xsdLoader.setEntityResolver(new XMLCatalogResolver() {
+            @Override
+            public String resolveIdentifier(XMLResourceIdentifier resourceIdentifier) throws IOException, XNIException {
+                String expandedLocation = resourceIdentifier.getExpandedSystemId();
+                if (expandedLocation != null && !documentLocations.contains(expandedLocation)) {
                     try {
-                        getFileFromURL(rootFolder, currentLocation, httpVersion);
-                        documentLocations.add(currentLocation);
+                        getFileFromURL(rootFolder, expandedLocation, httpVersion);
+                        documentLocations.add(expandedLocation);
                     } catch (IOException e) {
                         throw new ValidatorException("validator.label.exception.loadingRemoteSchemas", e);
                     }
                 }
+                return super.resolveIdentifier(resourceIdentifier);
             }
+        });
+        try {
+            // Iterate also over the namespaces XSD imports and includes to ensure we haven't missed anything from the custom resolver.
+            XSModel xsdModel = xsdLoader.loadURI(rootURI);
+            XSNamespaceItemList xsdNamespaceItemList = xsdModel.getNamespaceItems();
+            for (int i=0; i<xsdNamespaceItemList.getLength(); i++) {
+                XSNamespaceItem xsdItem = (XSNamespaceItem) xsdNamespaceItemList.get(i);
+                StringList sl = xsdItem.getDocumentLocations();
+                for (int k=0; k<sl.getLength(); k++) {
+                    if (!documentLocations.contains(sl.item(k))) {
+                        String currentLocation = (String)sl.get(k);
+                        getFileFromURL(rootFolder, currentLocation, httpVersion);
+                        documentLocations.add(currentLocation);
+                    }
+                }
+            }
+        } catch (ValidatorException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ValidatorException("validator.label.exception.loadingRemoteSchemas", e);
         }
     }
 

@@ -92,6 +92,11 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         // Input transformations - start
         domainConfig.setInputTransformerMap(parseInputFileTransformers(ParseUtils.parseMap("validator.input.transformer", config, domainConfig.getType()), domainConfig));
         // Input transformations - end
+        // Stop on XSD errors - start
+        domainConfig.setStopOnXsdErrors(ParseUtils.parseBooleanMap("validator.stopOnXsdErrors", config, domainConfig.getType(),
+                config.getBoolean("validator.stopOnXsdErrors", true)
+        ));
+        // Stop on XSD errors - stop
         addMissingDefaultValues(domainConfig.getWebServiceDescription(), appConfig.getDefaultLabels());
     }
 

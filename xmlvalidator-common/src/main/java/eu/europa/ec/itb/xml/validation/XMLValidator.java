@@ -302,7 +302,7 @@ public class XMLValidator {
                     // No schema.
                     schemaResult = createEmptyReport();
                 }
-                if (schemaResult.getResult() != TestResultType.SUCCESS) {
+                if (schemaResult.getResult() != TestResultType.SUCCESS && specs.getDomainConfig().stopOnXsdErrors(getValidationType())) {
                     overallResult = schemaResult;
                 } else {
                     TAR schematronResult = validateAgainstSchematron();

@@ -37,6 +37,7 @@ public class DomainConfig extends WebDomainConfig {
     private ContextFileCombinationTemplateConfig contextFileCombinationDefaultTemplate;
     private Map<String, ContextFileCombinationTemplateConfig> contextFileCombinationTemplateMap;
     private Map<String, Path> inputTransformerMap;
+    private Map<String, Boolean> stopOnXsdErrors;
 
     /** @return The map of full validation types to XSLT files for input transformation. */
     public Map<String, Path> getInputTransformerMap() {
@@ -92,6 +93,24 @@ public class DomainConfig extends WebDomainConfig {
             }
         }
         return false;
+    }
+
+    /**
+     * @param stopOnXsdErrors Set the map of full validation types to whether validation should stop on XSD errors.
+     */
+    public void setStopOnXsdErrors(Map<String, Boolean> stopOnXsdErrors) {
+        this.stopOnXsdErrors = stopOnXsdErrors;
+    }
+
+    /**
+     * Check to see whether validation should stop if we have an XSD error. This prevents Schematron rules to be evaluated
+     * in case of XSD errors.
+     *
+     * @param validationType The full validation type.
+     * @return Whether we should stop validation on XSD error (default is true).
+     */
+    public boolean stopOnXsdErrors(String validationType) {
+        return this.stopOnXsdErrors == null || this.stopOnXsdErrors.getOrDefault(validationType, Boolean.TRUE);
     }
 
     /**

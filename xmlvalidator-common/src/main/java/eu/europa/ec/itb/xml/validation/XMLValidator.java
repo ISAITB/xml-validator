@@ -6,7 +6,7 @@ import com.gitb.tr.*;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
 import com.helger.schematron.ISchematronResource;
-import com.helger.schematron.pure.SchematronResourcePure;
+import com.helger.schematron.sch.SchematronResourceSCH;
 import com.helger.schematron.svrl.SVRLMarshaller;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
@@ -413,7 +413,14 @@ public class XMLValidator {
      * @return The schematron.
      */
     private ISchematronResource schematronAsRaw(File schematronFile) {
-        return SchematronResourcePure.fromFile(schematronFile);
+        var schematron = SchematronResourceSCH.fromFile(schematronFile);
+        var newResolver = getURIResolver(schematronFile);
+        var resolver = schematron.getURIResolver();
+        if (resolver instanceof DefaultTransformURIResolver defaultResolver) {
+            newResolver.setDefaultBase(defaultResolver.getDefaultBase());
+        }
+        schematron.setURIResolver(newResolver);
+        return schematron;
     }
 
     /**

@@ -455,16 +455,13 @@ public class XMLValidator {
                 svrlOutput = applySchematron(schematronAsXSLT(schematronFile));
             } else if (schematronFileName.endsWith("sch")) {
                 // Validate as raw schematron.
-                convertXPathExpressions = true;
                 svrlOutput = applySchematron(schematronAsRaw(schematronFile));
             } else {
                 // We're not certain - validate as raw and if that fails validate as XSLT.
                 try {
-                    convertXPathExpressions = true;
                     svrlOutput = applySchematron(schematronAsRaw(schematronFile));
                 } catch (Exception e) {
                     // Try also as XSLT.
-                    convertXPathExpressions = false;
                     svrlOutput = applySchematron(schematronAsXSLT(schematronFile));
                 }
             }

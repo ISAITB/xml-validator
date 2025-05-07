@@ -13,6 +13,7 @@ import eu.europa.ec.itb.xml.validation.XSDReportHandler;
 import net.sf.saxon.om.NodeInfo;
 import net.sf.saxon.type.Type;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -147,7 +148,7 @@ public class ValidationSpecs {
                     // We need to combine the input and context file(s) based on the configured template.
                     String combinationXslt = getContextFileCombinationXslt(contextFilesToCombine);
                     File combinedInputFile = new File(inputToUse.getParentFile(), UUID.randomUUID() + ".xml");
-                    applyXsltTransformation(combinationTemplatePath, () -> new StringReader(combinationXslt), combinedInputFile.toPath());
+                    applyXsltTransformation(combinationTemplatePath, () -> new StringReader(combinationXslt), combinedInputFile.toPath(), true);
                     schematronInputToUse = combinedInputFile;
                 } else {
                     // Schematron input is unchanged.
@@ -164,8 +165,9 @@ public class ValidationSpecs {
      * @param inputFile The file to transform.
      * @param xsltReader A function to supply the XSLT to make the transformation with (or null).
      * @param outputFile The resulting file.
+     * @param exposeTransformationInError Whether the user should be made aware that a XSLT transformation was taking place.
      */
-    private void applyXsltTransformation(Path inputFile, Supplier<Reader> xsltReader, Path outputFile) {
+    private void applyXsltTransformation(Path inputFile, Supplier<Reader> xsltReader, Path outputFile, boolean exposeTransformationInError) {
         try (var fileReader = new FileReader(inputFile.toFile())) {
             var reader = getXmlInputFactory().createXMLStreamReader(fileReader);
             Transformer transformer;
@@ -179,7 +181,17 @@ public class ValidationSpecs {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.transform(new StAXSource(reader), new StreamResult(outputFile.toFile()));
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to apply XSLT transformation", e);
+            var errorMessage = new StringBuilder();
+            if (exposeTransformationInError) {
+                errorMessage.append("Unable to apply XSLT transformation");
+            } else {
+                errorMessage.append("Unable to process as XML");
+            }
+            var cause = e.getMessage();
+            if (StringUtils.isNotBlank(cause)) {
+                errorMessage.append(" [").append(cause.trim()).append(']');
+            }
+            throw new IllegalStateException(errorMessage.toString(), e);
         }
     }
 
@@ -249,7 +261,7 @@ public class ValidationSpecs {
                 } catch (FileNotFoundException e) {
                     throw new IllegalStateException("Unable to read XSLT file for input transformation", e);
                 }
-            }, inputToReturn.toPath());
+            }, inputToReturn.toPath(), true);
             inputToReturn = replaceFile(originalFile, inputToReturn);
         }
         return new FileProcessingResult(inputToReturn, processingApplied);
@@ -305,7 +317,7 @@ public class ValidationSpecs {
      */
     private void prettyPrintFile(File fileToProcess) {
         File prettyPrintedFile = new File(fileToProcess.getParentFile(), UUID.randomUUID() + ".xml");
-        applyXsltTransformation(fileToProcess.toPath(), null, prettyPrintedFile.toPath());
+        applyXsltTransformation(fileToProcess.toPath(), null, prettyPrintedFile.toPath(), false);
         replaceFile(fileToProcess, prettyPrintedFile);
     }
 

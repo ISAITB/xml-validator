@@ -60,7 +60,7 @@ public class ValidationSpecs {
     private boolean locationAsPath = false;
     private boolean addInputToReport = true;
     private Path tempFolder;
-    private List<FileInfo> schematronFilesToUse;
+    private List<SchematronFileInfo> schematronFilesToUse;
     private ApplicationContext applicationContext;
     private XMLInputFactory xmlInputFactory;
     private TransformerFactory transformerFactory;
@@ -354,18 +354,19 @@ public class ValidationSpecs {
      *
      * @return The list of schematron files to use.
      */
-    public List<FileInfo> getSchematronsToUse() {
+    public List<SchematronFileInfo> getSchematronsToUse() {
         if (schematronFilesToUse == null) {
             FileManager fileManager = applicationContext.getBean(FileManager.class);
             if (getContextFiles().isEmpty()) {
                 // No context files. Return preconfigured and user-provided schematrons from their normal locations.
-                List<FileInfo> schematronFiles = fileManager.getPreconfiguredValidationArtifacts(getDomainConfig(), getValidationType(), DomainConfig.ARTIFACT_TYPE_SCHEMATRON);
-                schematronFiles.addAll(getExternalSchematrons());
+                List<SchematronFileInfo> schematronFiles = new ArrayList<>(fileManager.getPreconfiguredValidationArtifacts(getDomainConfig(), getValidationType(), DomainConfig.ARTIFACT_TYPE_SCHEMATRON)
+                        .stream().map(fileInfo -> new SchematronFileInfo(fileInfo, false)).toList());
+                schematronFiles.addAll(getExternalSchematrons().stream().map(fileInfo -> new SchematronFileInfo(fileInfo, true)).toList());
                 schematronFilesToUse = schematronFiles;
             } else {
                 // We have context files. We need to copy everything in a temp folder specific to this validation run.
                 validateContextFiles();
-                List<FileInfo> schematronFiles = new ArrayList<>();
+                List<SchematronFileInfo> schematronFiles = new ArrayList<>();
                 Path originalDomain = Path.of(getApplicationConfig().getResourceRoot(), getDomainConfig().getDomain());
                 Path tmpDomain = tempDomainPath();
                 try {
@@ -380,14 +381,14 @@ public class ValidationSpecs {
                             Files.createDirectories(pathInTempDomainFolder.getParent());
                             Files.copy(originalPath, pathInTempDomainFolder);
                         }
-                        schematronFiles.add(new FileInfo(pathInTempDomainFolder.toFile(), originalFileInfo.getType()));
+                        schematronFiles.add(new SchematronFileInfo(pathInTempDomainFolder.toFile(), originalFileInfo.getType(), false));
                     }
                     // Move user-provided schematron files to the temp domain folder.
                     for (var originalFileInfo: getExternalSchematrons()) {
                         Path originalPath = originalFileInfo.getFile().toPath();
                         Path pathInTempDomainFolder = Path.of(tmpDomain.toString(), originalPath.getFileName().toString());
                         Files.move(originalPath, pathInTempDomainFolder);
-                        schematronFiles.add(new FileInfo(pathInTempDomainFolder.toFile(), originalFileInfo.getType()));
+                        schematronFiles.add(new SchematronFileInfo(pathInTempDomainFolder.toFile(), originalFileInfo.getType(), false));
                     }
                     // Move user-provided context files to domain folder.
                     for (var contextFile: getContextFiles()) {

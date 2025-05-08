@@ -6,6 +6,7 @@ import com.gitb.tr.*;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
 import com.helger.schematron.ISchematronResource;
+import com.helger.schematron.pure.SchematronResourcePure;
 import com.helger.schematron.sch.SchematronResourceSCH;
 import com.helger.schematron.svrl.SVRLMarshaller;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
@@ -17,10 +18,7 @@ import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
 import eu.europa.ec.itb.validation.plugin.PluginManager;
 import eu.europa.ec.itb.validation.plugin.ValidationPlugin;
-import eu.europa.ec.itb.xml.ApplicationConfig;
-import eu.europa.ec.itb.xml.DomainConfig;
-import eu.europa.ec.itb.xml.ValidationSpecs;
-import eu.europa.ec.itb.xml.XMLInvalidException;
+import eu.europa.ec.itb.xml.*;
 import eu.europa.ec.itb.xml.util.FileManager;
 import jakarta.xml.bind.JAXBElement;
 import org.apache.commons.io.FileUtils;
@@ -245,14 +243,14 @@ public class XMLValidator {
      */
     private TAR validateAgainstSchematron() throws XMLInvalidException {
         List<TAR> reports = new ArrayList<>();
-        List<FileInfo> schematronFiles = specs.getSchematronsToUse();
+        List<SchematronFileInfo> schematronFiles = specs.getSchematronsToUse();
         if (schematronFiles.isEmpty()) {
             logger.info("No schematrons to validate against");
             return null;
         } else {
-            for (FileInfo aSchematronFile: schematronFiles) {
+            for (SchematronFileInfo aSchematronFile: schematronFiles) {
                 logger.info("Validating against [{}]", aSchematronFile.getFile().getName());
-                TAR report = validateSchematron(aSchematronFile.getFile());
+                TAR report = validateSchematron(aSchematronFile.getFile(), aSchematronFile.isSupportPureValidation());
                 logReport(report, aSchematronFile.getFile().getName());
                 reports.add(report);
                 logger.info("Validated against [{}]", aSchematronFile.getFile().getName());
@@ -412,15 +410,26 @@ public class XMLValidator {
      * @param schematronFile The schematron file.
      * @return The schematron.
      */
-    private ISchematronResource schematronAsRaw(File schematronFile) {
-        var schematron = SchematronResourceSCH.fromFile(schematronFile);
-        var newResolver = getURIResolver(schematronFile);
-        var resolver = schematron.getURIResolver();
-        if (resolver instanceof DefaultTransformURIResolver defaultResolver) {
-            newResolver.setDefaultBase(defaultResolver.getDefaultBase());
+    private ISchematronResource schematronAsRaw(File schematronFile, boolean isExternallyProvided) {
+        if (isExternallyProvided) {
+            /*
+             * The "pure" validation approach is preferable to parsing the SCH as it is much more performant.
+             * The problem is that external functions (e.g. loading external documents via document()) are
+             * not support in pure mode so this can't be applied in all cases. However, when the schematron
+             * is provided as an external input, it is anyway not possible to provide additional files and
+             * use such functions. In such cases we should be able to use the pure approach without issues.
+             */
+            return SchematronResourcePure.fromFile(schematronFile);
+        } else {
+            var schematron = SchematronResourceSCH.fromFile(schematronFile);
+            var newResolver = getURIResolver(schematronFile);
+            var resolver = schematron.getURIResolver();
+            if (resolver instanceof DefaultTransformURIResolver defaultResolver) {
+                newResolver.setDefaultBase(defaultResolver.getDefaultBase());
+            }
+            schematron.setURIResolver(newResolver);
+            return schematron;
         }
-        schematron.setURIResolver(newResolver);
-        return schematron;
     }
 
     /**
@@ -443,9 +452,10 @@ public class XMLValidator {
      * Validate the XML input against a single Schematron file.
      *
      * @param schematronFile The Schematron file.
+     * @param supportPureValidationApproach Whether the schematron file can be processed using the 'pure' approach.
      * @return The validation report.
      */
-    private TAR validateSchematron(File schematronFile) {
+    private TAR validateSchematron(File schematronFile, boolean supportPureValidationApproach) {
         SchematronOutputType svrlOutput;
         boolean convertXPathExpressions = false;
         String schematronFileName = schematronFile.getName().toLowerCase();
@@ -455,13 +465,16 @@ public class XMLValidator {
                 svrlOutput = applySchematron(schematronAsXSLT(schematronFile));
             } else if (schematronFileName.endsWith("sch")) {
                 // Validate as raw schematron.
-                svrlOutput = applySchematron(schematronAsRaw(schematronFile));
+                convertXPathExpressions = supportPureValidationApproach;
+                svrlOutput = applySchematron(schematronAsRaw(schematronFile, supportPureValidationApproach));
             } else {
                 // We're not certain - validate as raw and if that fails validate as XSLT.
                 try {
-                    svrlOutput = applySchematron(schematronAsRaw(schematronFile));
+                    convertXPathExpressions = supportPureValidationApproach;
+                    svrlOutput = applySchematron(schematronAsRaw(schematronFile, supportPureValidationApproach));
                 } catch (Exception e) {
                     // Try also as XSLT.
+                    convertXPathExpressions = false;
                     svrlOutput = applySchematron(schematronAsXSLT(schematronFile));
                 }
             }

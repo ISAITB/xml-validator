@@ -1,5 +1,6 @@
 package eu.europa.ec.itb.xml.util;
 
+import eu.europa.ec.itb.validation.commons.BomStrippingReader;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.ErrorHandler;
@@ -64,9 +65,9 @@ public class Utils {
         } catch (SAXNotRecognizedException | SAXNotSupportedException e) {
             throw new IllegalStateException("Unable to configure schema validator", e);
         }
-        try {
+        try (BomStrippingReader reader = new BomStrippingReader(inputToValidate)) {
             // If no custom error handler is set, the default implementation will throw an exception upon detected errors.
-            validator.validate(new StAXSource(secureXMLInputFactory().createXMLStreamReader(inputToValidate)));
+            validator.validate(new StAXSource(secureXMLInputFactory().createXMLStreamReader(reader)));
         } catch (IOException e) {
             throw new IllegalStateException("Unable to read input stream", e);
         }

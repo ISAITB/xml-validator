@@ -3,6 +3,7 @@ package eu.europa.ec.itb.xml;
 import com.gitb.tr.BAR;
 import com.gitb.tr.TAR;
 import com.gitb.tr.TestResultType;
+import eu.europa.ec.itb.validation.commons.BomStrippingReader;
 import eu.europa.ec.itb.validation.commons.FileInfo;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.Utils;
@@ -168,8 +169,8 @@ public class ValidationSpecs {
      * @param exposeTransformationInError Whether the user should be made aware that a XSLT transformation was taking place.
      */
     private void applyXsltTransformation(Path inputFile, Supplier<Reader> xsltReader, Path outputFile, boolean exposeTransformationInError) {
-        try (var fileReader = new FileReader(inputFile.toFile())) {
-            var reader = getXmlInputFactory().createXMLStreamReader(fileReader);
+        try (BomStrippingReader xmlReader = new BomStrippingReader(Files.newInputStream(inputFile))) {
+            var reader = getXmlInputFactory().createXMLStreamReader(xmlReader);
             Transformer transformer;
             if (xsltReader == null) {
                 transformer = getTransformerFactory().newTransformer();
@@ -257,8 +258,8 @@ public class ValidationSpecs {
             inputToReturn = new File(originalFile.getParentFile(), UUID.randomUUID() + ".xml");
             applyXsltTransformation(originalFile.toPath(), () -> {
                 try {
-                    return new FileReader(xsltPath.toFile());
-                } catch (FileNotFoundException e) {
+                    return new BomStrippingReader(Files.newInputStream(xsltPath));
+                } catch (IOException e) {
                     throw new IllegalStateException("Unable to read XSLT file for input transformation", e);
                 }
             }, inputToReturn.toPath(), true);

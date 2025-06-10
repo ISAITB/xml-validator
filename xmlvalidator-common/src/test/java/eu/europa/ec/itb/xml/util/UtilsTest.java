@@ -5,8 +5,6 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
-import javax.xml.stream.XMLStreamException;
-
 import static eu.europa.ec.itb.xml.util.Utils.secureSchemaValidation;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;

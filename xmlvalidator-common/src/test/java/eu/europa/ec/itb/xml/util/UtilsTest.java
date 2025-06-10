@@ -1,16 +1,11 @@
 package eu.europa.ec.itb.xml.util;
 
 import org.junit.jupiter.api.Test;
-import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import javax.xml.stream.XMLStreamException;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 
 import static eu.europa.ec.itb.xml.util.Utils.secureSchemaValidation;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -59,7 +54,7 @@ class UtilsTest {
     @Test
     void testSchemaValidationInvalidXML() throws SAXException {
         // Without error handler.
-        assertThrows(XMLStreamException.class, () -> {
+        assertThrows(IllegalStateException.class, () -> {
             try (
                     var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xml.xml");
                     var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
@@ -83,7 +78,7 @@ class UtilsTest {
     @Test
     void testSchemaValidationMissingXML() throws SAXException {
         // Without error handler.
-        assertThrows(XMLStreamException.class, () -> {
+        assertThrows(IllegalStateException.class, () -> {
             try (
                     var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/missing.xml");
                     var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")
@@ -93,7 +88,7 @@ class UtilsTest {
         });
         // With error handler.
         var errorHandler = mock(ErrorHandler.class);
-        assertThrows(XMLStreamException.class, () -> {
+        assertThrows(IllegalStateException.class, () -> {
             try (
                     var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/missing.txt");
                     var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/PurchaseOrder.xsd")

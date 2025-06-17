@@ -182,6 +182,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
             var validationType = inputHelper.validateValidationType(domainConfig, in.getValidationType());
             var locationAsPath = Objects.requireNonNullElse(in.getLocationAsPath(), true);
             var addInputToReport = Objects.requireNonNullElse(in.getAddInputToReport(), false);
+            var showLocationPaths = Objects.requireNonNullElse(in.getShowLocationPaths(), domainConfig.isIncludeLocationPath());
             var contentEmbeddingMethod = inputHelper.getEmbeddingMethod(in.getEmbeddingMethod());
             var externalSchemas = getExternalSchemas(domainConfig, in.getExternalSchemas(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, parentFolder);
             var externalSchematrons = getExternalSchemas(domainConfig, in.getExternalSchematrons(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, parentFolder);
@@ -194,6 +195,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
                     .withExternalSchematrons(externalSchematrons)
                     .locationAsPath(locationAsPath)
                     .addInputToReport(addInputToReport)
+                    .showLocationPaths(showLocationPaths)
                     .withContextFiles(contextFiles)
                     .withTempFolder(parentFolder.toPath())
                     .build();

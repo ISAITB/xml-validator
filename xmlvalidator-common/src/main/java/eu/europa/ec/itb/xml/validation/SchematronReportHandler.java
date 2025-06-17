@@ -39,6 +39,7 @@ public class SchematronReportHandler {
     private final SchematronOutputType svrlReport;
     private final boolean locationAsPath;
     private final LocalisationHelper localiser;
+    private final boolean includeLocationPath;
     private NamespaceContext namespaceContext;
     private XPathFactory xpathFactory;
     private Boolean hasDefaultNamespace;
@@ -58,9 +59,11 @@ public class SchematronReportHandler {
      * @param includeAssertionID True if the assertion IDs per report item should be included.
      * @param locationAsPath True if report item locations should be XPath expressions. If not the line numbers will be
      *                       calculated and recorded instead.
+     * @param includeLocationPath True to append the location XPath expression when the location is reported as the line number.
+     *                            In case locationAsPath is true this flag is ignored.
      * @param localiser Helper class for translations.
      */
-    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean includeAssertionID, boolean locationAsPath, LocalisationHelper localiser) {
+    public SchematronReportHandler(Document node, SchematronOutputType svrl, boolean convertXPathExpressions, boolean includeTest, boolean includeAssertionID, boolean locationAsPath, boolean includeLocationPath, LocalisationHelper localiser) {
         this.node = node;
         this.svrlReport = svrl;
         report = new TAR();
@@ -71,6 +74,7 @@ public class SchematronReportHandler {
         this.convertXPathExpressions = convertXPathExpressions;
         this.includeTest = includeTest;
         this.includeAssertionID = includeAssertionID;
+        this.includeLocationPath = includeLocationPath;
         this.locationAsPath = locationAsPath;
         this.localiser = localiser;
     }
@@ -153,9 +157,14 @@ public class SchematronReportHandler {
             reportItem.setDescription(getMessageText(message));
             if (message.getLocation() != null && !message.getLocation().isBlank()) {
                 if (locationAsPath) {
-                    reportItem.setLocation(message.getLocation());
+                    reportItem.setLocation(toPathForPresentation(message.getLocation()));
                 } else {
-                    reportItem.setLocation(ValidationConstants.INPUT_XML+":" + this.getLineNumberFromXPath(message.getLocation()) + ":0");
+                    LocationInfo locationInfo = getLocationInfo(message.getLocation());
+                    if (includeLocationPath) {
+                        reportItem.setLocation("%s:%s:0|%s".formatted(ValidationConstants.INPUT_XML, locationInfo.lineNumber(), locationInfo.path()));
+                    } else {
+                        reportItem.setLocation("%s:%s:0".formatted(ValidationConstants.INPUT_XML, locationInfo.lineNumber()));
+                    }
                 }
             }
             if (message.getTest() != null && includeTest) {
@@ -261,11 +270,12 @@ public class SchematronReportHandler {
      * @param xpathExpression The expression.
      * @return The line number.
      */
-    private String getLineNumberFromXPath(String xpathExpression) {
+    private LocationInfo getLocationInfo(String xpathExpression) {
         String xpathExpressionConverted = convertToXPathExpression(xpathExpression);
         XPath xPath = getXPathFactory().newXPath();
         xPath.setNamespaceContext(getNamespaceContext());
         Node locatedNode;
+        String lineNumber;
         try {
             locatedNode = (Node)xPath.evaluate(xpathExpressionConverted, this.node, XPathConstants.NODE);
             if (locatedNode == null) {
@@ -275,13 +285,30 @@ public class SchematronReportHandler {
                 }
             }
             if (locatedNode == null) {
-                return "0";
+                lineNumber = "0";
             } else {
-                return (String)locatedNode.getUserData("lineNumber");
+                lineNumber = (String)locatedNode.getUserData("lineNumber");
             }
         } catch (Exception e) {
             logger.error("Unable to locate line for expression [{}] [{}]: {}", xpathExpression, xpathExpressionConverted, e.getMessage());
-            return "0";
+            lineNumber = "0";
+        }
+        return new LocationInfo(toPathForPresentation(xpathExpression), lineNumber);
+    }
+
+    /**
+     * Concert the provided XPath expression to one to be used for reporting.
+     *
+     * @param xpathExpression The XPath expression to process.
+     * @return The location path to use.
+     */
+    private String toPathForPresentation(String xpathExpression) {
+        if (xpathExpression != null) {
+            return xpathExpression
+                    .replaceAll("\\*:", "")
+                    .replaceAll("\\[\\s*namespace-uri\\(\\)\\s*=\\s*(?:'[^\\[\\]]+'|\"[^\\[\\]]+\")\\s*]", "");
+        } else {
+            return null;
         }
     }
 
@@ -368,5 +395,13 @@ public class SchematronReportHandler {
         }
         return hasDefaultNamespace;
     }
+
+    /**
+     * Record to group together the XPath path and line number to represent a location.
+     *
+     * @param path The XPath expression.
+     * @param lineNumber The line number.
+     */
+    private record LocationInfo(String path, String lineNumber) {}
 
 }

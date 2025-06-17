@@ -32,6 +32,7 @@ public class DomainConfig extends WebDomainConfig {
     private String mailInboundFolder;
     private boolean includeTestDefinition;
     private boolean includeAssertionID;
+    private boolean includeLocationPath = false;
     private List<ContextFileConfig> contextFileConfigDefaultConfig;
     private Map<String, List<ContextFileConfig>> contextFileMap;
     private ContextFileCombinationTemplateConfig contextFileCombinationDefaultTemplate;
@@ -189,6 +190,20 @@ public class DomainConfig extends WebDomainConfig {
      */
     public ValidationArtifactInfo getSchematronInfo(String validationType) {
         return getArtifactInfo().get(validationType).get(ARTIFACT_TYPE_SCHEMATRON);
+    }
+
+    /**
+     * @return True if path locations should be included in validation report items.
+     */
+    public boolean isIncludeLocationPath() {
+        return includeLocationPath;
+    }
+
+    /**
+     * @param includeLocationPath True if path locations should be included in validation report items.
+     */
+    public void setIncludeLocationPath(boolean includeLocationPath) {
+        this.includeLocationPath = includeLocationPath;
     }
 
     /**

@@ -84,6 +84,7 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         domainConfig.setMailInboundFolder(config.getString("validator.mailInboundFolder", "INBOX"));
         domainConfig.setIncludeTestDefinition(config.getBoolean("validator.includeTestDefinition", true));
         domainConfig.setIncludeAssertionID(config.getBoolean("validator.includeAssertionID", true));
+        domainConfig.setIncludeLocationPath(config.getBoolean("validator.includeLocationPath", false));
         // Context files - START
         domainConfig.setContextFileDefaultConfig(ParseUtils.parseValueList("validator.defaultContextFile", config, getContextFileMapper(domainConfig, true)));
         domainConfig.setContextFiles(parseTypeSpecificContextFiles("validator.contextFile", domainConfig.getType(), config, domainConfig));

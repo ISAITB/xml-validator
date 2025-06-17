@@ -78,6 +78,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
         response.getModule().getInputs().getParam().add(Utils.createParameter(ValidationConstants.INPUT_EMBEDDING_METHOD, "string", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_EMBEDDING_METHOD)));
         response.getModule().getInputs().getParam().add(Utils.createParameter(ValidationConstants.INPUT_LOCATION_AS_PATH, "boolean", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_LOCATION_AS_PATH)));
         response.getModule().getInputs().getParam().add(Utils.createParameter(ValidationConstants.INPUT_ADD_INPUT_TO_REPORT, "boolean", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_ADD_INPUT_TO_REPORT)));
+        response.getModule().getInputs().getParam().add(Utils.createParameter(ValidationConstants.INPUT_SHOW_LOCATION_PATHS, "boolean", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_SHOW_LOCATION_PATHS)));
         if (inputHelper.supportsExternalArtifacts(domainConfig.getArtifactInfo(), DomainConfig.ARTIFACT_TYPE_SCHEMA)) {
             response.getModule().getInputs().getParam().add(Utils.createParameter(ValidationConstants.INPUT_EXTERNAL_SCHEMA, "list[map]", UsageEnumeration.O, ConfigurationType.SIMPLE, domainConfig.getWebServiceDescription().get(ValidationConstants.INPUT_EXTERNAL_SCHEMA)));
         }
@@ -101,6 +102,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
             ValueEmbeddingEnumeration contentEmbeddingMethod = inputHelper.validateContentEmbeddingMethod(validateRequest, ValidationConstants.INPUT_EMBEDDING_METHOD);
             boolean locationAsPath = getInputAsBoolean(validateRequest, ValidationConstants.INPUT_LOCATION_AS_PATH, false);
             boolean addInputToReport = getInputAsBoolean(validateRequest, ValidationConstants.INPUT_ADD_INPUT_TO_REPORT, true);
+            boolean showLocationPaths = getInputAsBoolean(validateRequest, ValidationConstants.INPUT_SHOW_LOCATION_PATHS, domainConfig.isIncludeLocationPath());
             File contentToValidate = inputHelper.validateContentToValidate(validateRequest, ValidationConstants.INPUT_XML, contentEmbeddingMethod, null, tempFolderPath, domainConfig.getHttpVersion()).getFile();
             String validationType = inputHelper.validateValidationType(domainConfig, validateRequest, ValidationConstants.INPUT_TYPE);
             List<FileInfo> externalSchemas = inputHelper.validateExternalArtifacts(domainConfig, validateRequest, ValidationConstants.INPUT_EXTERNAL_SCHEMA, ValidationConstants.INPUT_EXTERNAL_ARTIFACT_CONTENT, ValidationConstants.INPUT_EMBEDDING_METHOD, validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, tempFolderPath);
@@ -113,6 +115,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
                     .withExternalSchematrons(externalSchematron)
                     .locationAsPath(locationAsPath)
                     .addInputToReport(addInputToReport)
+                    .showLocationPaths(showLocationPaths)
                     .withContextFiles(contextFiles)
                     .withTempFolder(tempFolderPath.toPath())
                     .build();

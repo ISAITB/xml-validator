@@ -60,6 +60,7 @@ public class ValidationSpecs {
     private List<ContextFileData> contextFiles;
     private boolean locationAsPath = false;
     private boolean addInputToReport = true;
+    private Boolean showLocationPaths;
     private Path tempFolder;
     private List<SchematronFileInfo> schematronFilesToUse;
     private ApplicationContext applicationContext;
@@ -594,6 +595,16 @@ public class ValidationSpecs {
     }
 
     /**
+     * @return True if a simplified XPath expression should be added to report item locations.
+     */
+    public boolean isShowLocationPaths() {
+        if (showLocationPaths == null) {
+            showLocationPaths = domainConfig.isIncludeLocationPath();
+        }
+        return showLocationPaths;
+    }
+
+    /**
      * @return True if the provided input should be added as context to the produced TAR report.
      */
     public boolean isAddInputToReport() {
@@ -700,6 +711,17 @@ public class ValidationSpecs {
          */
         public Builder addInputToReport(boolean addInputToReport) {
             instance.addInputToReport = addInputToReport;
+            return this;
+        }
+
+        /**
+         * Whether locations will include a simplified XPath expression.
+         *
+         * @param showLocationPaths The flag's value.
+         * @return The builder.
+         */
+        public Builder showLocationPaths(boolean showLocationPaths) {
+            instance.showLocationPaths = showLocationPaths;
             return this;
         }
 

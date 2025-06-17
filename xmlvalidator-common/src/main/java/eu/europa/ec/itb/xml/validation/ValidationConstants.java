@@ -30,6 +30,8 @@ public class ValidationConstants {
     public static final String INPUT_LOCATION_AS_PATH = "locationAsPath";
     /** Whether the validated content should be added to the TAR report. */
     public static final String INPUT_ADD_INPUT_TO_REPORT = "addInputToReport";
+    /** Whether a simplified XPath expression should be added to report item locations. */
+    public static final String INPUT_SHOW_LOCATION_PATHS = "showLocationPaths";
     /** The locale string to consider. */
     public static final String INPUT_LOCALE = "locale";
 

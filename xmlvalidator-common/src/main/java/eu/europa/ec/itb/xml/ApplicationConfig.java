@@ -35,6 +35,7 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
     private String defaultLocationAsPathDescription;
     private String defaultLocaleDescription;
     private String defaultAddInputToReportDescription;
+    private String defaultShowLocationPathsDescription;
 
     /**
      * @return True if caching is disabled for artifact pre-processing.
@@ -289,6 +290,20 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
     }
 
     /**
+     * @return The web service description for the show location paths input.
+     */
+    public String getDefaultShowLocationPathsDescription() {
+        return defaultShowLocationPathsDescription;
+    }
+
+    /**
+     * @param defaultShowLocationPathsDescription The web service description for the show location paths input.
+     */
+    public void setDefaultShowLocationPathsDescription(String defaultShowLocationPathsDescription) {
+        this.defaultShowLocationPathsDescription = defaultShowLocationPathsDescription;
+    }
+
+    /**
      * @return The default labels to use for the description of SOAP web service inputs.
      */
     public Map<String, String> getDefaultLabels() {
@@ -314,6 +329,7 @@ public class ApplicationConfig extends eu.europa.ec.itb.validation.commons.confi
         defaultLabels.put(ValidationConstants.INPUT_LOCATION_AS_PATH, defaultLocationAsPathDescription);
         defaultLabels.put(ValidationConstants.INPUT_LOCALE, defaultLocaleDescription);
         defaultLabels.put(ValidationConstants.INPUT_ADD_INPUT_TO_REPORT, defaultAddInputToReportDescription);
+        defaultLabels.put(ValidationConstants.INPUT_SHOW_LOCATION_PATHS, defaultShowLocationPathsDescription);
     }
 
 }

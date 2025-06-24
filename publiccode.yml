@@ -51,9 +51,9 @@ description:
       - Quality control
       - Quality assurance
     screenshots:
-      - https://www.itb.ec.europa.eu/files/screenshots/validator_01_form.png
-      - https://www.itb.ec.europa.eu/files/screenshots/validator_02_report.png
-      - https://www.itb.ec.europa.eu/files/screenshots/validator_03_report_details.png
+      - https://www.itb.ec.europa.eu/files/screenshots/validator_xml_01_form.png
+      - https://www.itb.ec.europa.eu/files/screenshots/validator_xml_02_report.png
+      - https://www.itb.ec.europa.eu/files/screenshots/validator_xml_03_report_detail.png
     videos:
       - https://youtu.be/_e-XFqYZBR0
 legal:

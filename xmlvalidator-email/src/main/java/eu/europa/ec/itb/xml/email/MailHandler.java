@@ -189,11 +189,15 @@ public class MailHandler {
                                 } catch (ValidatorException e) {
                                     // Send error response to sender.
                                     messageAdditionalText.append("Failed to process message: %s%n".formatted(e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))));
-                                    e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
+                                    try (var out = new PrintWriter(new StringBuilderWriter(messageAdditionalText))) {
+                                        e.printStackTrace(out);
+                                    }
                                 } catch (Exception e) {
                                     // Send error response to sender.
                                     messageAdditionalText.append("Failed to process message: %s%n".formatted(e.getMessage()));
-                                    e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
+                                    try (var out = new PrintWriter(new StringBuilderWriter(messageAdditionalText))) {
+                                        e.printStackTrace(out);
+                                    }
                                 } finally {
                                     logger.info("Sending email response");
                                     try {

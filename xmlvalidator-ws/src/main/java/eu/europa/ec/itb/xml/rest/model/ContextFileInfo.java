@@ -63,10 +63,10 @@ public class ContextFileInfo {
      * @return The rule set information.
      */
     public FileContent toFileContent() {
-        FileContent content = new FileContent();
-        content.setContent(getContent());
-        content.setEmbeddingMethod(FileContent.embeddingMethodFromString(getEmbeddingMethod()));
-        return content;
+        FileContent fileContent = new FileContent();
+        fileContent.setContent(getContent());
+        fileContent.setEmbeddingMethod(FileContent.embeddingMethodFromString(getEmbeddingMethod()));
+        return fileContent;
     }
 
 }

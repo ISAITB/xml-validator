@@ -41,6 +41,11 @@ import static eu.europa.ec.itb.validation.commons.Utils.secureXMLInputFactory;
 public class Utils {
 
     /**
+     * Private constructor to prevent instantiation.
+     */
+    private Utils() {}
+
+    /**
      * Validate XML content using an XML Schema securely.
      * <p/>
      * Findings will be reported through the provided error handler which is also returned by this method.

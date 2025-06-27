@@ -56,7 +56,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 import static eu.europa.ec.itb.validation.commons.web.Constants.*;
 
@@ -163,9 +163,9 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
      * @param configuredKeyFn The function to get the configured key from the context file config object.
      * @return The label text.
      */
-    private String contextFileKeyToUse(String validationType, LocalisationHelper localisationHelper, String defaultKeyIfMissing, ContextFileConfig config, Supplier<Boolean> configuredKeyFn) {
+    private String contextFileKeyToUse(String validationType, LocalisationHelper localisationHelper, String defaultKeyIfMissing, ContextFileConfig config, BooleanSupplier configuredKeyFn) {
         String keyToUse = null;
-        if (configuredKeyFn.get()) {
+        if (configuredKeyFn.getAsBoolean()) {
             String key;
             if (config.defaultConfig()) {
                 key = "validator.defaultContextFile.%s.label".formatted(config.index());

@@ -26,7 +26,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "A user-provided context file to use in the validation.")
 public class ContextFileInfo {
 
-    @Schema(required = true, description = "The file's content.")
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The file's content.")
     private String content;
     @Schema(description = "The way in which to interpret the value for content. If not provided, the method will be determined from the content value itself.", allowableValues = FileContent.EMBEDDING_STRING+","+FileContent.EMBEDDING_URL+","+FileContent.EMBEDDING_BASE_64)
     private String embeddingMethod;

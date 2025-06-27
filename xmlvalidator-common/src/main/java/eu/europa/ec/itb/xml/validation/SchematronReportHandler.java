@@ -212,10 +212,10 @@ public class SchematronReportHandler {
         String messageText;
         if (content == null) {
             messageText = "";
-        } else if (content instanceof String) {
-            messageText = (String)content;
-        } else if (content instanceof Text) {
-            messageText = diagnosticContentAsString(((Text) content).getContent());
+        } else if (content instanceof String stringContent) {
+            messageText = stringContent;
+        } else if (content instanceof Text textContent) {
+            messageText = diagnosticContentAsString(textContent.getContent());
         } else if (content instanceof Iterable) {
             StringBuilder messageBuilder = new StringBuilder();
             for (var item: (Iterable<?>)content) {
@@ -320,7 +320,7 @@ public class SchematronReportHandler {
     private String toPathForPresentation(String xpathExpression) {
         if (xpathExpression != null) {
             return xpathExpression
-                    .replaceAll("\\*:", "")
+                    .replace("*:", "")
                     .replaceAll("\\[\\s*namespace-uri\\(\\)\\s*=\\s*(?:'[^\\[\\]]+'|\"[^\\[\\]]+\")\\s*]", "");
         } else {
             return null;

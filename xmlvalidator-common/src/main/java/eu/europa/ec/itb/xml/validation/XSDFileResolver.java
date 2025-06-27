@@ -191,6 +191,7 @@ public class XSDFileResolver implements LSResourceResolver {
          */
         @Override
         public void setByteStream(InputStream byteStream) {
+            // Do nothing.
         }
 
         /**
@@ -310,6 +311,7 @@ public class XSDFileResolver implements LSResourceResolver {
          */
         @Override
         public void setCertifiedText(boolean certifiedText) {
+            // Do nothing.
         }
     }
 

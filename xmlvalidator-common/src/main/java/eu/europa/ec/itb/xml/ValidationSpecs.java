@@ -157,7 +157,7 @@ public class ValidationSpecs {
                 String validationType = getValidationType();
                 List<ContextFileConfig> contextFilesToCombine =  domainConfig.getContextFiles(validationType)
                         .stream()
-                        .filter((contextFile) -> contextFile.combinationPlaceholder().isPresent())
+                        .filter(contextFile -> contextFile.combinationPlaceholder().isPresent())
                         .toList();
                 Optional<ContextFileCombinationTemplateConfig> combinationTemplate = domainConfig.getContextFileCombinationTemplate(validationType);
                 if (!contextFilesToCombine.isEmpty() && combinationTemplate.isPresent()) {
@@ -238,8 +238,8 @@ public class ValidationSpecs {
                     var outputStream = Files.newOutputStream(inputToReturn.toPath())
             ) {
                 var result = xPath.evaluate(new StreamSource(inputStream), XPathConstants.NODE);
-                if (result instanceof NodeInfo) {
-                    int resultKind = ((NodeInfo) result).getNodeKind();
+                if (result instanceof NodeInfo nodeInfo) {
+                    int resultKind = nodeInfo.getNodeKind();
                     if (resultKind == Type.ELEMENT || resultKind == Type.DOCUMENT || resultKind == Type.NODE) {
                         Utils.serialize((Source) result, outputStream);
                     } else {

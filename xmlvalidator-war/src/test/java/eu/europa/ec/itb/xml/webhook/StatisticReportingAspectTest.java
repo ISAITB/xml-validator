@@ -1,6 +1,5 @@
 package eu.europa.ec.itb.xml.webhook;
 
-import eu.europa.ec.itb.validation.commons.config.ApplicationConfig;
 import eu.europa.ec.itb.validation.commons.web.dto.Translations;
 import eu.europa.ec.itb.validation.commons.web.dto.UploadResult;
 import eu.europa.ec.itb.xml.upload.UploadController;

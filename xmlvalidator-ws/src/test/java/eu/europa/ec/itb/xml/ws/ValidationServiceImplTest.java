@@ -2,7 +2,6 @@ package eu.europa.ec.itb.xml.ws;
 
 import com.gitb.core.TypedParameter;
 import com.gitb.core.UsageEnumeration;
-import com.gitb.core.ValidationModule;
 import com.gitb.vs.Void;
 import eu.europa.ec.itb.validation.commons.artifact.ExternalArtifactSupport;
 import eu.europa.ec.itb.validation.commons.artifact.TypedValidationArtifactInfo;

@@ -112,7 +112,7 @@ public class MailHandler {
 
     /**
      * Check for new emails.
-     *
+     * <p/>
      * This method can be triggered manually but is otherwise fired at fixed intervals.
      */
     @Scheduled(fixedDelayString = "${validator.mailPollingRate}")
@@ -168,7 +168,7 @@ public class MailHandler {
                                                         TAR report = validator.validateAll();
                                                         reports.add(new FileReport(part.getFileName(), report));
                                                     } catch (Exception e) {
-                                                        messageAdditionalText.append("Failed to validate file [%s]: %s\n".formatted(part.getFileName(), e.getMessage()));
+                                                        messageAdditionalText.append("Failed to validate file [%s]: %s%n".formatted(part.getFileName(), e.getMessage()));
                                                         logger.warn("Failed to validate file", e);
                                                     }
                                                 } else {
@@ -188,11 +188,11 @@ public class MailHandler {
                                     }
                                 } catch (ValidatorException e) {
                                     // Send error response to sender.
-                                    messageAdditionalText.append("Failed to process message: %s\n".formatted(e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))));
+                                    messageAdditionalText.append("Failed to process message: %s%n".formatted(e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH))));
                                     e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
                                 } catch (Exception e) {
                                     // Send error response to sender.
-                                    messageAdditionalText.append("Failed to process message: %s\n".formatted(e.getMessage()));
+                                    messageAdditionalText.append("Failed to process message: %s%n".formatted(e.getMessage()));
                                     e.printStackTrace(new PrintWriter(new StringBuilderWriter(messageAdditionalText)));
                                 } finally {
                                     logger.info("Sending email response");
@@ -249,7 +249,6 @@ public class MailHandler {
     public void sendEmail(Message inputMessage, Collection<FileReport> reports, String messageAdditionalText, DomainConfig domainConfig) throws MessagingException {
         JavaMailSender mailSender = mailSenders.get(domainConfig.getDomain());
         MimeMessage message = mailSender.createMimeMessage();
-        List<String> idsToDelete = new ArrayList<>();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
             String to = inputMessage.getFrom()[0].toString();
@@ -269,12 +268,11 @@ public class MailHandler {
             }
             helper.setText(sb.toString());
             mailSender.send(message);
-            logger.info("Email sent to ["+to+"] for ["+inputMessage.getSubject()+"]");
+            logger.info("Email sent to [{}] for [{}]", to, inputMessage.getSubject());
         } catch (MessagingException e) {
             logger.error("Failed to send email message", e);
             throw e;
         }
-        idsToDelete.parallelStream().forEach(id -> fileController.deleteReport(domainConfig.getDomainName(), id));
     }
 
     /**

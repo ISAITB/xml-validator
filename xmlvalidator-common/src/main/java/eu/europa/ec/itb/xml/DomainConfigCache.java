@@ -268,14 +268,14 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
      * Utility class to implement a persistent counter object.
      */
     private static class Counter {
-        int counter = 0;
+        int counterValue = 0;
 
         /**
          * @return The next counter value.
          */
         int getAndIncrement() {
-            int valueToReturn = counter;
-            counter += 1;
+            int valueToReturn = counterValue;
+            counterValue += 1;
             return valueToReturn;
         }
     }

@@ -473,28 +473,45 @@ public class XMLValidator {
     private TAR validateSchematron(File schematronFile, boolean supportPureValidationApproach) {
         SchematronOutputType svrlOutput;
         boolean convertXPathExpressions = false;
+        boolean retryAsXslt = false;
         String schematronFileName = schematronFile.getName().toLowerCase();
+        ISchematronResource schematronResource = null;
         try {
             if (schematronFileName.endsWith("xslt") || schematronFileName.endsWith("xsl")) {
                 // Validate as XSLT.
-                svrlOutput = applySchematron(schematronAsXSLT(schematronFile));
+                schematronResource = schematronAsXSLT(schematronFile);
             } else if (schematronFileName.endsWith("sch")) {
                 // Validate as raw schematron.
                 convertXPathExpressions = supportPureValidationApproach;
-                svrlOutput = applySchematron(schematronAsRaw(schematronFile, supportPureValidationApproach));
+                schematronResource = schematronAsRaw(schematronFile, supportPureValidationApproach);
             } else {
                 // We're not certain - validate as raw and if that fails validate as XSLT.
-                try {
-                    convertXPathExpressions = supportPureValidationApproach;
-                    svrlOutput = applySchematron(schematronAsRaw(schematronFile, supportPureValidationApproach));
-                } catch (Exception e) {
+                convertXPathExpressions = supportPureValidationApproach;
+                schematronResource = schematronAsRaw(schematronFile, supportPureValidationApproach);
+                retryAsXslt = true;
+            }
+            try {
+                if (schematronResource instanceof SchematronResourcePure pureSchematron) {
+                    pureSchematron.setErrorHandler(new PureSchematronErrorHandler());
+                }
+                svrlOutput = applySchematron(schematronResource);
+            } catch (Exception e) {
+                if (retryAsXslt) {
                     // Try also as XSLT.
                     convertXPathExpressions = false;
                     svrlOutput = applySchematron(schematronAsXSLT(schematronFile));
+                } else {
+                    throw e;
                 }
             }
         } catch (Exception e) {
-            throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
+            if (schematronResource instanceof SchematronResourcePure pureSchematron
+                    && pureSchematron.getErrorHandler() instanceof PureSchematronErrorHandler errorHandler
+                    && errorHandler.isDueToExternalFunctionCall()) {
+                throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is provided in pure Schematron format (as a .sch file) and contains references to functions (built-in or external). To be able to use functions you must convert the Schematron file to its XSLT representation and use the XSLT file instead", e);
+            } else {
+                throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
+            }
         }
         SchematronReportHandler handler = new SchematronReportHandler(specs.inputAsDocumentForSchematronValidation(), svrlOutput, convertXPathExpressions, specs.getDomainConfig().isIncludeTestDefinition(), specs.getDomainConfig().isIncludeAssertionID(), specs.isLocationAsPath(), specs.isShowLocationPaths(), specs.getLocalisationHelper());
         return handler.createReport();

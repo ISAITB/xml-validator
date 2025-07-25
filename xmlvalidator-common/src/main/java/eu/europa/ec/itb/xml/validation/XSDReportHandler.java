@@ -56,8 +56,7 @@ public class XSDReportHandler implements ErrorHandler {
     @Override
     public void warning(SAXParseException exception) throws SAXException {
         if (logger.isDebugEnabled()) {
-            logger.debug("warning: <"+exception.getLineNumber() + "," +
-                    exception.getColumnNumber() + ">" + exception.getMessage());
+            logger.debug("warning: <{},{}>{}", exception.getLineNumber(), exception.getColumnNumber(), exception.getMessage());
         }
         BAR warning = new BAR();
         warning.setDescription( exception.getMessage());
@@ -75,8 +74,7 @@ public class XSDReportHandler implements ErrorHandler {
     @Override
     public void error(SAXParseException exception) throws SAXException {
         if (logger.isDebugEnabled()) {
-            logger.debug("error: <" + exception.getLineNumber() + "," +
-                    exception.getColumnNumber() + ">" + exception.getMessage());
+            logger.debug("error: <{},{}>{}", exception.getLineNumber(), exception.getColumnNumber(), exception.getMessage());
         }
         report.setResult(TestResultType.FAILURE);
         BAR error = new BAR();
@@ -95,8 +93,7 @@ public class XSDReportHandler implements ErrorHandler {
     @Override
     public void fatalError(SAXParseException exception) throws SAXException {
         if (logger.isDebugEnabled()) {
-            logger.debug("fatal error: <" + exception.getLineNumber() + "," +
-                    exception.getColumnNumber() + ">" + exception.getMessage());
+            logger.debug("fatal error: <{},{}>{}", exception.getLineNumber(), exception.getColumnNumber(), exception.getMessage());
         }
         report.setResult(TestResultType.FAILURE);
         BAR error = new BAR();

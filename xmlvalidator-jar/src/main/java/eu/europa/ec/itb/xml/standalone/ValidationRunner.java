@@ -155,7 +155,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
             contextFileInfo = processContextFiles(domainConfig, validationType, contextFileInputs, parentFolder);
         } catch (ValidatorException e) {
             LOGGER_FEEDBACK.info("\nInvalid arguments provided: {}\n", e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH)));
-            LOGGER.error(String.format("Invalid arguments provided: %s", e.getMessageForLog()), e);
+            LOGGER.error("Invalid arguments provided: {}", e.getMessageForLog(), e);
             inputs.clear();
         } catch (Exception e) {
             LOGGER_FEEDBACK.info("\nAn error occurred while processing the provided arguments.\n");
@@ -218,12 +218,12 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
                     }
                 } catch (ValidatorException e) {
                     LOGGER_FEEDBACK.info("\nAn error occurred while executing the validation: {}", e.getMessageForDisplay(localiser));
-                    LOGGER.error(String.format("An error occurred while executing the validation: %s", e.getMessageForLog()), e);
+                    LOGGER.error("An error occurred while executing the validation: {}", e.getMessageForLog(), e);
                     break;
 
                 } catch (Exception e) {
                     LOGGER_FEEDBACK.info("\nAn error occurred while executing the validation.");
-                    LOGGER.error(String.format("An error occurred while executing the validation: %s", e.getMessage()), e);
+                    LOGGER.error("An error occurred while executing the validation: {}", e.getMessage(), e);
                     break;
                 }
                 i++;

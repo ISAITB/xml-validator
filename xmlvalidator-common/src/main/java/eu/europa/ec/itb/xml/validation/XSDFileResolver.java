@@ -124,7 +124,7 @@ public class XSDFileResolver implements LSResourceResolver {
         try {
             return new LSInputImpl(publicId, systemId, baseURI, new InputStreamReader(new FileInputStream(referencedSchemaFile)));
         } catch (FileNotFoundException e) {
-            LOG.error("The referenced schema with system ID ["+systemId+"] could not be located at ["+referencedSchemaFile.getAbsolutePath()+"].", e);
+            LOG.error("The referenced schema with system ID [{}] could not be located at [{}].", systemId, referencedSchemaFile.getAbsolutePath(), e);
             throw new IllegalStateException("The referenced schema with system ID ["+systemId+"] could not be located.", e);
         }
     }

@@ -243,9 +243,10 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
         var localisationHelper = new LocalisationHelper(config, localeResolver.resolveLocale(request, response, config, appConfig));
         var result = new UploadResult<>();
 
-        if (StringUtils.isBlank(validationType)) {
-            validationType = config.getType().get(0);
+        if (!isOwnSubmission(request)) {
+            validationType = inputHelper.determineValidationType(validationType, domain, config);
         }
+        validationType = inputHelper.validateValidationType(config, validationType);
         if (config.hasMultipleValidationTypes() && (validationType == null || !config.getType().contains(validationType))) {
             // A validation type is required.
             result.setMessage(localisationHelper.localise("validator.label.exception.providedValidationTypeNotValid"));
@@ -261,7 +262,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                         result.setMessage(localisationHelper.localise("validator.label.exception.providedInputNotXML"));
                     }
                 } catch (IOException e) {
-                    logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
+                    logger.error("Error while reading uploaded file [{}]", e.getMessage(), e);
                     result.setMessage(localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));
                     proceedToValidate = false;
                 }
@@ -276,7 +277,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                     } catch (ValidatorException e) {
                         throw e;
                     } catch (Exception e) {
-                        logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
+                        logger.error("Error while reading uploaded file [{}]", e.getMessage(), e);
                         result.setMessage(localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));
                         proceedToValidate = false;
                     }
@@ -316,7 +317,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                     fileName, report, aggregateReport,
                                     new Translations(localisationHelper, report, config));
                         } catch (IOException e) {
-                            logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
+                            logger.error("Error generating detailed report [{}]", e.getMessage(), e);
                             result.setMessage(localisationHelper.localise("validator.label.exception.errorGeneratingDetailedReport", e.getMessage()));
                         }
                     }
@@ -325,7 +326,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                 logger.error(e.getMessageForLog(), e);
                 result.setMessage(e.getMessageForDisplay(localisationHelper));
             } catch (Exception e) {
-                logger.error("An error occurred during the validation [" + e.getMessage() + "]", e);
+                logger.error("An error occurred during the validation [{}]", e.getMessage(), e);
                 if (e.getMessage() != null) {
                     result.setMessage(localisationHelper.localise("validator.label.exception.unexpectedErrorDuringValidationWithParams", e.getMessage()));
                 } else {
@@ -417,15 +418,15 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                       @RequestParam(value = "validationType", defaultValue = "") String validationType,
                                       @RequestParam(value = "contentType", defaultValue = "") String contentType,
                                       @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false, defaultValue = "") String[] externalSchema,
-                                      @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required= false) MultipartFile[] externalSchemaFiles,
+                                      @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false) MultipartFile[] externalSchemaFiles,
                                       @RequestParam(value = "uri-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false, defaultValue = "") String[] externalSchemaUri,
                                       @RequestParam(value = "text-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false, defaultValue = "") String[] externalSchemaString,
                                       @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false, defaultValue = "") String[] externalSch,
-                                      @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required= false) MultipartFile[] externalSchFiles,
+                                      @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) MultipartFile[] externalSchFiles,
                                       @RequestParam(value = "uri-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false, defaultValue = "") String[] externalSchUri,
                                       @RequestParam(value = "text-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false, defaultValue = "") String[] externalSchString,
                                       @RequestParam(value = "contentType-contextFile", required = false, defaultValue = "") String[] contextFileTypes,
-                                      @RequestParam(value = "inputFile-contextFile", required= false) MultipartFile[] contextFileFiles,
+                                      @RequestParam(value = "inputFile-contextFile", required = false) MultipartFile[] contextFileFiles,
                                       @RequestParam(value = "uri-contextFile", required = false, defaultValue = "") String[] contextFileUris,
                                       @RequestParam(value = "text-contextFile", required = false, defaultValue = "") String[] contextFileStrings,
                                       RedirectAttributes redirectAttributes,
@@ -447,15 +448,15 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                              @RequestParam(value = "validationType", defaultValue = "") String validationType,
                                              @RequestParam(value = "contentType", defaultValue = "") String contentType,
                                              @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false, defaultValue = "") String[] externalSchema,
-                                             @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required= false) MultipartFile[] externalSchemaFiles,
+                                             @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false) MultipartFile[] externalSchemaFiles,
                                              @RequestParam(value = "uri-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false, defaultValue = "") String[] externalSchemaUri,
                                              @RequestParam(value = "text-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false, defaultValue = "") String[] externalSchemaString,
                                              @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false, defaultValue = "") String[] externalSch,
-                                             @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required= false, defaultValue = "") MultipartFile[] externalSchFiles,
+                                             @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) MultipartFile[] externalSchFiles,
                                              @RequestParam(value = "uri-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false, defaultValue = "") String[] externalSchUri,
                                              @RequestParam(value = "text-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false, defaultValue = "") String[] externalSchString,
                                              @RequestParam(value = "contentType-contextFile", required = false, defaultValue = "") String[] contextFileTypes,
-                                             @RequestParam(value = "inputFile-contextFile", required= false) MultipartFile[] contextFileFiles,
+                                             @RequestParam(value = "inputFile-contextFile", required = false) MultipartFile[] contextFileFiles,
                                              @RequestParam(value = "uri-contextFile", required = false, defaultValue = "") String[] contextFileUris,
                                              @RequestParam(value = "text-contextFile", required = false, defaultValue = "") String[] contextFileStrings,
                                              RedirectAttributes redirectAttributes,
@@ -480,15 +481,15 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                              @RequestParam(value = "validationType", defaultValue = "") String validationType,
                                              @RequestParam(value = "contentType", defaultValue = "") String contentType,
                                              @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false, defaultValue = "") String[] externalSchema,
-                                             @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required= false, defaultValue = "") MultipartFile[] externalSchemaFiles,
+                                             @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required= false) MultipartFile[] externalSchemaFiles,
                                              @RequestParam(value = "uri-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false, defaultValue = "") String[] externalSchemaUri,
                                              @RequestParam(value = "text-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMA, required = false, defaultValue = "") String[] externalSchemaString,
                                              @RequestParam(value = "contentType-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false, defaultValue = "") String[] externalSch,
-                                             @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required= false) MultipartFile[] externalSchFiles,
+                                             @RequestParam(value = "inputFile-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false) MultipartFile[] externalSchFiles,
                                              @RequestParam(value = "uri-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false, defaultValue = "") String[] externalSchUri,
                                              @RequestParam(value = "text-external_"+DomainConfig.ARTIFACT_TYPE_SCHEMATRON, required = false, defaultValue = "") String[] externalSchString,
                                              @RequestParam(value = "contentType-contextFile", required = false, defaultValue = "") String[] contextFileTypes,
-                                             @RequestParam(value = "inputFile-contextFile", required= false) MultipartFile[] contextFileFiles,
+                                             @RequestParam(value = "inputFile-contextFile", required = false) MultipartFile[] contextFileFiles,
                                              @RequestParam(value = "uri-contextFile", required = false, defaultValue = "") String[] contextFileUris,
                                              @RequestParam(value = "text-contextFile", required = false, defaultValue = "") String[] contextFileStrings,
                                              RedirectAttributes redirectAttributes,

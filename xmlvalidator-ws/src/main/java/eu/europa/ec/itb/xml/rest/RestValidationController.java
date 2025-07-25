@@ -164,6 +164,8 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
             HttpServletRequest request
     ) {
         DomainConfig domainConfig = validateDomain(domain);
+        // Consider the case that we have a cross-domain alias and resolve the validation type accordingly.
+        in.setValidationType(inputHelper.determineValidationType(in.getValidationType(), domain, domainConfig));
         /*
          * Important: We call executeValidationProcess here and not in the return statement because the StreamingResponseBody
          * uses a separate thread. Doing so would break the ThreadLocal used in the statistics reporting.
@@ -306,6 +308,8 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
         var outputs = new ArrayList<Output>(inputs.length);
         for (Input input: inputs) {
             Output output = new Output();
+            // Consider the case that we have a cross-domain alias and resolve the validation type accordingly.
+            input.setValidationType(inputHelper.determineValidationType(input.getValidationType(), domain, domainConfig));
             var report = executeValidationProcess(input, domainConfig);
             try (var bos = new ByteArrayOutputStream()) {
                 var wrapReportDataInCDATA = Objects.requireNonNullElse(input.getWrapReportDataInCDATA(), false);

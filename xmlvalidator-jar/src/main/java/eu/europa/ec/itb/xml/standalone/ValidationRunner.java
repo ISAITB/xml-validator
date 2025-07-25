@@ -155,7 +155,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
             contextFileInfo = processContextFiles(domainConfig, validationType, contextFileInputs, parentFolder);
         } catch (ValidatorException e) {
             LOGGER_FEEDBACK.info("\nInvalid arguments provided: {}\n", e.getMessageForDisplay(new LocalisationHelper(Locale.ENGLISH)));
-            LOGGER.error(String.format("Invalid arguments provided: %s", e.getMessageForLog()), e);
+            LOGGER.error("Invalid arguments provided: {}", e.getMessageForLog(), e);
             inputs.clear();
         } catch (Exception e) {
             LOGGER_FEEDBACK.info("\nAn error occurred while processing the provided arguments.\n");

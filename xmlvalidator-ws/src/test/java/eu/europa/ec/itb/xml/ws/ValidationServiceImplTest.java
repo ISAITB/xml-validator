@@ -47,7 +47,7 @@ class ValidationServiceImplTest {
                 descriptionEntryOf(ValidationConstants.INPUT_EXTERNAL_SCHEMATRON),
                 descriptionEntryOf(ValidationConstants.INPUT_LOCALE)
         )).when(domainConfig).getWebServiceDescription();
-        var service = new ValidationServiceImpl(domainConfig);
+        var service = new ValidationServiceImpl(domainConfig, domainConfig);
         service.inputHelper = inputHelper;
         var result = service.getModuleDefinition(new Void());
         assertNotNull(result);

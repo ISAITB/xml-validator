@@ -25,7 +25,7 @@ import java.util.Map;
 
 /**
  * A namespace context to lookup and map namespaces based on prefix and URI.
- *
+ * <p>
  * Implementation based on source found <a href="http://www.ibm.com/developerworks/library/x-nmspccontext/">here</a>.
  */
 public class DocumentNamespaceContext implements NamespaceContext {

@@ -262,7 +262,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                         result.setMessage(localisationHelper.localise("validator.label.exception.providedInputNotXML"));
                     }
                 } catch (IOException e) {
-                    logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
+                    logger.error("Error while reading uploaded file [{}]", e.getMessage(), e);
                     result.setMessage(localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));
                     proceedToValidate = false;
                 }
@@ -277,7 +277,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                     } catch (ValidatorException e) {
                         throw e;
                     } catch (Exception e) {
-                        logger.error("Error while reading uploaded file [" + e.getMessage() + "]", e);
+                        logger.error("Error while reading uploaded file [{}]", e.getMessage(), e);
                         result.setMessage(localisationHelper.localise("validator.label.exception.errorInUpload", e.getMessage()));
                         proceedToValidate = false;
                     }
@@ -317,7 +317,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                     fileName, report, aggregateReport,
                                     new Translations(localisationHelper, report, config));
                         } catch (IOException e) {
-                            logger.error("Error generating detailed report [" + e.getMessage() + "]", e);
+                            logger.error("Error generating detailed report [{}]", e.getMessage(), e);
                             result.setMessage(localisationHelper.localise("validator.label.exception.errorGeneratingDetailedReport", e.getMessage()));
                         }
                     }
@@ -326,7 +326,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                 logger.error(e.getMessageForLog(), e);
                 result.setMessage(e.getMessageForDisplay(localisationHelper));
             } catch (Exception e) {
-                logger.error("An error occurred during the validation [" + e.getMessage() + "]", e);
+                logger.error("An error occurred during the validation [{}]", e.getMessage(), e);
                 if (e.getMessage() != null) {
                     result.setMessage(localisationHelper.localise("validator.label.exception.unexpectedErrorDuringValidationWithParams", e.getMessage()));
                 } else {

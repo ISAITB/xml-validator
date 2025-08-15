@@ -15,10 +15,11 @@
 
 package eu.europa.ec.itb.xml.validation;
 
+import eu.europa.ec.itb.validation.commons.artifact.ValidationArtifactInfo;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.util.FileManager;
-import eu.europa.ec.itb.validation.commons.artifact.ValidationArtifactInfo;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +28,14 @@ import org.springframework.stereotype.Component;
 import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -68,39 +74,38 @@ public class XSDFileResolver implements LSResourceResolver {
      * @see LSResourceResolver#resolveResource(String, String, String, String, String)
      *
      * @param type The resource type.
-     * @param namespaceURI The URI.
+     * @param namespaceUri The URI.
      * @param publicId The public ID.
      * @param systemId The system ID.
-     * @param baseURI The base URI.
+     * @param baseUri The base URI.
      * @return The resolved resource.
      */
     @Override
-    public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {
-        File baseURIFile;
+    public LSInput resolveResource(String type, String namespaceUri, String publicId, String systemId, String baseUri) {
+        Path baseURIFile;
         boolean systemIdSet = false;
-        if (baseURI == null) {
+        if (baseUri == null) {
             ValidationArtifactInfo schemaInfo = domainConfig.getSchemaInfo(validationType);
-        	if(schemaInfo.getLocalPath() != null) {
-        		baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), schemaInfo.getLocalPath()).toFile().getParentFile();
+        	if (schemaInfo.getLocalPath() != null) {
+        		baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), schemaInfo.getLocalPath()).getParent();
         	} else {
         		if (!schemaInfo.getRemoteArtifacts().isEmpty()) {
-        			baseURIFile = Paths.get(fileManager.getRemoteFileCacheFolder().getAbsolutePath(), domainConfig.getDomainName(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA).toFile();
-        			systemId = "/import/" + new File(baseURIFile, systemId).getName();
+        			baseURIFile = Paths.get(fileManager.getRemoteFileCacheFolder().getAbsolutePath(), domainConfig.getDomainName(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA);
+                    systemId = "/import/" + resolve(baseURIFile, systemId).getFileName();
                     systemIdSet = true;
         		} else {
-        			baseURIFile = Paths.get(xsdExternalPath).toFile();
-        			File currentFile = new File(baseURIFile, systemId);
-        			if(!currentFile.exists()) {
-        				systemId = "/import/" + currentFile.getName();
+        			baseURIFile = Paths.get(xsdExternalPath);
+        			Path currentFile = resolve(baseURIFile, systemId);
+        			if (!Files.exists(currentFile)) {
+        				systemId = "/import/" + currentFile.getFileName();
                         systemIdSet = true;
         			}
             	}
         	}
         } else {
             try {
-                URI uri = new URI(baseURI);
-                baseURIFile = new File(uri);
-                baseURIFile = baseURIFile.getParentFile();
+                baseURIFile = Paths.get(new URI(baseUri));
+                baseURIFile = baseURIFile.getParent();
             } catch (URISyntaxException e) {
                 throw new IllegalStateException(e);
             }
@@ -108,24 +113,44 @@ public class XSDFileResolver implements LSResourceResolver {
 
         if (!systemIdSet) {
             if (!domainConfig.getSchemaInfo(validationType).getRemoteArtifacts().isEmpty()) {
-                systemId = new File(baseURIFile, systemId).getName();
+                systemId = resolve(baseURIFile, systemId).getFileName().toString();
             } else {
-                File currentFile = new File(baseURIFile, systemId);
-                if (!currentFile.exists()) {
-                    systemId = currentFile.getName();
+                Path currentFile = resolve(baseURIFile, systemId);
+                if (!Files.exists(currentFile)) {
+                    systemId = currentFile.getFileName().toString();
                 }
             }
         }
 
-        File referencedSchemaFile = new File(baseURIFile, systemId);
-        baseURI = referencedSchemaFile.getParentFile().toURI().toString();
-        systemId = referencedSchemaFile.getName();
+        Path referencedSchemaFile = resolve(baseURIFile, systemId);
+        baseUri = referencedSchemaFile.getParent().toUri().toString();
+        systemId = referencedSchemaFile.getFileName().toString();
         
         try {
-            return new LSInputImpl(publicId, systemId, baseURI, new InputStreamReader(new FileInputStream(referencedSchemaFile)));
-        } catch (FileNotFoundException e) {
-            LOG.error("The referenced schema with system ID [{}] could not be located at [{}].", systemId, referencedSchemaFile.getAbsolutePath(), e);
+            return new LSInputImpl(publicId, systemId, baseUri, new InputStreamReader(Files.newInputStream(referencedSchemaFile)));
+        } catch (IOException e) {
+            LOG.error("The referenced schema with system ID [{}] could not be located at [{}].", systemId, referencedSchemaFile.toAbsolutePath(), e);
             throw new IllegalStateException("The referenced schema with system ID ["+systemId+"] could not be located.", e);
+        }
+    }
+
+    private Path resolve(Path base, String extension) {
+        try {
+            URI uri = new URI(extension);
+            if ("file".equalsIgnoreCase(uri.getScheme())) {
+                return base.resolve(Paths.get(uri));
+            } else {
+                String uriPath = uri.getPath();
+                if (uriPath.endsWith("/")) {
+                    return base;
+                } else {
+                    int lastSlashPosition = uriPath.lastIndexOf('/');
+                    return base.resolve((lastSlashPosition >= 0) ? uriPath.substring(lastSlashPosition + 1) : uriPath);
+                }
+            }
+        } catch (URISyntaxException ignored) {
+            // Not a URI - treat as simple string.
+            return base.resolve(extension);
         }
     }
 

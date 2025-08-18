@@ -111,11 +111,11 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
                     try {
                         return new StreamSource(new FileInputStream(referencedFile));
                     } catch (FileNotFoundException e) {
-                        LOG.error("Referenced file not found base[{}] href[{}] file [{}]", base, href, referencedFile);
+                        LOG.error("Referenced file not found base[{}] href [{}] file [{}]", base, href, referencedFile);
                         throw new IllegalStateException(String.format("Referenced file not found base[%s] href[%s]", base, href));
                     }
                 } else {
-                    LOG.error("Referenced file not found base[{}] href[{}] file [{}]", base, href, referencedFile);
+                    LOG.error("Referenced file not found base[{}] href [{}] file [{}]", base, href, referencedFile);
                     throw new IllegalStateException(String.format("Referenced file not found base[%s] href[%s]", base, href));
                 }
             }

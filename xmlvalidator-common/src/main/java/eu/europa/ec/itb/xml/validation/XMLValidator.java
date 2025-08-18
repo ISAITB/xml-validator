@@ -51,6 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -94,11 +95,11 @@ public class XMLValidator {
     /**
      * Create an XSD resolver.
      *
-     * @param xsdExternalPath The string absolute file system path to the location where externally loaded XSDs are placed.
+     * @param schemaSource The source from which the schema was initially loaded.
      * @return The resolver.
      */
-    private LSResourceResolver getXSDResolver(String xsdExternalPath) {
-        return ctx.getBean(XSDFileResolver.class, specs.getValidationType(), specs.getDomainConfig(), xsdExternalPath);
+    private LSResourceResolver getXSDResolver(URI schemaSource) {
+        return ctx.getBean(XSDFileResolver.class, specs.getDomainConfig(), schemaSource);
     }
 
     /**
@@ -133,16 +134,22 @@ public class XMLValidator {
     private TAR validateAgainstSchema() throws XMLInvalidException {
         List<FileInfo> schemaFiles = specs.getSchemasToUse(fileManager);
         if (schemaFiles.isEmpty()) {
-            logger.info("No schemas to validate against");
+            if (specs.isLogProgress()) {
+                logger.info("No schemas to validate against");
+            }
             return null;
         } else {
             List<TAR> reports = new ArrayList<>();
             for (FileInfo aSchemaFile: schemaFiles) {
-                logger.info("Validating against [{}]", aSchemaFile.getFile().getName());
-                TAR report = validateSchema(specs.getInputStreamForValidation(false), aSchemaFile.getFile());
+                if (specs.isLogProgress()) {
+                    logger.info("Validating against [{}]", aSchemaFile.getFile().getName());
+                }
+                TAR report = validateSchema(specs.getInputStreamForValidation(false), aSchemaFile);
                 logReport(report, aSchemaFile.getFile().getName());
                 reports.add(report);
-                logger.info("Validated against [{}]", aSchemaFile.getFile().getName());
+                if (specs.isLogProgress()) {
+                    logger.info("Validated against [{}]", aSchemaFile.getFile().getName());
+                }
             }
             return Utils.mergeReports(reports);
         }
@@ -157,11 +164,11 @@ public class XMLValidator {
      * @return The TAR validation report.
      * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    private TAR validateSchema(InputStream inputStream, File schemaFile) throws XMLInvalidException {
+    private TAR validateSchema(InputStream inputStream, FileInfo schemaFile) throws XMLInvalidException {
         // Validate XML content against given XSD schema.
         var errorHandler = new XSDReportHandler();
-        try (var schemaStream = Files.newInputStream(schemaFile.toPath())) {
-            secureSchemaValidation(inputStream, schemaStream, errorHandler, getXSDResolver(schemaFile.getParent()), specs.getLocalisationHelper().getLocale());
+        try (var schemaStream = Files.newInputStream(schemaFile.getFile().toPath())) {
+            secureSchemaValidation(inputStream, schemaStream, errorHandler, getXSDResolver(schemaFile.getSource()), specs.getLocalisationHelper().getLocale());
         } catch (Exception e) {
             throw new XMLInvalidException(e);
         }
@@ -260,15 +267,21 @@ public class XMLValidator {
         List<TAR> reports = new ArrayList<>();
         List<SchematronFileInfo> schematronFiles = specs.getSchematronsToUse();
         if (schematronFiles.isEmpty()) {
-            logger.info("No schematrons to validate against");
+            if (specs.isLogProgress()) {
+                logger.info("No schematrons to validate against");
+            }
             return null;
         } else {
             for (SchematronFileInfo aSchematronFile: schematronFiles) {
-                logger.info("Validating against [{}]", aSchematronFile.getFile().getName());
+                if (specs.isLogProgress()) {
+                    logger.info("Validating against [{}]", aSchematronFile.getFile().getName());
+                }
                 TAR report = validateSchematron(aSchematronFile.getFile(), aSchematronFile.isSupportPureValidation());
                 logReport(report, aSchematronFile.getFile().getName());
                 reports.add(report);
-                logger.info("Validated against [{}]", aSchematronFile.getFile().getName());
+                if (specs.isLogProgress()) {
+                    logger.info("Validated against [{}]", aSchematronFile.getFile().getName());
+                }
             }
             return Utils.mergeReports(reports);
         }
@@ -315,7 +328,7 @@ public class XMLValidator {
                     // No schema.
                     schemaResult = createEmptyReport();
                 }
-                if (schemaResult.getResult() != TestResultType.SUCCESS && specs.getDomainConfig().stopOnXsdErrors(getValidationType())) {
+                if (!specs.isValidateAgainstSchematrons() || (schemaResult.getResult() != TestResultType.SUCCESS && specs.getDomainConfig().stopOnXsdErrors(getValidationType()))) {
                     overallResult = schemaResult;
                 } else {
                     TAR schematronResult = validateAgainstSchematron();
@@ -329,15 +342,17 @@ public class XMLValidator {
             } finally {
                 fileManager.signalValidationEnd(specs.getDomainConfig().getDomainName());
             }
-            TAR pluginResult = validateAgainstPlugins();
-            if (pluginResult != null) {
-                overallResult = Utils.mergeReports(new TAR[] {overallResult, pluginResult});
+            if (specs.isValidateAgainstPlugins()) {
+                TAR pluginResult = validateAgainstPlugins();
+                if (pluginResult != null) {
+                    overallResult = Utils.mergeReports(new TAR[] {overallResult, pluginResult});
+                }
             }
             if (specs.getDomainConfig().isReportsOrdered() && overallResult.getReports() != null) {
                 overallResult.getReports().getInfoOrWarningOrError().sort(new ReportItemComparator());
             }
         } catch (XMLInvalidException e) {
-            logger.warn("Error while validating XML [{}]", e.getMessage());
+            logger.warn("Error while validating XML [{}]", e.getMessage(), e);
             overallResult = createFailureReport();
         }
         specs.getDomainConfig().applyMetadata(overallResult, getValidationType());
@@ -363,7 +378,9 @@ public class XMLValidator {
                     String pluginName = plugin.getName();
                     ValidationResponse response = plugin.validate(pluginInput);
                     if (response != null && response.getReport() != null && response.getReport().getReports() != null) {
-                        logger.info("Plugin [{}] produced [{}] report item(s).", pluginName, response.getReport().getReports().getInfoOrWarningOrError().size());
+                        if (specs.isLogProgress()) {
+                            logger.info("Plugin [{}] produced [{}] report item(s).", pluginName, response.getReport().getReports().getInfoOrWarningOrError().size());
+                        }
                         if (pluginReport == null) {
                             pluginReport = response.getReport();
                         } else {

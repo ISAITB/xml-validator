@@ -53,7 +53,7 @@ public class InputHelper extends BaseInputHelper<ApplicationConfig, FileManager,
             if (fileInfo.getFile() != null) {
                 File rootFile = fileManager.unzipFile(parentFolder, fileInfo.getFile());
                 if (rootFile == null) {
-                    artifactsToReturn.add(new FileInfo(fileManager.preprocessFileIfNeeded(domainConfig, validationType, artifactType, fileInfo.getFile(), true)));
+                    artifactsToReturn.add(new FileInfo(fileManager.preprocessFileIfNeeded(domainConfig, validationType, artifactType, fileInfo.getFile(), true), fileInfo.getType(), fileInfo.getSource()));
                 } else {
                     // ZIP File
                     boolean proceed;

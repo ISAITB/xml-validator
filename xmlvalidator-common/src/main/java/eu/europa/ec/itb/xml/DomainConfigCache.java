@@ -114,6 +114,13 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         ));
         // Stop on XSD errors - stop
         addMissingDefaultValues(domainConfig.getWebServiceDescription(), appConfig.getDefaultLabels());
+        // Local mappings for remote schema imports and caching - start
+        domainConfig.setRemoteSchemaImportMappings(ParseUtils.parseFileMap("validator.remoteSchemaImportMapping", config, "Schema import", appConfig, domainConfig));
+        domainConfig.setSkipRemoteSchemaImportCaching(config.getBoolean("validator.skipRemoteSchemaImportCaching", false));
+        if (!domainConfig.isSkipRemoteSchemaImportCaching()) {
+            domainConfig.setPreloadRemoteSchemaImports(ParseUtils.parseBooleanMap("validator.preloadRemoteSchemaImports", config, domainConfig.getType(), config.getBoolean("validator.preloadRemoteSchemaImports", false)));
+        }
+        // Local mappings for remote schema imports and caching - end
     }
 
     /**

@@ -15,11 +15,10 @@
 
 package eu.europa.ec.itb.xml.validation;
 
-import eu.europa.ec.itb.validation.commons.artifact.ValidationArtifactInfo;
+import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.util.FileManager;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +35,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Objects;
 
 /**
  * URI resolver for XSDs looking up resources from the local file system.
@@ -51,8 +50,7 @@ public class XSDFileResolver implements LSResourceResolver {
     private final FileManager fileManager = null;
 
     private final DomainConfig domainConfig;
-    private final String validationType;
-    private final String xsdExternalPath;
+    private final URI schemaSource;
 
     @Autowired
     ApplicationConfig config;
@@ -60,14 +58,12 @@ public class XSDFileResolver implements LSResourceResolver {
     /**
      * Constructor.
      *
-     * @param validationType The validation type.
      * @param domainConfig The domain configuration.
-     * @param xsdExternalPath The path used to store externally loaded XSDs.
+     * @param schemaSource The source of the initial schema that triggered the validation.
      */
-    public XSDFileResolver(String validationType, DomainConfig domainConfig, String xsdExternalPath) {
-        this.validationType = validationType;
+    public XSDFileResolver(DomainConfig domainConfig, URI schemaSource) {
         this.domainConfig = domainConfig;
-        this.xsdExternalPath = xsdExternalPath;
+        this.schemaSource = schemaSource;
     }
 
     /**
@@ -82,75 +78,189 @@ public class XSDFileResolver implements LSResourceResolver {
      */
     @Override
     public LSInput resolveResource(String type, String namespaceUri, String publicId, String systemId, String baseUri) {
-        Path baseURIFile;
-        boolean systemIdSet = false;
-        if (baseUri == null) {
-            ValidationArtifactInfo schemaInfo = domainConfig.getSchemaInfo(validationType);
-        	if (schemaInfo.getLocalPath() != null) {
-        		baseURIFile = Paths.get(config.getResourceRoot(), domainConfig.getDomain(), schemaInfo.getLocalPath()).getParent();
-        	} else {
-        		if (!schemaInfo.getRemoteArtifacts().isEmpty()) {
-        			baseURIFile = Paths.get(fileManager.getRemoteFileCacheFolder().getAbsolutePath(), domainConfig.getDomainName(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA);
-                    systemId = "/import/" + resolve(baseURIFile, systemId).getFileName();
-                    systemIdSet = true;
-        		} else {
-        			baseURIFile = Paths.get(xsdExternalPath);
-        			Path currentFile = resolve(baseURIFile, systemId);
-        			if (!Files.exists(currentFile)) {
-        				systemId = "/import/" + currentFile.getFileName();
-                        systemIdSet = true;
-        			}
-            	}
-        	}
-        } else {
-            try {
-                baseURIFile = Paths.get(new URI(baseUri));
-                baseURIFile = baseURIFile.getParent();
-            } catch (URISyntaxException e) {
-                throw new IllegalStateException(e);
-            }
+        URI baseUriToUse = parseUri(baseUri);
+        if (baseUriToUse == null) {
+            baseUriToUse = schemaSource;
         }
-
-        if (!systemIdSet) {
-            if (!domainConfig.getSchemaInfo(validationType).getRemoteArtifacts().isEmpty()) {
-                systemId = resolve(baseURIFile, systemId).getFileName().toString();
-            } else {
-                Path currentFile = resolve(baseURIFile, systemId);
-                if (!Files.exists(currentFile)) {
-                    systemId = currentFile.getFileName().toString();
-                }
-            }
-        }
-
-        Path referencedSchemaFile = resolve(baseURIFile, systemId);
-        baseUri = referencedSchemaFile.getParent().toUri().toString();
-        systemId = referencedSchemaFile.getFileName().toString();
-        
+        URI systemIdAsUri;
         try {
-            return new LSInputImpl(publicId, systemId, baseUri, new InputStreamReader(Files.newInputStream(referencedSchemaFile)));
-        } catch (IOException e) {
-            LOG.error("The referenced schema with system ID [{}] could not be located at [{}].", systemId, referencedSchemaFile.toAbsolutePath(), e);
-            throw new IllegalStateException("The referenced schema with system ID ["+systemId+"] could not be located.", e);
+            systemIdAsUri = URI.create(systemId);
+        } catch (IllegalArgumentException e) {
+            throw signalError(systemId, baseUri, e);
+        }
+        URI schemaResource = baseUriToUse.resolve(systemIdAsUri);
+        LSInputImpl result;
+        if (isAbsoluteRemoteUri(schemaResource)) {
+            // Loaded remotely.
+            result = resourceFromRemoteUri(schemaResource, systemId, baseUri, publicId, domainConfig);
+        } else {
+            // Loaded from file system.
+            result = resourceFromLocalPath(schemaResource, systemId, baseUri, publicId);
+        }
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Resolved resource [{}] for system ID [{}] with base URI [{}]", schemaResource, systemId, baseUri);
+        }
+        return result;
+    }
+
+    /**
+     * Ensure that referenced files are loaded from legal locations (domain config folder or temp folder).
+     *
+     * @param schemaResource The schema resource to load.
+     * @return The file path for the schema resource.
+     */
+    private Path readSchemaResourceFromFileSystem(URI schemaResource) {
+        Path schemaPath = Path.of(schemaResource).toAbsolutePath().normalize();
+        if (Utils.isUnderDomain(schemaPath, config, domainConfig)
+                || schemaPath.startsWith(fileManager.getTempFolder().toPath().toAbsolutePath().normalize())) {
+            return schemaPath;
+        } else {
+            throw new IllegalStateException("Resource [%s] is outside the expected folder hierarchy".formatted(schemaResource));
         }
     }
 
-    private Path resolve(Path base, String extension) {
+    /**
+     * Resolve the schema from the local filesystem.
+     *
+     * @param schemaResource The schema to resolve.
+     * @param requestedSystemId The system ID that was requested.
+     * @param requestedBaseUri The base URI that was requested.
+     * @param publicId The public ID that was requested.
+     * @return The resource.
+     */
+    private LSInputImpl resourceFromLocalPath(URI schemaResource, String requestedSystemId, String requestedBaseUri, String publicId) {
+        Path schemaPath = readSchemaResourceFromFileSystem(schemaResource);
+        String baseUriToReport = schemaPath.getParent().toUri().toString();
+        String systemIdToReport = schemaResource.toString();
+        LSInputImpl result;
         try {
-            URI uri = new URI(extension);
-            if ("file".equalsIgnoreCase(uri.getScheme())) {
-                return base.resolve(Paths.get(uri));
-            } else {
-                String uriPath = uri.getPath();
-                if (uriPath.endsWith("/")) {
-                    return base;
-                } else {
-                    int lastSlashPosition = uriPath.lastIndexOf('/');
-                    return base.resolve((lastSlashPosition >= 0) ? uriPath.substring(lastSlashPosition + 1) : uriPath);
-                }
+            result = new LSInputImpl(publicId, systemIdToReport, baseUriToReport, new InputStreamReader(Files.newInputStream(schemaPath)));
+        } catch (IOException e) {
+            LOG.error("The referenced schema with system ID [{}] could not be located at path [{}].", requestedSystemId, schemaPath.toAbsolutePath(), e);
+            throw signalError(requestedSystemId, requestedBaseUri, e);
+        }
+        return result;
+    }
+
+    /**
+     *
+     * Resolve the schema from a remote location.
+     *
+     * @param schemaResource The schema to resolve.
+     * @param requestedSystemId The system ID that was requested.
+     * @param requestedBaseUri The base URI that was requested.
+     * @param publicId The public ID that was requested.
+     * @param domainConfig The domain configuration to consider.
+     * @return The resource.
+     */
+    private LSInputImpl resourceFromRemoteUri(URI schemaResource, String requestedSystemId, String requestedBaseUri, String publicId, DomainConfig domainConfig) {
+        String baseUriToReport;
+        try {
+            baseUriToReport = extractParentUri(schemaResource).toString();
+        } catch (URISyntaxException e) {
+            LOG.error("The referenced schema with system ID [{}] could not be located at URI [{}].", requestedSystemId, schemaResource, e);
+            throw signalError(requestedSystemId, requestedBaseUri, e);
+        }
+        String systemIdToReport = schemaResource.toString();
+        LSInputImpl result;
+        try {
+            result = new LSInputImpl(publicId, systemIdToReport, baseUriToReport, new InputStreamReader(readRemoteSchema(schemaResource, domainConfig)));
+        } catch (IOException e) {
+            LOG.error("The referenced schema with system ID [{}] could not be located at URI [{}].", requestedSystemId, schemaResource, e);
+            throw signalError(requestedSystemId, requestedBaseUri, e);
+        }
+        return result;
+    }
+
+    /**
+     * Read the provided resource as a stream.
+     *
+     * @param schemaResource The resource URI.
+     * @param domainConfig The current domain configuration.
+     * @return The resource's stream.
+     * @throws IOException If an IO error occurs.
+     */
+    private InputStream readRemoteSchema(URI schemaResource, DomainConfig domainConfig) throws IOException {
+        String uriAsString = schemaResource.toString();
+        if (domainConfig.getRemoteSchemaImportMappings() != null && domainConfig.getRemoteSchemaImportMappings().containsKey(uriAsString)) {
+            // Read from a local file mapping defined in the domain configuration.
+            LOG.debug("Retrieving resource [{}] from local mapped file", schemaResource);
+            return Files.newInputStream(domainConfig.getRemoteSchemaImportMappings().get(uriAsString));
+        } else if (domainConfig.isSkipRemoteSchemaImportCaching()) {
+            // Read from the remote URI directly.
+            LOG.debug("Retrieving resource [{}] remotely due to disabled caching", schemaResource);
+            return fileManager.getInputStreamFromURL(uriAsString, null, domainConfig.getHttpVersion()).stream();
+        } else {
+            // Go through our caching layer.
+            LOG.debug("Retrieving resource [{}] from cache", schemaResource);
+            return Files.newInputStream(fileManager.retrieveCachedRemoteResource(domainConfig, schemaResource));
+        }
+    }
+
+    /**
+     * Raise a resource resolution error.
+     *
+     * @param systemId The requested system ID.
+     * @param baseUri The requested base URI.
+     * @param cause The cause of the error.
+     * @return The error to throw.
+     */
+    private IllegalStateException signalError(String systemId, String baseUri, Throwable cause) {
+        String message = "The referenced schema with system ID [%s] and base URI [%s] could not be retrieved".formatted(systemId, Objects.requireNonNullElse(baseUri, this.schemaSource));
+        if (cause != null) {
+            return new IllegalStateException(message, cause);
+        } else {
+            return new IllegalStateException(message);
+        }
+    }
+
+    /**
+     * Extract the parent part of the provided URI.
+     *
+     * @param uri The URI.
+     * @return The parent URI.
+     * @throws URISyntaxException If the URI is invalid.
+     */
+    private URI extractParentUri(URI uri) throws URISyntaxException {
+        String path = uri.getPath();
+        int lastSlash = path.lastIndexOf('/');
+        String parentPath = (lastSlash >= 0) ? path.substring(0, lastSlash + 1) : "/";
+        return new URI(uri.getScheme(), uri.getAuthority(), parentPath, null, null);
+    }
+
+    /**
+     * Check to see if the provided URI is an absolute remote resource reference.
+     *
+     * @param uri The URI to check.
+     * @return The check result.
+     */
+    private boolean isAbsoluteRemoteUri(URI uri) {
+        if (uri != null) {
+            String scheme = uri.getScheme();
+            return ("http".equalsIgnoreCase(scheme)
+                    || "https".equalsIgnoreCase(scheme)
+                    || "ftp".equalsIgnoreCase(scheme)
+                    || "ftps".equalsIgnoreCase(scheme));
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Parse an optional URI.
+     *
+     * @param string The string to process.
+     * @return The parsed URI (or null).
+     */
+    private URI parseUri(String string) {
+        if (string != null) {
+            try {
+                return new URI(string);
+            } catch (URISyntaxException ignored) {
+                return null;
             }
-        } catch (URISyntaxException ignored) {
-            // Not a URI - treat as simple string.
-            return base.resolve(extension);
+        } else {
+            return null;
         }
     }
 

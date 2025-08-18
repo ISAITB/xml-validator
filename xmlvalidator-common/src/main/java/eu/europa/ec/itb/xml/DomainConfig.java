@@ -54,6 +54,63 @@ public class DomainConfig extends WebDomainConfig {
     private Map<String, ContextFileCombinationTemplateConfig> contextFileCombinationTemplateMap;
     private Map<String, Path> inputTransformerMap;
     private Map<String, Boolean> stopOnXsdErrors;
+    private Map<String, Path> remoteSchemaImportMappings;
+    private Map<String, Boolean> preloadRemoteSchemaImports;
+    private boolean skipRemoteSchemaImportCaching = false;
+
+    /**
+     * @return Whether remote schemas in imports should be cached.
+     */
+    public boolean isSkipRemoteSchemaImportCaching() {
+        return skipRemoteSchemaImportCaching;
+    }
+
+    /**
+     * @param skipRemoteSchemaImportCaching Whether remote schemas in imports should be cached.
+     */
+    public void setSkipRemoteSchemaImportCaching(boolean skipRemoteSchemaImportCaching) {
+        this.skipRemoteSchemaImportCaching = skipRemoteSchemaImportCaching;
+    }
+
+    /**
+     * @return The map of schema URIs to path locations.
+     */
+    public Map<String, Path> getRemoteSchemaImportMappings() {
+        return remoteSchemaImportMappings;
+    }
+
+    /**
+     * @param remoteSchemaImportMappings The map of schema URIs to path locations.
+     */
+    public void setRemoteSchemaImportMappings(Map<String, Path> remoteSchemaImportMappings) {
+        this.remoteSchemaImportMappings = remoteSchemaImportMappings;
+    }
+
+    /**
+     * Check to see whether any validation types are set for remote schema import preloading.
+     *
+     * @return The check result.
+     */
+    public boolean isPreloadingRemoteSchemaImportsForAnyType() {
+        return preloadRemoteSchemaImports != null && preloadRemoteSchemaImports.values().stream().anyMatch(preload -> preload);
+    }
+
+    /**
+     * Check whether remote schema imports should be preloaded at startup for the given validation type.
+     *
+     * @param validationType The validation type.
+     * @return The check result.
+     */
+    public boolean preloadRemoteSchemaImports(String validationType) {
+        return preloadRemoteSchemaImports != null && preloadRemoteSchemaImports.compute(validationType, (k, flag) -> flag != null && flag);
+    }
+
+    /**
+     * @param preloadRemoteSchemaImports The map of full validation types to whether remote schema imports should be preloaded at startup.
+     */
+    public void setPreloadRemoteSchemaImports(Map<String, Boolean> preloadRemoteSchemaImports) {
+        this.preloadRemoteSchemaImports = preloadRemoteSchemaImports;
+    }
 
     /** @return The map of full validation types to XSLT files for input transformation. */
     public Map<String, Path> getInputTransformerMap() {

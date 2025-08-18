@@ -82,11 +82,35 @@ public class ValidationSpecs {
     private XMLInputFactory xmlInputFactory;
     private TransformerFactory transformerFactory;
     private Document schematronInputAsDocument;
+    private boolean validateAgainstSchematrons = true;
+    private boolean validateAgainstPlugins = true;
+    private boolean logProgress = true;
 
     /**
      * Private constructor to prevent direct initialisation.
      */
     private ValidationSpecs() {}
+
+    /**
+     * @return Whether validation progress should be logged.
+     */
+    public boolean isLogProgress() {
+        return logProgress;
+    }
+
+    /**
+     * @return Whether the input should be validated against schematrons.
+     */
+    public boolean isValidateAgainstSchematrons() {
+        return validateAgainstSchematrons;
+    }
+
+    /**
+     * @return Whether the input should be validated against custom plugins.
+     */
+    public boolean isValidateAgainstPlugins() {
+        return validateAgainstPlugins;
+    }
 
     /**
      * @return The pretty-printed JSON content to validate.
@@ -357,8 +381,15 @@ public class ValidationSpecs {
      * @return The list of XSDs.
      */
     public List<FileInfo> getSchemasToUse(FileManager fileManager) {
-        List<FileInfo> schemaFiles = fileManager.getPreconfiguredValidationArtifacts(getDomainConfig(), getValidationType(), DomainConfig.ARTIFACT_TYPE_SCHEMA);
-        schemaFiles.addAll(getExternalSchemas());
+        List<FileInfo> schemaFiles = new ArrayList<>();
+        List<FileInfo> preconfiguredSchemas = fileManager.getPreconfiguredValidationArtifacts(getDomainConfig(), getValidationType(), DomainConfig.ARTIFACT_TYPE_SCHEMA);
+        if (preconfiguredSchemas != null) {
+            schemaFiles.addAll(preconfiguredSchemas);
+        }
+        List<FileInfo> externalSchemas = getExternalSchemas();
+        if (externalSchemas != null) {
+            schemaFiles.addAll(externalSchemas);
+        }
         return schemaFiles;
     }
 
@@ -539,7 +570,7 @@ public class ValidationSpecs {
                                 inputStream,
                                 schemaStream,
                                 errorHandler,
-                                applicationContext.getBean(XSDFileResolver.class, getValidationType(), getDomainConfig(), schemaFile.getParent()),
+                                applicationContext.getBean(XSDFileResolver.class, getDomainConfig(), schemaFile.toURI()),
                                 getLocalisationHelper().getLocale()
                         );
                     } catch (Exception e) {
@@ -748,6 +779,36 @@ public class ValidationSpecs {
          */
         public Builder withTempFolder(Path tempFolder) {
             instance.tempFolder = tempFolder;
+            return this;
+        }
+
+        /**
+         * Skip schematron validation.
+         *
+         * @return The builder.
+         */
+        public Builder skipSchematronValidation() {
+            instance.validateAgainstSchematrons = false;
+            return this;
+        }
+
+        /**
+         * Skip plugin validation.
+         *
+         * @return The builder.
+         */
+        public Builder skipPluginValidation() {
+            instance.validateAgainstPlugins = false;
+            return this;
+        }
+
+        /**
+         * Skip progress logging.
+         *
+         * @return The builder instance.
+         */
+        public Builder skipProgressLogging() {
+            this.instance.logProgress = false;
             return this;
         }
 

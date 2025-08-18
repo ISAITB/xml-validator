@@ -520,26 +520,26 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
         if (externalContentType != null) {
             for (int i=0; i<externalContentType.length; i++) {
                 if (StringUtils.isNotBlank(externalContentType[i])) {
-                    File file = null;
+                    FileInfo fileInfo = null;
                     if (CONTENT_TYPE_FILE.equals(externalContentType[i])) {
                         if (!externalFiles[i].isEmpty()) {
                             try (var stream = externalFiles[i].getInputStream()) {
-                                file = fileManager.getFileFromInputStream(parentFolder, stream, FileManager.EXTERNAL_FILE, externalFiles[i].getOriginalFilename());
+                                fileInfo = new FileInfo(fileManager.getFileFromInputStream(parentFolder, stream, FileManager.EXTERNAL_FILE, externalFiles[i].getOriginalFilename()));
                             }
                         }
                     } else if (CONTENT_TYPE_STRING.equals(externalContentType[i])) {
                         if (StringUtils.isNotBlank(externalStrings[i])) {
-                            file = fileManager.getFileFromString(parentFolder, externalStrings[i], null, null, artifactType);
+                            fileInfo = new FileInfo(fileManager.getFileFromString(parentFolder, externalStrings[i], null, null, artifactType));
                         }
                     } else {
                         if (StringUtils.isNotBlank(externalUri[i])) {
-                            file = fileManager.getFileFromURL(parentFolder, externalUri[i], null, null, artifactType, domainConfig.getHttpVersion());
+                            fileInfo = fileManager.getFileFromURL(parentFolder, externalUri[i], null, null, null, null, artifactType, null, domainConfig.getHttpVersion());
                         }
                     }
-                    if (file != null) {
-                        File rootFile = this.fileManager.unzipFile(parentFolder, file);
+                    if (fileInfo != null) {
+                        File rootFile = this.fileManager.unzipFile(parentFolder, fileInfo.getFile());
                         if (rootFile == null) {
-                            artifacts.add(new FileInfo(fileManager.preprocessFileIfNeeded(domainConfig, validationType, artifactType, file, true)));
+                            artifacts.add(new FileInfo(fileManager.preprocessFileIfNeeded(domainConfig, validationType, artifactType, fileInfo.getFile(), true), fileInfo.getType(), fileInfo.getSource()));
                         } else {
                             // ZIP File
                             boolean proceed;

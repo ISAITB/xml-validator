@@ -16,34 +16,28 @@
 package eu.europa.ec.itb.xml.util;
 
 import eu.europa.ec.itb.validation.commons.BaseFileManager;
-import eu.europa.ec.itb.validation.commons.FileInfo;
-import eu.europa.ec.itb.validation.commons.error.ValidatorException;
+import eu.europa.ec.itb.validation.commons.StreamInfo;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.Metadata;
-import org.apache.xerces.impl.xs.XMLSchemaLoader;
-import org.apache.xerces.util.XMLCatalogResolver;
-import org.apache.xerces.xni.XMLResourceIdentifier;
-import org.apache.xerces.xni.XNIException;
-import org.apache.xerces.xs.StringList;
-import org.apache.xerces.xs.XSModel;
-import org.apache.xerces.xs.XSNamespaceItem;
-import org.apache.xerces.xs.XSNamespaceItemList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
-import java.net.http.HttpClient;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.nio.file.StandardCopyOption;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -55,6 +49,59 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
 
     /** Flag to indicate that the given file is externally provided. */
     public static final String EXTERNAL_FILE = "external";
+    private static final Logger LOG = LoggerFactory.getLogger(FileManager.class);
+
+    private final ConcurrentHashMap<String, Path> remoteResourceCache = new ConcurrentHashMap<>();
+
+    /**
+     * Retrieve an external resource from the cache.
+     *
+     * @param domain The current domain configuration.
+     * @param uri The resource to retrieve.
+     * @return The local resource.
+     */
+    public Path retrieveCachedRemoteResource(DomainConfig domain, URI uri) {
+        String key = "%s|%s".formatted(domain.getDomain(), Objects.requireNonNull(uri));
+        return remoteResourceCache.compute(key, (k, existingPath) -> {
+            if (existingPath == null || !Files.exists(existingPath)) {
+                try {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("No cached resource found for [{}]. Downloading...", uri);
+                    }
+                    return writeResourceToCache(domain, uri);
+                } catch (IOException e) {
+                    throw new IllegalStateException("Unable to read remote resource from [%s]".formatted(uri), e);
+                }
+            } else {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Returning [{}] from cache", uri);
+                }
+                return existingPath;
+            }
+        });
+    }
+
+    /**
+     * Write the provided resource to the cache.
+     *
+     * @param domain The current domain.
+     * @param uri The remote resource to write.
+     * @return The local cached path.
+     * @throws IOException If an IO error occurs.
+     */
+    private Path writeResourceToCache(DomainConfig domain, URI uri) throws IOException {
+        StreamInfo streamInfo = null;
+        try {
+            streamInfo = getInputStreamFromURL(uri.toString(), null, domain.getHttpVersion());
+            Path parentFolder = getTempFolder().toPath().resolve("remote_cache").resolve(domain.getDomain());
+            Files.createDirectories(parentFolder);
+            Path targetFile = parentFolder.resolve(UUID.randomUUID().toString());
+            Files.copy(streamInfo.stream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+            return targetFile;
+        } finally {
+            if (streamInfo != null) IOUtils.close(streamInfo.stream());
+        }
+    }
 
     /**
      * @see BaseFileManager#getFileExtension(String)
@@ -231,80 +278,6 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
             return unzipFiles;
         } else {
             return null;
-        }
-    }
-
-    /**
-     * @see BaseFileManager#getExternalValidationArtifacts(eu.europa.ec.itb.validation.commons.config.DomainConfig, String, String, File, List, HttpClient.Version)
-     *
-     * In case of XML schemas ensure that imported schemas are also downloaded and cached.
-     *
-     * @param targetFolder The folder to store the file in.
-     * @param url The URL to load.
-     * @param extension The file extension for the created file.
-     * @param fileName The name of the file to use.
-     * @param preprocessorFile An optional file for a preprocessing resource to be used to determine the final loaded file.
-     * @param preprocessorOutputExtension The file extension for the file produced via preprocessing (if applicable).
-     * @param artifactType The type of validation artifact.
-     * @param acceptedContentTypes A (nullable) list of content types to accept for the request.
-     * @param httpVersion The HTTP version to use.
-     * @return The stored file.
-     * @throws IOException If the file could not be retrieved or stored.
-     */
-    @Override
-    public FileInfo getFileFromURL(File targetFolder, String url, String extension, String fileName, File preprocessorFile, String preprocessorOutputExtension, String artifactType, List<String> acceptedContentTypes, HttpClient.Version httpVersion) throws IOException {
-        FileInfo savedFile = super.getFileFromURL(targetFolder, url, extension, fileName, preprocessorFile, preprocessorOutputExtension, artifactType, acceptedContentTypes, httpVersion);
-        if (DomainConfig.ARTIFACT_TYPE_SCHEMA.equals(artifactType)) {
-            retrieveSchemasForImports(url, new File(savedFile.getFile().getParent(), "import"), httpVersion);
-        }
-        return savedFile;
-    }
-
-    /**
-     * Retrieve the schema for the provided URI and store it in the target folder.
-     *
-     * @param rootURI The URI.
-     * @param rootFolder The folder.
-     * @param httpVersion The HTTP version to use.
-     */
-    private void retrieveSchemasForImports(String rootURI, File rootFolder, HttpClient.Version httpVersion) {
-        XMLSchemaLoader xsdLoader = new XMLSchemaLoader();
-        Set<String> documentLocations = new HashSet<>();
-        // Use a custom resolver as this will handle XSDs as well as DTDs.
-        xsdLoader.setEntityResolver(new XMLCatalogResolver() {
-            @Override
-            public String resolveIdentifier(XMLResourceIdentifier resourceIdentifier) throws IOException, XNIException {
-                String expandedLocation = resourceIdentifier.getExpandedSystemId();
-                if (expandedLocation != null && !documentLocations.contains(expandedLocation)) {
-                    try {
-                        getFileFromURL(rootFolder, expandedLocation, httpVersion);
-                        documentLocations.add(expandedLocation);
-                    } catch (IOException e) {
-                        throw new ValidatorException("validator.label.exception.loadingRemoteSchemas", e);
-                    }
-                }
-                return super.resolveIdentifier(resourceIdentifier);
-            }
-        });
-        try {
-            // Iterate also over the namespaces XSD imports and includes to ensure we haven't missed anything from the custom resolver.
-            XSModel xsdModel = xsdLoader.loadURI(rootURI);
-            XSNamespaceItemList xsdNamespaceItemList = xsdModel.getNamespaceItems();
-            for (int i=0; i<xsdNamespaceItemList.getLength(); i++) {
-                XSNamespaceItem xsdItem = (XSNamespaceItem) xsdNamespaceItemList.get(i);
-                StringList sl = xsdItem.getDocumentLocations();
-                for (int k=0; k<sl.getLength(); k++) {
-                    if (!documentLocations.contains(sl.item(k))) {
-                        String currentLocation = (String)sl.get(k);
-                        getFileFromURL(rootFolder, currentLocation, httpVersion);
-                        documentLocations.add(currentLocation);
-                    }
-                }
-            }
-        } catch (ValidatorException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ValidatorException("validator.label.exception.loadingRemoteSchemas", e);
         }
     }
 

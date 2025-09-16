@@ -16,7 +16,7 @@
 package eu.europa.ec.itb.xml.validation;
 
 import com.gitb.tr.*;
-import com.helger.commons.error.level.EErrorLevel;
+import com.helger.diagnostics.error.level.EErrorLevel;
 import com.helger.schematron.svrl.AbstractSVRLMessage;
 import com.helger.schematron.svrl.SVRLHelper;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;

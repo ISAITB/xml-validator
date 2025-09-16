@@ -37,13 +37,24 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | Guava ListenableFuture only | com.google.guava:listenablefuture | 9999.0-empty-to-avoid-conflict-with-guava | https://github.com/google/guava/listenablefuture |
 | Apache License, Version 2.0 | J2ObjC Annotations | com.google.j2objc:j2objc-annotations | 1.3 | https://github.com/google/j2objc/ |
 | Apache License, Version 2.0 | OWASP Java HTML Sanitizer | com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer | 20220608.1 | https://github.com/OWASP/java-html-sanitizer/owasp-java-html-sanitizer |
-| Apache License, Version 2.0 | ph-commons | com.helger.commons:ph-commons | 11.2.0 | https://github.com/phax/ph-commons/ph-commons |
-| Apache License, Version 2.0 | ph-jaxb | com.helger.commons:ph-jaxb | 11.2.0 | https://github.com/phax/ph-commons/ph-jaxb |
-| Apache License, Version 2.0 | ph-xml | com.helger.commons:ph-xml | 11.2.0 | https://github.com/phax/ph-commons/ph-xml |
-| Apache License, Version 2.0 | ph-schematron-api | com.helger.schematron:ph-schematron-api | 8.0.6 | https://github.com/phax/ph-schematron/ph-schematron-api |
-| Apache License, Version 2.0 | ph-schematron-pure | com.helger.schematron:ph-schematron-pure | 8.0.6 | https://github.com/phax/ph-schematron/ph-schematron-pure |
-| Apache License, Version 2.0 | ph-schematron-xslt | com.helger.schematron:ph-schematron-xslt | 8.0.6 | https://github.com/phax/ph-schematron/ph-schematron-xslt |
-| Apache License, Version 2.0 | ph-xsds-xml | com.helger.xsd:ph-xsds-xml | 3.0.0 | https://github.com/phax/ph-xsds/ph-xsds-xml |
+| Apache License, Version 2.0 | ph-annotations | com.helger.commons:ph-annotations | 12.0.0 | https://github.com/phax/ph-commons/ph-annotations |
+| Apache License, Version 2.0 | ph-base | com.helger.commons:ph-base | 12.0.0 | https://github.com/phax/ph-commons/ph-base |
+| Apache License, Version 2.0 | ph-cache | com.helger.commons:ph-cache | 12.0.0 | https://github.com/phax/ph-commons/ph-cache |
+| Apache License, Version 2.0 | ph-collection | com.helger.commons:ph-collection | 12.0.0 | https://github.com/phax/ph-commons/ph-collection |
+| Apache License, Version 2.0 | ph-datetime | com.helger.commons:ph-datetime | 12.0.0 | https://github.com/phax/ph-commons/ph-datetime |
+| Apache License, Version 2.0 | ph-diagnostics | com.helger.commons:ph-diagnostics | 12.0.0 | https://github.com/phax/ph-commons/ph-diagnostics |
+| Apache License, Version 2.0 | ph-io | com.helger.commons:ph-io | 12.0.0 | https://github.com/phax/ph-commons/ph-io |
+| Apache License, Version 2.0 | ph-jaxb | com.helger.commons:ph-jaxb | 12.0.0 | https://github.com/phax/ph-commons/ph-jaxb |
+| Apache License, Version 2.0 | ph-jaxb-adapter | com.helger.commons:ph-jaxb-adapter | 12.0.0 | https://github.com/phax/ph-commons/ph-jaxb-adapter |
+| Apache License, Version 2.0 | ph-mime | com.helger.commons:ph-mime | 12.0.0 | https://github.com/phax/ph-commons/ph-mime |
+| Apache License, Version 2.0 | ph-statistics | com.helger.commons:ph-statistics | 12.0.0 | https://github.com/phax/ph-commons/ph-statistics |
+| Apache License, Version 2.0 | ph-text | com.helger.commons:ph-text | 12.0.0 | https://github.com/phax/ph-commons/ph-text |
+| Apache License, Version 2.0 | ph-typeconvert | com.helger.commons:ph-typeconvert | 12.0.0 | https://github.com/phax/ph-commons/ph-typeconvert |
+| Apache License, Version 2.0 | ph-xml | com.helger.commons:ph-xml | 12.0.0 | https://github.com/phax/ph-commons/ph-xml |
+| Apache License, Version 2.0 | ph-schematron-api | com.helger.schematron:ph-schematron-api | 9.0.1 | https://github.com/phax/ph-schematron/ph-schematron-api |
+| Apache License, Version 2.0 | ph-schematron-pure | com.helger.schematron:ph-schematron-pure | 9.0.1 | https://github.com/phax/ph-schematron/ph-schematron-pure |
+| Apache License, Version 2.0 | ph-schematron-xslt | com.helger.schematron:ph-schematron-xslt | 9.0.1 | https://github.com/phax/ph-schematron/ph-schematron-xslt |
+| Apache License, Version 2.0 | ph-xsds-xml | com.helger.xsd:ph-xsds-xml | 4.0.0 | https://github.com/phax/ph-xsds/ph-xsds-xml |
 | Apache License, Version 2.0 | MaxMind DB Reader | com.maxmind.db:maxmind-db | 2.0.0 | http://dev.maxmind.com/ |
 | Apache License, Version 2.0 | MaxMind GeoIP2 API | com.maxmind.geoip2:geoip2 | 3.0.1 | https://dev.maxmind.com/geoip?lang=en |
 | Eclipse Distribution License - v1.0 | istack common utility code runtime | com.sun.istack:istack-commons-runtime | 4.1.2 | https://projects.eclipse.org/projects/ee4j/istack-commons/istack-commons-runtime |
@@ -53,7 +64,7 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | Apache Commons IO | commons-io:commons-io | 2.17.0 | https://commons.apache.org/proper/commons-io/ |
 | Apache License, Version 2.0 | Logging | commons-logging:commons-logging | 1.0.4 | http://jakarta.apache.org/commons/logging/ |
 | Apache License, Version 2.0 | PDFBox-Graphics2d | de.rototor.pdfbox:graphics2d | 3.0.1 | https://github.com/rototor/pdfbox-graphics2d/graphics2d |
-| European Union Public Licence (EUPL) Version 1.2 | gitb-types-jakarta | eu.europa.ec.itb:gitb-types-jakarta | 1.26.0 | https://interoperable-europe.ec.europa.eu/collection/interoperability-test-bed-repository/solution/interoperability-test-bed/gitb-types-jakarta |
+| European Union Public Licence (EUPL) Version 1.2 | eu.europa.ec.itb:gitb-types-jakarta | eu.europa.ec.itb:gitb-types-jakarta | 1.26.0 | https://interoperable-europe.ec.europa.eu/collection/interoperability-test-bed-repository/solution/interoperability-test-bed/gitb-types-jakarta |
 | MIT License | ClassGraph | io.github.classgraph:classgraph | 4.8.149 | https://github.com/classgraph/classgraph |
 | GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf Core Renderer | io.github.openhtmltopdf:openhtmltopdf-core | 1.1.28 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-core |
 | GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf PDF Rendering (Apache PDF-BOX 3) | io.github.openhtmltopdf:openhtmltopdf-pdfbox | 1.1.28 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-pdfbox |
@@ -72,7 +83,7 @@ This product depends on software developed by third parties as listed in the fol
 | Eclipse Distribution License - v1.0 | Jakarta XML Binding API | jakarta.xml.bind:jakarta.xml.bind-api | 4.0.2 | https://github.com/jakartaee/jaxb-api/jakarta.xml.bind-api |
 | Eclipse Distribution License - v1.0 | Jakarta SOAP with Attachments API | jakarta.xml.soap:jakarta.xml.soap-api | 3.0.2 | https://github.com/jakartaee/saaj-api |
 | Eclipse Distribution License - v1.0 | Jakarta XML Web Services API | jakarta.xml.ws:jakarta.xml.ws-api | 4.0.2 | https://github.com/jakartaee/jax-ws-api |
-| Mozilla Public License Version 2.0 | Saxon-HE | net.sf.saxon:Saxon-HE | 12.4 | http://www.saxonica.com/ |
+| Mozilla Public License Version 2.0 | Saxon-HE | net.sf.saxon:Saxon-HE | 12.8 | http://www.saxonica.com/ |
 | Apache License, Version 2.0 | Apache Commons Configuration | org.apache.commons:commons-configuration2 | 2.11.0 | https://commons.apache.org/proper/commons-configuration/ |
 | Apache License, Version 2.0 | Apache Commons CSV | org.apache.commons:commons-csv | 1.12.0 | https://commons.apache.org/proper/commons-csv/ |
 | Apache License, Version 2.0 | Apache Commons Lang | org.apache.commons:commons-lang3 | 3.18.0 | https://commons.apache.org/proper/commons-lang/ |
@@ -90,9 +101,6 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | Apache CXF Runtime Core for WSDL | org.apache.cxf:cxf-rt-wsdl | 4.1.3 | https://cxf.apache.org |
 | Apache License, Version 2.0 | Apache CXF Spring Boot Autoconfigure | org.apache.cxf:cxf-spring-boot-autoconfigure | 4.1.3 | https://cxf.apache.org |
 | Apache License, Version 2.0 | Apache CXF Spring Boot Starter JAX-WS | org.apache.cxf:cxf-spring-boot-starter-jaxws | 4.1.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache HttpClient | org.apache.httpcomponents.client5:httpclient5 | 5.4.4 | https://hc.apache.org/httpcomponents-client-5.4.x/5.4.4/httpclient5/ |
-| Apache License, Version 2.0 | Apache HttpComponents Core HTTP/1.1 | org.apache.httpcomponents.core5:httpcore5 | 5.3.4 | https://hc.apache.org/httpcomponents-core-5.3.x/5.3.4/httpcore5/ |
-| Apache License, Version 2.0 | Apache HttpComponents Core HTTP/2 | org.apache.httpcomponents.core5:httpcore5-h2 | 5.3.4 | https://hc.apache.org/httpcomponents-core-5.3.x/5.3.4/httpcore5-h2/ |
 | Apache License, Version 2.0 | Apache Log4j API | org.apache.logging.log4j:log4j-api | 2.24.3 | https://logging.apache.org/log4j/2.x/log4j/log4j-api/ |
 | Apache License, Version 2.0 | Log4j API to SLF4J Adapter | org.apache.logging.log4j:log4j-to-slf4j | 2.24.3 | https://logging.apache.org/log4j/2.x/log4j/log4j-to-slf4j/ |
 | Apache License, Version 2.0 | Apache Neethi | org.apache.neethi:neethi | 3.2.1 | https://ws.apache.org/neethi/ |
@@ -180,7 +188,7 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | Swagger UI | org.webjars:swagger-ui | 5.18.2 | https://www.webjars.org |
 | MIT License | webjars-locator-core | org.webjars:webjars-locator-core | 0.53 | http://webjars.org |
 | MIT License | webjars-locator-lite | org.webjars:webjars-locator-lite | 1.1.0 | https://webjars.org |
-| Apache License, Version 2.0 | XML Resolver | org.xmlresolver:xmlresolver | 5.2.2 | https://github.com/xmlresolver/xmlresolver |
+| Apache License, Version 2.0 | XML Resolver | org.xmlresolver:xmlresolver | 5.3.3 | https://github.com/xmlresolver/xmlresolver |
 | Apache License, Version 2.0 | SnakeYAML | org.yaml:snakeyaml | 2.4 | https://bitbucket.org/snakeyaml/snakeyaml |
 | Common Public License 1.0 | WSDL4J | wsdl4j:wsdl4j | 1.6.3 | http://sf.net/projects/wsdl4j |
 | Apache License, Version 2.0 | Xerces2-j | xerces:xercesImpl | 2.12.2 | https://xerces.apache.org/xerces2-j/ |

@@ -1,6 +1,6 @@
 # Notice
 
-Copyright (C) 2025 European Union
+Copyright (C) 2026 European Union
 
 Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions
 of the EUPL (the "Licence"); You may not use this work except in compliance with the Licence.
@@ -19,10 +19,10 @@ This product depends on software developed by third parties as listed in the fol
 
 | Licence type | Name | Dependency | Version | Link |
 | :----------- | :--- | :--------- | :------ | :--- |
-| Eclipse Public License - v1.0, GNU Lesser General Public License (LGPL), Version 2.1 | Logback Classic Module | ch.qos.logback:logback-classic | 1.5.22 | http://logback.qos.ch/logback-classic |
-| Eclipse Public License - v1.0, GNU Lesser General Public License (LGPL), Version 2.1 | Logback Core Module | ch.qos.logback:logback-core | 1.5.22 | http://logback.qos.ch/logback-core |
+| Eclipse Public License - v1.0, GNU Lesser General Public License (LGPL), Version 2.1 | Logback Classic Module | ch.qos.logback:logback-classic | 1.5.25 | http://logback.qos.ch/logback-classic |
+| Eclipse Public License - v1.0, GNU Lesser General Public License (LGPL), Version 2.1 | Logback Core Module | ch.qos.logback:logback-core | 1.5.25 | http://logback.qos.ch/logback-core |
 | Apache License, Version 2.0 | bucket4j_jdk17-core | com.bucket4j:bucket4j_jdk17-core | 8.16.0 | http://github.com/bucket4j/bucket4j/bucket4j_jdk17-core |
-| Apache License, Version 2.0 | ClassMate | com.fasterxml:classmate | 1.7.1 | https://github.com/FasterXML/java-classmate |
+| Apache License, Version 2.0 | ClassMate | com.fasterxml:classmate | 1.7.3 | https://github.com/FasterXML/java-classmate |
 | Apache License, Version 2.0 | Jackson-annotations | com.fasterxml.jackson.core:jackson-annotations | 2.19.4 | https://github.com/FasterXML/jackson |
 | Apache License, Version 2.0 | Jackson-core | com.fasterxml.jackson.core:jackson-core | 2.19.4 | https://github.com/FasterXML/jackson-core |
 | Apache License, Version 2.0 | jackson-databind | com.fasterxml.jackson.core:jackson-databind | 2.19.4 | https://github.com/FasterXML/jackson |
@@ -69,12 +69,12 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | PDFBox-Graphics2d | de.rototor.pdfbox:graphics2d | 3.0.1 | https://github.com/rototor/pdfbox-graphics2d/graphics2d |
 | European Union Public Licence (EUPL) Version 1.2 | eu.europa.ec.itb:gitb-types-jakarta | eu.europa.ec.itb:gitb-types-jakarta | 1.26.0 | https://interoperable-europe.ec.europa.eu/collection/interoperability-test-bed-repository/solution/interoperability-test-bed/gitb-types-jakarta |
 | MIT License | ClassGraph | io.github.classgraph:classgraph | 4.8.149 | https://github.com/classgraph/classgraph |
-| GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf Core Renderer | io.github.openhtmltopdf:openhtmltopdf-core | 1.1.28 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-core |
-| GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf PDF Rendering (Apache PDF-BOX 3) | io.github.openhtmltopdf:openhtmltopdf-pdfbox | 1.1.28 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-pdfbox |
-| GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf slf4j Support | io.github.openhtmltopdf:openhtmltopdf-slf4j | 1.1.28 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-slf4j |
-| GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf SVG Support | io.github.openhtmltopdf:openhtmltopdf-svg-support | 1.1.28 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-svg-support |
-| Apache License, Version 2.0 | micrometer-commons | io.micrometer:micrometer-commons | 1.15.7 | https://github.com/micrometer-metrics/micrometer |
-| Apache License, Version 2.0 | micrometer-observation | io.micrometer:micrometer-observation | 1.15.7 | https://github.com/micrometer-metrics/micrometer |
+| GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf Core Renderer | io.github.openhtmltopdf:openhtmltopdf-core | 1.1.37 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-core |
+| GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf PDF Rendering (Apache PDF-BOX 3) | io.github.openhtmltopdf:openhtmltopdf-pdfbox | 1.1.37 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-pdfbox |
+| GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf slf4j Support | io.github.openhtmltopdf:openhtmltopdf-slf4j | 1.1.37 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-slf4j |
+| GNU Lesser General Public License (LGPL), Version 2.1 | Openhtmltopdf SVG Support | io.github.openhtmltopdf:openhtmltopdf-svg-support | 1.1.37 | https://github.com/openhtmltopdf/openhtmltopdf/openhtmltopdf-svg-support |
+| Apache License, Version 2.0 | micrometer-commons | io.micrometer:micrometer-commons | 1.15.8 | https://github.com/micrometer-metrics/micrometer |
+| Apache License, Version 2.0 | micrometer-observation | io.micrometer:micrometer-observation | 1.15.8 | https://github.com/micrometer-metrics/micrometer |
 | Apache License, Version 2.0 | swagger-annotations-jakarta | io.swagger.core.v3:swagger-annotations-jakarta | 2.2.25 | https://github.com/swagger-api/swagger-core/modules/swagger-annotations-jakarta |
 | Apache License, Version 2.0 | swagger-core-jakarta | io.swagger.core.v3:swagger-core-jakarta | 2.2.25 | https://github.com/swagger-api/swagger-core/modules/swagger-core-jakarta |
 | Apache License, Version 2.0 | swagger-models-jakarta | io.swagger.core.v3:swagger-models-jakarta | 2.2.25 | https://github.com/swagger-api/swagger-core/modules/swagger-models-jakarta |
@@ -107,9 +107,9 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | Apache Log4j API | org.apache.logging.log4j:log4j-api | 2.24.3 | https://logging.apache.org/log4j/2.x/log4j/log4j-api/ |
 | Apache License, Version 2.0 | Log4j API to SLF4J Adapter | org.apache.logging.log4j:log4j-to-slf4j | 2.24.3 | https://logging.apache.org/log4j/2.x/log4j/log4j-to-slf4j/ |
 | Apache License, Version 2.0 | Apache Neethi | org.apache.neethi:neethi | 3.2.1 | https://ws.apache.org/neethi/ |
-| Apache License, Version 2.0 | Apache FontBox | org.apache.pdfbox:fontbox | 3.0.5 | http://pdfbox.apache.org/ |
-| Apache License, Version 2.0 | Apache PDFBox | org.apache.pdfbox:pdfbox | 3.0.5 | https://www.apache.org/pdfbox-parent/pdfbox/ |
-| Apache License, Version 2.0 | Apache PDFBox io | org.apache.pdfbox:pdfbox-io | 3.0.5 | https://www.apache.org/pdfbox-parent/pdfbox-io/ |
+| Apache License, Version 2.0 | Apache FontBox | org.apache.pdfbox:fontbox | 3.0.6 | http://pdfbox.apache.org/ |
+| Apache License, Version 2.0 | Apache PDFBox | org.apache.pdfbox:pdfbox | 3.0.6 | https://www.apache.org/pdfbox-parent/pdfbox/ |
+| Apache License, Version 2.0 | Apache PDFBox io | org.apache.pdfbox:pdfbox-io | 3.0.6 | https://www.apache.org/pdfbox-parent/pdfbox-io/ |
 | Apache License, Version 2.0 | Apache XmpBox | org.apache.pdfbox:xmpbox | 3.0.3 | https://www.apache.org/pdfbox-parent/xmpbox/ |
 | Apache License, Version 2.0 | Apache Tika core | org.apache.tika:tika-core | 3.2.2 | https://tika.apache.org/ |
 | Apache License, Version 2.0 | tomcat-embed-core | org.apache.tomcat.embed:tomcat-embed-core | 10.1.50 | https://tomcat.apache.org/ |
@@ -165,18 +165,18 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | Spring Commons Logging Bridge | org.springframework:spring-jcl | 6.2.15 | https://github.com/spring-projects/spring-framework |
 | Apache License, Version 2.0 | Spring Web | org.springframework:spring-web | 6.2.15 | https://github.com/spring-projects/spring-framework |
 | Apache License, Version 2.0 | Spring Web MVC | org.springframework:spring-webmvc | 6.2.15 | https://github.com/spring-projects/spring-framework |
-| Apache License, Version 2.0 | spring-boot | org.springframework.boot:spring-boot | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-autoconfigure | org.springframework.boot:spring-boot-autoconfigure | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter | org.springframework.boot:spring-boot-starter | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter-aop | org.springframework.boot:spring-boot-starter-aop | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter-json | org.springframework.boot:spring-boot-starter-json | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter-logging | org.springframework.boot:spring-boot-starter-logging | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter-mail | org.springframework.boot:spring-boot-starter-mail | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter-security | org.springframework.boot:spring-boot-starter-security | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter-thymeleaf | org.springframework.boot:spring-boot-starter-thymeleaf | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter-tomcat | org.springframework.boot:spring-boot-starter-tomcat | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter-validation | org.springframework.boot:spring-boot-starter-validation | 3.5.9 | https://spring.io/projects/spring-boot |
-| Apache License, Version 2.0 | spring-boot-starter-web | org.springframework.boot:spring-boot-starter-web | 3.5.9 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot | org.springframework.boot:spring-boot | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-autoconfigure | org.springframework.boot:spring-boot-autoconfigure | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter | org.springframework.boot:spring-boot-starter | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter-aop | org.springframework.boot:spring-boot-starter-aop | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter-json | org.springframework.boot:spring-boot-starter-json | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter-logging | org.springframework.boot:spring-boot-starter-logging | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter-mail | org.springframework.boot:spring-boot-starter-mail | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter-security | org.springframework.boot:spring-boot-starter-security | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter-thymeleaf | org.springframework.boot:spring-boot-starter-thymeleaf | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter-tomcat | org.springframework.boot:spring-boot-starter-tomcat | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter-validation | org.springframework.boot:spring-boot-starter-validation | 3.5.10 | https://spring.io/projects/spring-boot |
+| Apache License, Version 2.0 | spring-boot-starter-web | org.springframework.boot:spring-boot-starter-web | 3.5.10 | https://spring.io/projects/spring-boot |
 | Apache License, Version 2.0 | spring-security-config | org.springframework.security:spring-security-config | 6.5.7 | https://spring.io/projects/spring-security |
 | Apache License, Version 2.0 | spring-security-core | org.springframework.security:spring-security-core | 6.5.7 | https://spring.io/projects/spring-security |
 | Apache License, Version 2.0 | spring-security-crypto | org.springframework.security:spring-security-crypto | 6.5.7 | https://spring.io/projects/spring-security |
@@ -190,7 +190,7 @@ This product depends on software developed by third parties as listed in the fol
 | MIT License | jquery | org.webjars:jquery | 3.7.1 | http://webjars.org |
 | Apache License, Version 2.0 | Swagger UI | org.webjars:swagger-ui | 5.18.2 | https://www.webjars.org |
 | MIT License | webjars-locator-core | org.webjars:webjars-locator-core | 0.53 | http://webjars.org |
-| MIT License | webjars-locator-lite | org.webjars:webjars-locator-lite | 1.1.2 | https://webjars.org |
+| MIT License | webjars-locator-lite | org.webjars:webjars-locator-lite | 1.1.3 | https://webjars.org |
 | Apache License, Version 2.0 | XML Resolver | org.xmlresolver:xmlresolver | 5.3.3 | https://github.com/xmlresolver/xmlresolver |
 | Apache License, Version 2.0 | SnakeYAML | org.yaml:snakeyaml | 2.4 | https://bitbucket.org/snakeyaml/snakeyaml |
 | Common Public License 1.0 | WSDL4J | wsdl4j:wsdl4j | 1.6.3 | http://sf.net/projects/wsdl4j |
@@ -3549,7 +3549,7 @@ https://www.eclipse.org/legal/epl-2.0
 ### GITB types - Jakarta (eu.europa.ec.itb.gitb-types-jakarta)
 
 ```
-Copyright (C) 2025 European Union
+Copyright (C) 2026 European Union
 
 Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions
 of the EUPL (the "Licence"); You may not use this work except in compliance with the Licence.
@@ -3566,7 +3566,7 @@ language governing permissions and limitations under the Licence.
 ### ITB commons (eu.europa.ec.itb.commons.*)
 
 ```
-Copyright (C) 2025 European Union
+Copyright (C) 2026 European Union
 
 Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions
 of the EUPL (the "Licence"); You may not use this work except in compliance with the Licence.

@@ -2,8 +2,8 @@ publiccodeYmlVersion: 0.4.0
 name: Interoperability Test Bed - XML validator
 applicationSuite: ""
 url: https://github.com/ISAITB/xml-validator
-softwareVersion: 1.9.0
-releaseDate: 2025-08-22
+softwareVersion: 1.10.0
+releaseDate: 2026-02-04
 logo: https://www.itb.ec.europa.eu/files/itb_logo_simple.png?v=1
 platforms:
   - web
@@ -16,6 +16,7 @@ usedBy:
   - European Commission
   - World Health Organization
   - European Maritime Safety Agency
+  - European Union Agency for Railways
   - Publications Office of the European Union
   - IHE Europe
 developmentStatus: stable

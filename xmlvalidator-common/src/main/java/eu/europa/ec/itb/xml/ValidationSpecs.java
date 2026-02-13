@@ -571,7 +571,8 @@ public class ValidationSpecs {
                                 schemaStream,
                                 errorHandler,
                                 applicationContext.getBean(XSDFileResolver.class, getDomainConfig(), schemaFile.toURI()),
-                                getLocalisationHelper().getLocale()
+                                getLocalisationHelper().getLocale(),
+                                getDomainConfig().getSchemaVersionForValidationType(getValidationType())
                         );
                     } catch (Exception e) {
                         throw new IllegalStateException("Context file could not be parsed.", e);

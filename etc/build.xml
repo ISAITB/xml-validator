@@ -22,8 +22,13 @@
         <exec executable="cmd" failonerror="true" failifexecutionfails="true" osfamily="windows">
             <arg line="/c mvn install:install-file -Dfile=${project.basedir}/etc/xerces/xercesImpl.jar -DgroupId=eu.europa.ec.itb.xerces -DartifactId=xercesImpl -Dversion=${version.xercesBuild} -Dpackaging=jar"/>
         </exec>
-        <exec executable="sh" failonerror="true" failifexecutionfails="true" osfamily="unix">
-            <arg value="-c 'mvn install:install-file -Dfile=${project.basedir}/etc/xerces/xercesImpl.jar -DgroupId=eu.europa.ec.itb.xerces -DartifactId=xercesImpl -Dversion=${version.xercesBuild} -Dpackaging=jar'"/>
+        <exec executable="mvn" failonerror="true" failifexecutionfails="true" osfamily="unix">
+            <arg value="install:install-file"/>
+            <arg value="-Dfile=${project.basedir}/etc/xerces/xercesImpl.jar"/>
+            <arg value="-DgroupId=eu.europa.ec.itb.xerces"/>
+            <arg value="-DartifactId=xercesImpl"/>
+            <arg value="-Dversion=${version.xercesBuild}"/>
+            <arg value="-Dpackaging=jar"/>
         </exec>
     </target>
     <target name="xerces-install-xpath2" depends="xerces-check-xpath2" unless="xpath2.exists">
@@ -31,8 +36,13 @@
         <exec executable="cmd" failonerror="true" failifexecutionfails="true" osfamily="windows">
             <arg line="/c mvn install:install-file -Dfile=${project.basedir}/etc/xerces/org.eclipse.wst.xml.xpath2.processor_1.2.1.jar -DgroupId=eu.europa.ec.itb.xerces -DartifactId=org.eclipse.wst.xml.xpath2.processor_1.2.1 -Dversion=${version.xercesBuild} -Dpackaging=jar"/>
         </exec>
-        <exec executable="sh" failonerror="true" failifexecutionfails="true" osfamily="unix">
-            <arg value="-c 'mvn install:install-file -Dfile=${project.basedir}/etc/xerces/org.eclipse.wst.xml.xpath2.processor_1.2.1.jar -DgroupId=eu.europa.ec.itb.xerces -DartifactId=org.eclipse.wst.xml.xpath2.processor_1.2.1 -Dversion=${version.xercesBuild} -Dpackaging=jar'"/>
+        <exec executable="mvn" failonerror="true" failifexecutionfails="true" osfamily="unix">
+            <arg value="install:install-file"/>
+            <arg value="-Dfile=${project.basedir}/etc/xerces/org.eclipse.wst.xml.xpath2.processor_1.2.1.jar"/>
+            <arg value="-DgroupId=eu.europa.ec.itb.xerces"/>
+            <arg value="-DartifactId=org.eclipse.wst.xml.xpath2.processor_1.2.1"/>
+            <arg value="-Dversion=${version.xercesBuild}"/>
+            <arg value="-Dpackaging=jar"/>
         </exec>
     </target>
     <target name="xerces-install-cupv10k" depends="xerces-check-cupv10k" unless="cupv10k.exists">
@@ -40,8 +50,13 @@
         <exec executable="cmd" failonerror="true" failifexecutionfails="true" osfamily="windows">
             <arg line="/c mvn install:install-file -Dfile=${project.basedir}/etc/xerces/cupv10k-runtime.jar -DgroupId=eu.europa.ec.itb.xerces -DartifactId=cupv10k-runtime -Dversion=${version.xercesBuild} -Dpackaging=jar"/>
         </exec>
-        <exec executable="sh" failonerror="true" failifexecutionfails="true" osfamily="unix">
-            <arg value="-c 'mvn install:install-file -Dfile=${project.basedir}/etc/xerces/cupv10k-runtime.jar -DgroupId=eu.europa.ec.itb.xerces -DartifactId=cupv10k-runtime -Dversion=${version.xercesBuild} -Dpackaging=jar'"/>
+        <exec executable="mvn" failonerror="true" failifexecutionfails="true" osfamily="unix">
+            <arg value="install:install-file"/>
+            <arg value="-Dfile=${project.basedir}/etc/xerces/cupv10k-runtime.jar"/>
+            <arg value="-DgroupId=eu.europa.ec.itb.xerces"/>
+            <arg value="-DartifactId=cupv10k-runtime"/>
+            <arg value="-Dversion=${version.xercesBuild}"/>
+            <arg value="-Dpackaging=jar"/>
         </exec>
     </target>
     <target name="xerces-install-icu4j" depends="xerces-check-icu4j" unless="icu4j.exists">
@@ -49,8 +64,13 @@
         <exec executable="cmd" failonerror="true" failifexecutionfails="true" osfamily="windows">
             <arg line="/c mvn install:install-file -Dfile=${project.basedir}/etc/xerces/icu4j.jar -DgroupId=eu.europa.ec.itb.xerces -DartifactId=icu4j -Dversion=${version.xercesBuild} -Dpackaging=jar"/>
         </exec>
-        <exec executable="sh" failonerror="true" failifexecutionfails="true" osfamily="unix">
-            <arg value="-c 'mvn install:install-file -Dfile=${project.basedir}/etc/xerces/icu4j.jar -DgroupId=eu.europa.ec.itb.xerces -DartifactId=icu4j -Dversion=${version.xercesBuild} -Dpackaging=jar'"/>
+        <exec executable="mvn" failonerror="true" failifexecutionfails="true" osfamily="unix">
+            <arg value="install:install-file"/>
+            <arg value="-Dfile=${project.basedir}/etc/xerces/icu4j.jar"/>
+            <arg value="-DgroupId=eu.europa.ec.itb.xerces"/>
+            <arg value="-DartifactId=icu4j"/>
+            <arg value="-Dversion=${version.xercesBuild}"/>
+            <arg value="-Dpackaging=jar"/>
         </exec>
     </target>
 </project>

@@ -56,6 +56,7 @@ public class DomainConfig extends WebDomainConfig {
     private Map<String, Boolean> stopOnXsdErrors;
     private Map<String, Path> remoteSchemaImportMappings;
     private Map<String, Boolean> preloadRemoteSchemaImports;
+    private Map<String, XmlSchemaVersion> schemaVersion;
     private boolean skipRemoteSchemaImportCaching = false;
 
     /**
@@ -468,4 +469,21 @@ public class DomainConfig extends WebDomainConfig {
         this.mailInboundFolder = mailInboundFolder;
     }
 
+    /**
+     * @param validationType The validation type.
+     * @return The XML Schema version to use for the provided validation type (default being v1.0).
+     */
+    public XmlSchemaVersion getSchemaVersionForValidationType(String validationType) {
+        if (validationType != null) {
+            return schemaVersion.getOrDefault(validationType, XmlSchemaVersion.VERSION_1_0);
+        }
+        return XmlSchemaVersion.VERSION_1_0;
+    }
+
+    /**
+     * @param schemaVersion The XML Schema version to use for the provided validation type.
+     */
+    public void setSchemaVersion(Map<String, XmlSchemaVersion> schemaVersion) {
+        this.schemaVersion = schemaVersion;
+    }
 }

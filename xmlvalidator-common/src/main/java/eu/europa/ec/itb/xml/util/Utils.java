@@ -16,6 +16,9 @@
 package eu.europa.ec.itb.xml.util;
 
 import eu.europa.ec.itb.validation.commons.BomStrippingReader;
+import eu.europa.ec.itb.xml.XmlSchemaVersion;
+import org.apache.xerces.impl.Constants;
+import org.apache.xerces.jaxp.validation.XMLSchema11Factory;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.ErrorHandler;
@@ -28,6 +31,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,10 +59,11 @@ public class Utils {
      * @param errorHandler The error handler to configure (optional).
      * @param resourceResolver The resource resolver to configure (optional).
      * @param locale The locale to use for th parsing (optional).
+     * @param schemaVersion The version of the XML Schema.
      * @throws XMLStreamException If the input cannot be parsed as XML.
      * @throws SAXException If the input is invalid (not thrown for regular errors if a custom errorHandler is provided).
      */
-    public static void secureSchemaValidation(InputStream inputToValidate, InputStream schemaToValidateWith, ErrorHandler errorHandler, LSResourceResolver resourceResolver, Locale locale) throws XMLStreamException, SAXException {
+    public static void secureSchemaValidation(InputStream inputToValidate, InputStream schemaToValidateWith, ErrorHandler errorHandler, LSResourceResolver resourceResolver, Locale locale, XmlSchemaVersion schemaVersion) throws XMLStreamException, SAXException {
         /*
          * We create specifically a Xerces parser to allow localisation of output messages.
          * The security configuration for the Xerces parser involves:
@@ -67,12 +72,13 @@ public class Utils {
          * Xerces does not directly support the JAXP 1.5 features to disable XXE (ACCESS_EXTERNAL_DTD, ACCESS_EXTERNAL_SCHEMA)
          * but we ensure secure processing by means of the secured underlying parser.
          */
-        XMLSchemaFactory factory = new XMLSchemaFactory();
+        SchemaFactory factory = schemaVersion == XmlSchemaVersion.VERSION_1_1?new XMLSchema11Factory():new XMLSchemaFactory();
         if (errorHandler != null) factory.setErrorHandler(errorHandler);
         if (resourceResolver != null) factory.setResourceResolver(resourceResolver);
         Schema schema;
         try {
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            factory.setFeature(Constants.XERCES_FEATURE_PREFIX + Constants.SCHEMA_FULL_CHECKING, true);
             schema = factory.newSchema(new StreamSource(schemaToValidateWith));
         } catch (SAXException e) {
             throw new IllegalStateException("Unable to configure schema", e);

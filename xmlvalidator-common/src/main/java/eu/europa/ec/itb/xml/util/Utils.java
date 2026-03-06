@@ -26,8 +26,12 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -35,6 +39,8 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 
 import static eu.europa.ec.itb.validation.commons.Utils.secureXMLInputFactory;
@@ -63,7 +69,7 @@ public class Utils {
      * @throws XMLStreamException If the input cannot be parsed as XML.
      * @throws SAXException If the input is invalid (not thrown for regular errors if a custom errorHandler is provided).
      */
-    public static void secureSchemaValidation(InputStream inputToValidate, InputStream schemaToValidateWith, ErrorHandler errorHandler, LSResourceResolver resourceResolver, Locale locale, XmlSchemaVersion schemaVersion) throws XMLStreamException, SAXException {
+    public static void secureSchemaValidation(InputStream inputToValidate, Path schemaToValidateWith, ErrorHandler errorHandler, LSResourceResolver resourceResolver, Locale locale, @Nullable XmlSchemaVersion schemaVersion) throws XMLStreamException, SAXException {
         /*
          * We create specifically a Xerces parser to allow localisation of output messages.
          * The security configuration for the Xerces parser involves:
@@ -72,16 +78,19 @@ public class Utils {
          * Xerces does not directly support the JAXP 1.5 features to disable XXE (ACCESS_EXTERNAL_DTD, ACCESS_EXTERNAL_SCHEMA)
          * but we ensure secure processing by means of the secured underlying parser.
          */
-        SchemaFactory factory = schemaVersion == XmlSchemaVersion.VERSION_1_1?new XMLSchema11Factory():new XMLSchemaFactory();
+        XmlSchemaVersion schemaVersionToUse = (schemaVersion == null)?parseSchemaVersion(schemaToValidateWith):schemaVersion;
+        SchemaFactory factory = schemaVersionToUse == XmlSchemaVersion.VERSION_1_1?new XMLSchema11Factory():new XMLSchemaFactory();
         if (errorHandler != null) factory.setErrorHandler(errorHandler);
         if (resourceResolver != null) factory.setResourceResolver(resourceResolver);
         Schema schema;
-        try {
+        try (var schemaStream = Files.newInputStream(schemaToValidateWith)) {
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             factory.setFeature(Constants.XERCES_FEATURE_PREFIX + Constants.SCHEMA_FULL_CHECKING, true);
-            schema = factory.newSchema(new StreamSource(schemaToValidateWith));
+            schema = factory.newSchema(new StreamSource(schemaStream));
         } catch (SAXException e) {
             throw new IllegalStateException("Unable to configure schema", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("IO error while configuring schema", e);
         }
         Validator validator = schema.newValidator();
         try {
@@ -96,6 +105,34 @@ public class Utils {
             validator.validate(new StAXSource(secureXMLInputFactory().createXMLStreamReader(reader)));
         } catch (IOException e) {
             throw new IllegalStateException("Unable to read input stream", e);
+        }
+    }
+
+    /**
+     * Parse the XML Schema version from the schema.
+     *
+     * @param schemaToValidateWith The schema to parse.
+     * @return The XML Schema version (defaults to 1.0 if not defined).
+     */
+    private static XmlSchemaVersion parseSchemaVersion(Path schemaToValidateWith) {
+        try (var stream = Files.newInputStream(schemaToValidateWith)) {
+            XMLInputFactory factory = XMLInputFactory.newInstance();
+            factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+            factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+            XMLStreamReader reader = factory.createXMLStreamReader(stream);
+            // Advance to the root element
+            while (reader.hasNext()) {
+                int event = reader.next();
+                if (event == XMLStreamConstants.START_ELEMENT) {
+                    String minVersion = reader.getAttributeValue("http://www.w3.org/2007/XMLSchema-versioning","minVersion");
+                    return "1.1".equals(minVersion) ? XmlSchemaVersion.VERSION_1_1 : XmlSchemaVersion.VERSION_1_0;
+                }
+            }
+            return XmlSchemaVersion.VERSION_1_0;
+        } catch (XMLStreamException e) {
+            throw new RuntimeException("Failed to parse schema version from schema file", e);
+        } catch (IOException e) {
+            throw new RuntimeException("IO failure when parsing schema version from schema file", e);
         }
     }
 

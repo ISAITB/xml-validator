@@ -142,7 +142,8 @@ public class XMLValidator {
             List<TAR> reports = new ArrayList<>();
             for (FileInfo aSchemaFile: schemaFiles) {
                 if (specs.isLogProgress()) {
-                    logger.info("Validating against [{}] (XML Schema {})", aSchemaFile.getFile().getName(), specs.getDomainConfig().getSchemaVersionForValidationType(specs.getValidationType()));
+                    XmlSchemaVersion version = specs.getDomainConfig().getSchemaVersionForValidationType(specs.getValidationType());
+                    logger.info("Validating against [{}]{}", aSchemaFile.getFile().getName(), (version == null)?"":" (XML Schema %s)".formatted(version));
                 }
                 TAR report = validateSchema(specs.getInputStreamForValidation(false), aSchemaFile);
                 logReport(report, aSchemaFile.getFile().getName());
@@ -167,8 +168,8 @@ public class XMLValidator {
     private TAR validateSchema(InputStream inputStream, FileInfo schemaFile) throws XMLInvalidException {
         // Validate XML content against given XSD schema.
         var errorHandler = new XSDReportHandler();
-        try (var schemaStream = Files.newInputStream(schemaFile.getFile().toPath())) {
-            secureSchemaValidation(inputStream, schemaStream, errorHandler, getXSDResolver(schemaFile.getSource()), specs.getLocalisationHelper().getLocale(), specs.getDomainConfig().getSchemaVersionForValidationType(getValidationType()));
+        try {
+            secureSchemaValidation(inputStream, schemaFile.getFile().toPath(), errorHandler, getXSDResolver(schemaFile.getSource()), specs.getLocalisationHelper().getLocale(), specs.getDomainConfig().getSchemaVersionForValidationType(getValidationType()));
         } catch (Exception e) {
             throw new XMLInvalidException(e);
         }

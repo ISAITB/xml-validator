@@ -475,9 +475,9 @@ public class DomainConfig extends WebDomainConfig {
      */
     public XmlSchemaVersion getSchemaVersionForValidationType(String validationType) {
         if (validationType != null) {
-            return schemaVersion.getOrDefault(validationType, XmlSchemaVersion.VERSION_1_0);
+            return schemaVersion.get(validationType);
         }
-        return XmlSchemaVersion.VERSION_1_0;
+        return null;
     }
 
     /**

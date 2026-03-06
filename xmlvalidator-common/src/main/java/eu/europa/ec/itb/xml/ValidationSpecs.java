@@ -562,13 +562,10 @@ public class ValidationSpecs {
                     LOG.info("Validating context file against [{}]", schemaFile.getName());
                     // Validate XML content against given XSD schema.
                     var errorHandler = new XSDReportHandler();
-                    try (
-                            var inputStream = Files.newInputStream(file.file());
-                            var schemaStream = Files.newInputStream(schemaFile.toPath())
-                    ) {
+                    try (var inputStream = Files.newInputStream(file.file())) {
                         secureSchemaValidation(
                                 inputStream,
-                                schemaStream,
+                                schemaFile.toPath(),
                                 errorHandler,
                                 applicationContext.getBean(XSDFileResolver.class, getDomainConfig(), schemaFile.toURI()),
                                 getLocalisationHelper().getLocale(),

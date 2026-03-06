@@ -50,9 +50,11 @@ public enum XmlSchemaVersion {
             return VERSION_1_0;
         } else if (VERSION_1_1.stringValue.equals(value)) {
             return VERSION_1_1;
+        } else if (value == null) {
+            return null;
         } else {
-            LOG.warn("Invalid XML Schema version [{}] (expected '{}' or '{}'. Considering '{}' by default.", value, VERSION_1_0.stringValue, VERSION_1_1.stringValue, VERSION_1_0.stringValue);
-            return VERSION_1_0;
+            LOG.warn("Invalid XML Schema version [{}] (expected '{}' or '{}').", value, VERSION_1_0.stringValue, VERSION_1_1.stringValue);
+            return null;
         }
     }
 

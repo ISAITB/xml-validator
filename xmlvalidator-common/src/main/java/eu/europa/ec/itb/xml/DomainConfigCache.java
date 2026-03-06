@@ -122,7 +122,7 @@ public class DomainConfigCache extends WebDomainConfigCache<DomainConfig> {
         }
         // Local mappings for remote schema imports and caching - end
         // XML Schema version - start
-        domainConfig.setSchemaVersion(ParseUtils.parseEnumMap("validator.schemaVersion", XmlSchemaVersion.from(config.getString("validator.schemaVersion", "1.0")), config, domainConfig.getType(), XmlSchemaVersion::from));
+        domainConfig.setSchemaVersion(ParseUtils.parseEnumMap("validator.schemaVersion", XmlSchemaVersion.from(config.getString("validator.schemaVersion", null)), config, domainConfig.getType(), XmlSchemaVersion::from));
         // XML Schema version - end
     }
 

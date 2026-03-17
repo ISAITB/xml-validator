@@ -52,11 +52,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.URI;
+import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import static eu.europa.ec.itb.xml.util.Utils.secureSchemaValidation;
 
@@ -96,10 +98,11 @@ public class XMLValidator {
      * Create an XSD resolver.
      *
      * @param schemaSource The source from which the schema was initially loaded.
+     * @param requestDecorator The request decorator to use.
      * @return The resolver.
      */
-    private LSResourceResolver getXSDResolver(URI schemaSource) {
-        return ctx.getBean(XSDFileResolver.class, specs.getDomainConfig(), schemaSource);
+    private LSResourceResolver getXSDResolver(URI schemaSource, Consumer<HttpRequest.Builder> requestDecorator) {
+        return ctx.getBean(XSDFileResolver.class, specs.getDomainConfig(), schemaSource, requestDecorator);
     }
 
     /**
@@ -169,7 +172,7 @@ public class XMLValidator {
         // Validate XML content against given XSD schema.
         var errorHandler = new XSDReportHandler();
         try {
-            secureSchemaValidation(inputStream, schemaFile.getFile().toPath(), errorHandler, getXSDResolver(schemaFile.getSource()), specs.getLocalisationHelper().getLocale(), specs.getDomainConfig().getSchemaVersionForValidationType(getValidationType()));
+            secureSchemaValidation(inputStream, schemaFile.getFile().toPath(), errorHandler, getXSDResolver(schemaFile.getSource(), schemaFile.getRequestDecorator()), specs.getLocalisationHelper().getLocale(), specs.getDomainConfig().getSchemaVersionForValidationType(getValidationType()));
         } catch (Exception e) {
             throw new XMLInvalidException(e);
         }

@@ -51,9 +51,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 import static eu.europa.ec.itb.validation.commons.web.Constants.*;
 
@@ -519,28 +521,29 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                                             String artifactType, File parentFolder) throws IOException {
         List<FileInfo> artifacts = new ArrayList<>();
         if (externalContentType != null) {
+            Consumer<HttpRequest.Builder> requestDecorator = fileManager.createRemoteFileRequestDecorator(domainConfig, artifactInfo);
             for (int i=0; i<externalContentType.length; i++) {
                 if (StringUtils.isNotBlank(externalContentType[i])) {
                     FileInfo fileInfo = null;
                     if (CONTENT_TYPE_FILE.equals(externalContentType[i])) {
                         if (!externalFiles[i].isEmpty()) {
                             try (var stream = externalFiles[i].getInputStream()) {
-                                fileInfo = new FileInfo(fileManager.getFileFromInputStream(parentFolder, stream, FileManager.EXTERNAL_FILE, externalFiles[i].getOriginalFilename()));
+                                fileInfo = new FileInfo(fileManager.getFileFromInputStream(parentFolder, stream, FileManager.EXTERNAL_FILE, externalFiles[i].getOriginalFilename()), null, null, requestDecorator);
                             }
                         }
                     } else if (CONTENT_TYPE_STRING.equals(externalContentType[i])) {
                         if (StringUtils.isNotBlank(externalStrings[i])) {
-                            fileInfo = new FileInfo(fileManager.getFileFromString(parentFolder, externalStrings[i], null, null, artifactType));
+                            fileInfo = new FileInfo(fileManager.getFileFromString(parentFolder, externalStrings[i], null, null, artifactType), null, null, requestDecorator);
                         }
                     } else {
                         if (StringUtils.isNotBlank(externalUri[i])) {
-                            fileInfo = fileManager.getFileFromURL(parentFolder, externalUri[i], null, null, null, null, artifactType, null, domainConfig.getHttpVersion());
+                            fileInfo = fileManager.getFileFromURL(parentFolder, externalUri[i], null, null, null, null, artifactType, null, domainConfig.getHttpVersion(), requestDecorator);
                         }
                     }
                     if (fileInfo != null) {
                         File rootFile = this.fileManager.unzipFile(parentFolder, fileInfo.getFile());
                         if (rootFile == null) {
-                            artifacts.add(new FileInfo(fileManager.preprocessFileIfNeeded(domainConfig, validationType, artifactType, fileInfo.getFile(), true), fileInfo.getType(), fileInfo.getSource()));
+                            artifacts.add(new FileInfo(fileManager.preprocessFileIfNeeded(domainConfig, validationType, artifactType, fileInfo.getFile(), true), fileInfo.getType(), fileInfo.getSource(), requestDecorator));
                         } else {
                             // ZIP File
                             boolean proceed;

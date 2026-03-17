@@ -33,9 +33,11 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpRequest;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * URI resolver for XSDs looking up resources from the local file system.
@@ -51,6 +53,7 @@ public class XSDFileResolver implements LSResourceResolver {
 
     private final DomainConfig domainConfig;
     private final URI schemaSource;
+    private final Consumer<HttpRequest.Builder> requestDecorator;
 
     @Autowired
     ApplicationConfig config;
@@ -60,10 +63,12 @@ public class XSDFileResolver implements LSResourceResolver {
      *
      * @param domainConfig The domain configuration.
      * @param schemaSource The source of the initial schema that triggered the validation.
+     * @param requestDecorator The request decorator to use.
      */
-    public XSDFileResolver(DomainConfig domainConfig, URI schemaSource) {
+    public XSDFileResolver(DomainConfig domainConfig, URI schemaSource, Consumer<HttpRequest.Builder> requestDecorator) {
         this.domainConfig = domainConfig;
         this.schemaSource = schemaSource;
+        this.requestDecorator = requestDecorator;
     }
 
     /**
@@ -189,7 +194,7 @@ public class XSDFileResolver implements LSResourceResolver {
         } else if (domainConfig.isSkipRemoteSchemaImportCaching()) {
             // Read from the remote URI directly.
             LOG.debug("Retrieving resource [{}] remotely due to disabled caching", schemaResource);
-            return fileManager.getInputStreamFromURL(uriAsString, null, domainConfig.getHttpVersion()).stream();
+            return fileManager.getInputStreamFromURL(uriAsString, null, domainConfig.getHttpVersion(), requestDecorator).stream();
         } else {
             // Go through our caching layer.
             LOG.debug("Retrieving resource [{}] from cache", schemaResource);

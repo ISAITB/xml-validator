@@ -130,9 +130,9 @@ public class Utils {
             }
             return XmlSchemaVersion.VERSION_1_0;
         } catch (XMLStreamException e) {
-            throw new RuntimeException("Failed to parse schema version from schema file", e);
+            throw new IllegalStateException("Failed to parse schema version from schema file", e);
         } catch (IOException e) {
-            throw new RuntimeException("IO failure when parsing schema version from schema file", e);
+            throw new IllegalStateException("IO failure when parsing schema version from schema file", e);
         }
     }
 

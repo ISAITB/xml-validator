@@ -18,7 +18,7 @@ package eu.europa.ec.itb.xml.validation;
 import com.helger.diagnostics.error.IError;
 import com.helger.schematron.pure.errorhandler.LoggingPSErrorHandler;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 /**
  * Custom error handler that is used in the case of pure schematron resources to detect whether errors are due to

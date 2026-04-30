@@ -25,10 +25,7 @@ import eu.europa.ec.itb.validation.commons.jar.BaseValidationRunner;
 import eu.europa.ec.itb.validation.commons.jar.FileReport;
 import eu.europa.ec.itb.validation.commons.jar.ValidationInput;
 import eu.europa.ec.itb.validation.commons.report.ReportGeneratorBean;
-import eu.europa.ec.itb.xml.ContextFileData;
-import eu.europa.ec.itb.xml.DomainConfig;
-import eu.europa.ec.itb.xml.InputHelper;
-import eu.europa.ec.itb.xml.ValidationSpecs;
+import eu.europa.ec.itb.xml.*;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
 import org.apache.commons.lang3.LocaleUtils;
@@ -42,10 +39,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * Component that handles the actual triggering of validation and resulting reporting.
@@ -65,6 +59,8 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
     @Autowired
     private ApplicationContext ctx;
     @Autowired
+    private ApplicationConfig appConfig;
+    @Autowired
     private FileManager fileManager;
     @Autowired
     private ReportGeneratorBean reportGenerator;
@@ -83,13 +79,15 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
      * @throws IOException If an IO error occurs.
      */
     private File getContent(String contentPath, File parentFolder, String fileName) throws IOException {
-        File fileToUse;
+        File fileToUse = null;
         if (isValidURL(contentPath)) {
             // Value is a URL.
-            try {
-                fileToUse = fileManager.getFileFromURL(parentFolder, contentPath, fileName, domainConfig.getHttpVersion());
-            } catch (IOException e) {
-                throw new ValidatorException("validator.label.exception.unableToReadFileFromURL", e, contentPath);
+            if (appConfig.isUriReadAllowed(contentPath)) {
+                try {
+                    fileToUse = fileManager.getFileFromURL(parentFolder, contentPath, fileName, domainConfig.getHttpVersion());
+                } catch (IOException e) {
+                    throw new ValidatorException("validator.label.exception.unableToReadFileFromURL", e, contentPath);
+                }
             }
         } else {
             // Value is a local file. Copy this in the tmp folder as we may later be changing it (e.g. encoding updates).
@@ -101,7 +99,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
             Files.createDirectories(finalInputFile.getParent());
             fileToUse = Files.copy(inputFile, finalInputFile).toFile();
         }
-        return fileToUse;
+        return Objects.requireNonNull(fileToUse);
     }
 
     /**

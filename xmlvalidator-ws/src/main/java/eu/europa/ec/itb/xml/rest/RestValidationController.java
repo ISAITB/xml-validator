@@ -68,6 +68,8 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
     private ApplicationContext ctx = null;
     @Autowired
     private FileManager fileManager = null;
+    @Autowired
+    private ApplicationConfig appConfig = null;
 
     /**
      * {@inheritDoc}
@@ -356,7 +358,11 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
                     if (receivedContextFile.getEmbeddingMethod() != null) {
                         switch (receivedContextFile.getEmbeddingMethod()) {
                             case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
-                            case URI -> fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), config.getHttpVersion());
+                            case URI -> {
+                                if (appConfig.isUriReadAllowed(receivedContextFile.getContent())) {
+                                    fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), config.getHttpVersion());
+                                }
+                            }
                             default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
                         }
                     } else {

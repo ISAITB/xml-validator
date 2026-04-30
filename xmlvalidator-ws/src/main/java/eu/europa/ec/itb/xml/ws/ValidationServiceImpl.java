@@ -27,10 +27,7 @@ import eu.europa.ec.itb.validation.commons.LocalisationHelper;
 import eu.europa.ec.itb.validation.commons.Utils;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.validation.commons.web.WebServiceContextProvider;
-import eu.europa.ec.itb.xml.ContextFileData;
-import eu.europa.ec.itb.xml.DomainConfig;
-import eu.europa.ec.itb.xml.InputHelper;
-import eu.europa.ec.itb.xml.ValidationSpecs;
+import eu.europa.ec.itb.xml.*;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.ValidationConstants;
 import eu.europa.ec.itb.xml.validation.XMLValidator;
@@ -65,6 +62,8 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
     private final DomainConfig domainConfig;
     private final DomainConfig requestedDomainConfig;
 
+    @Autowired
+    ApplicationConfig appConfig;
     @Autowired
     InputHelper inputHelper;
     @Autowired
@@ -224,7 +223,11 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
                     var receivedContextFile = receivedContextFiles.get(index);
                     switch (receivedContextFile.getEmbeddingMethod()) {
                         case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
-                        case URI -> fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), domainConfig.getHttpVersion());
+                        case URI -> {
+                            if (appConfig.isUriReadAllowed(receivedContextFile.getContent())) {
+                                fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), domainConfig.getHttpVersion());
+                            }
+                        }
                         default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
                     }
                     contextFiles.add(new ContextFileData(targetFile.toPath(), contextFileConfig));

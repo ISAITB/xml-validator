@@ -26,7 +26,8 @@
                 isMinimalUI: [[${minimalUI}]],
                 artifactTypes: ['schema', 'schematron'],
                 externalArtifacts: externalArtifacts,
-                labels: [(${labelConfig})]
+                labels: [(${labelConfig})],
+                allowUriInputs: [[${appConfig.allowUriInputs}]]
             });
             var contextFiles = {};
             [# th:each="contextFileEntry : ${contextFileLabels}"]

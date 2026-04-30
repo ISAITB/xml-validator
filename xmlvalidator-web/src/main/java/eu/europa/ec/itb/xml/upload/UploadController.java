@@ -386,7 +386,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                             }
                         }
                         case CONTENT_TYPE_URI -> {
-                            if (StringUtils.isNotBlank(contextFileUris[index])) {
+                            if (StringUtils.isNotBlank(contextFileUris[index]) && appConfig.isUriReadAllowed(contextFileUris[index])) {
                                 var file = fileManager.getFileFromURL(targetFile.getParentFile(), contextFileUris[index], "", targetFile.getName(), config.getHttpVersion());
                                 contextFiles.add(new ContextFileData(file.toPath(), contextFileConfig));
                             }
@@ -536,7 +536,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                             fileInfo = new FileInfo(fileManager.getFileFromString(parentFolder, externalStrings[i], null, null, artifactType), null, null, requestDecorator);
                         }
                     } else {
-                        if (StringUtils.isNotBlank(externalUri[i])) {
+                        if (StringUtils.isNotBlank(externalUri[i]) && appConfig.isUriReadAllowed(externalUri[i])) {
                             fileInfo = fileManager.getFileFromURL(parentFolder, externalUri[i], null, null, null, null, artifactType, null, domainConfig.getHttpVersion(), requestDecorator);
                         }
                     }
@@ -617,7 +617,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
      * @throws IOException If an IO error occurs.
      */
     private File saveInput(String inputType, MultipartFile file, String uri, String string, File parentFolder, HttpClient.Version httpVersion) throws IOException {
-        File inputFile;
+        File inputFile = null;
         switch (inputType) {
             case CONTENT_TYPE_FILE:
                 try (var stream = file.getInputStream()) {
@@ -625,7 +625,9 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                 }
                 break;
             case CONTENT_TYPE_URI:
-                inputFile = fileManager.getFileFromURL(parentFolder, uri, httpVersion);
+                if (appConfig.isUriReadAllowed(uri)) {
+                    inputFile = fileManager.getFileFromURL(parentFolder, uri, httpVersion);
+                }
                 break;
             case CONTENT_TYPE_STRING:
                 inputFile = fileManager.getFileFromString(parentFolder, string);

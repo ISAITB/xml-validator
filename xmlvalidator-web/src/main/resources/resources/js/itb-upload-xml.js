@@ -49,7 +49,7 @@ function addContextFile(index, labelText, placeholderText) {
                 "<div class='col-sm-2'>"+
                     "<select class='form-control contentTypeChangedContextFile' id='contentType-"+elementId+"' data-element-id='"+elementId+"' name='contentType-contextFile'>"+
                         "<option value='fileType' selected='true'>"+_config.externalArtifactFileLabel+"</option>"+
-                        "<option value='uriType'>"+_config.externalArtifactURILabel+"</option>"+
+                        (_config.allowUriInputs?("<option value='uriType'>"+_config.externalArtifactURILabel+"</option>")?:"")+
                         "<option value='stringType'>"+_config.externalArtifactTextLabel+"</option>"+
                     "</select>"+
                 "</div>"+

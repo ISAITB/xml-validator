@@ -16,6 +16,7 @@
 package eu.europa.ec.itb.xml.validation;
 
 import com.helger.xml.transform.DefaultTransformURIResolver;
+import eu.europa.ec.itb.validation.commons.ImportedFileAuthorizer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +38,17 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(SchematronURIResolver.class);
     private final File schematronFile;
+    private final ImportedFileAuthorizer importAuthorizer;
 
     /**
      * Constructor.
      *
      * @param schematronFile The root Schematron file.
+     * @param importAuthorizer The authorizer to use for imported resources.
      */
-    public SchematronURIResolver(File schematronFile) {
+    public SchematronURIResolver(File schematronFile, ImportedFileAuthorizer importAuthorizer) {
         this.schematronFile = schematronFile;
+        this.importAuthorizer = importAuthorizer;
     }
 
     /**
@@ -103,6 +107,7 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
                 }
                 // Lookup file directly under the base.
                 File referencedFile = new File(baseFile, href);
+                if (importAuthorizer != null) importAuthorizer.isPathAllowed(referencedFile.toPath());
                 if (!referencedFile.exists()) {
                     // Try next to the current XSLT.
                     referencedFile = new File(schematronFile.getParent(), href);

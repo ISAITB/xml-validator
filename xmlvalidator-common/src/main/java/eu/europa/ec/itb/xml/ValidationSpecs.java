@@ -18,10 +18,7 @@ package eu.europa.ec.itb.xml;
 import com.gitb.tr.BAR;
 import com.gitb.tr.TAR;
 import com.gitb.tr.TestResultType;
-import eu.europa.ec.itb.validation.commons.BomStrippingReader;
-import eu.europa.ec.itb.validation.commons.FileInfo;
-import eu.europa.ec.itb.validation.commons.LocalisationHelper;
-import eu.europa.ec.itb.validation.commons.Utils;
+import eu.europa.ec.itb.validation.commons.*;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.xml.util.FileManager;
 import eu.europa.ec.itb.xml.validation.XSDFileResolver;
@@ -567,7 +564,10 @@ public class ValidationSpecs {
                                 inputStream,
                                 schemaFile.toPath(),
                                 errorHandler,
-                                applicationContext.getBean(XSDFileResolver.class, getDomainConfig(), schemaFile.toURI()),
+                                applicationContext.getBean(XSDFileResolver.class, getDomainConfig(), schemaFile.toURI(),
+                                        ImportedUriAuthorizer.from(getApplicationConfig(), getDomainConfig(), getValidationType()).orElse(null),
+                                        ImportedFileAuthorizer.from(getApplicationConfig(), getDomainConfig())
+                                ),
                                 getLocalisationHelper().getLocale(),
                                 getDomainConfig().getSchemaVersionForValidationType(getValidationType())
                         );

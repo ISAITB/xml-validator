@@ -27,10 +27,9 @@ import com.helger.schematron.svrl.SVRLMarshaller;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
 import com.helger.xml.transform.DefaultTransformURIResolver;
-import eu.europa.ec.itb.validation.commons.FileInfo;
-import eu.europa.ec.itb.validation.commons.ReportItemComparator;
-import eu.europa.ec.itb.validation.commons.Utils;
+import eu.europa.ec.itb.validation.commons.*;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
+import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.validation.plugin.PluginManager;
 import eu.europa.ec.itb.validation.plugin.ValidationPlugin;
 import eu.europa.ec.itb.xml.*;
@@ -102,7 +101,10 @@ public class XMLValidator {
      * @return The resolver.
      */
     private LSResourceResolver getXSDResolver(URI schemaSource, Consumer<HttpRequest.Builder> requestDecorator) {
-        return ctx.getBean(XSDFileResolver.class, specs.getDomainConfig(), schemaSource, requestDecorator);
+        return ctx.getBean(XSDFileResolver.class, specs.getDomainConfig(), schemaSource, requestDecorator,
+                ImportedUriAuthorizer.from(appConfig, specs.getDomainConfig(), specs.getValidationType()).orElse(null),
+                ImportedFileAuthorizer.from(appConfig, specs.getDomainConfig())
+        );
     }
 
     /**
@@ -112,7 +114,7 @@ public class XMLValidator {
      * @return The resolver.
      */
     private SchematronURIResolver getURIResolver(File schematronFile) {
-        return new SchematronURIResolver(schematronFile);
+        return new SchematronURIResolver(schematronFile, ImportedFileAuthorizer.from(appConfig, specs.getDomainConfig()));
     }
 
     /**
@@ -173,6 +175,8 @@ public class XMLValidator {
         var errorHandler = new XSDReportHandler();
         try {
             secureSchemaValidation(inputStream, schemaFile.getFile().toPath(), errorHandler, getXSDResolver(schemaFile.getSource(), schemaFile.getRequestDecorator()), specs.getLocalisationHelper().getLocale(), specs.getDomainConfig().getSchemaVersionForValidationType(getValidationType()));
+        } catch (ValidatorException e) {
+            throw e;
         } catch (Exception e) {
             throw new XMLInvalidException(e);
         }

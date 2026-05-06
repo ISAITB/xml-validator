@@ -15,7 +15,8 @@
 
 package eu.europa.ec.itb.xml.validation;
 
-import eu.europa.ec.itb.validation.commons.Utils;
+import eu.europa.ec.itb.validation.commons.ImportedFileAuthorizer;
+import eu.europa.ec.itb.validation.commons.ImportedUriAuthorizer;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.util.FileManager;
@@ -54,6 +55,8 @@ public class XSDFileResolver implements LSResourceResolver {
     private final DomainConfig domainConfig;
     private final URI schemaSource;
     private final Consumer<HttpRequest.Builder> requestDecorator;
+    private final ImportedUriAuthorizer importAuthorizer;
+    private final ImportedFileAuthorizer importFileAuthorizer;
 
     @Autowired
     ApplicationConfig config;
@@ -64,11 +67,15 @@ public class XSDFileResolver implements LSResourceResolver {
      * @param domainConfig The domain configuration.
      * @param schemaSource The source of the initial schema that triggered the validation.
      * @param requestDecorator The request decorator to use.
+     * @param importAuthorizer The authorizer for imported schema URIs.
+     * @param importFileAuthorizer The authorizer for imported schema files.
      */
-    public XSDFileResolver(DomainConfig domainConfig, URI schemaSource, Consumer<HttpRequest.Builder> requestDecorator) {
+    public XSDFileResolver(DomainConfig domainConfig, URI schemaSource, Consumer<HttpRequest.Builder> requestDecorator, ImportedUriAuthorizer importAuthorizer, ImportedFileAuthorizer importFileAuthorizer) {
         this.domainConfig = domainConfig;
         this.schemaSource = schemaSource;
         this.requestDecorator = requestDecorator;
+        this.importAuthorizer = importAuthorizer;
+        this.importFileAuthorizer = importFileAuthorizer;
     }
 
     /**
@@ -116,12 +123,8 @@ public class XSDFileResolver implements LSResourceResolver {
      */
     private Path readSchemaResourceFromFileSystem(URI schemaResource) {
         Path schemaPath = Path.of(schemaResource).toAbsolutePath().normalize();
-        if (Utils.isUnderDomain(schemaPath, config, domainConfig)
-                || schemaPath.startsWith(fileManager.getTempFolder().toPath().toAbsolutePath().normalize())) {
-            return schemaPath;
-        } else {
-            throw new IllegalStateException("Resource [%s] is outside the expected folder hierarchy".formatted(schemaResource));
-        }
+        if (importFileAuthorizer != null) importFileAuthorizer.isPathAllowed(schemaPath);
+        return schemaPath;
     }
 
     /**
@@ -194,10 +197,12 @@ public class XSDFileResolver implements LSResourceResolver {
         } else if (domainConfig.isSkipRemoteSchemaImportCaching()) {
             // Read from the remote URI directly.
             LOG.debug("Retrieving resource [{}] remotely due to disabled caching", schemaResource);
+            if (importAuthorizer != null) importAuthorizer.isUriAllowed(schemaResource);
             return fileManager.getInputStreamFromURL(uriAsString, null, domainConfig.getHttpVersion(), requestDecorator).stream();
         } else {
             // Go through our caching layer.
             LOG.debug("Retrieving resource [{}] from cache", schemaResource);
+            if (importAuthorizer != null) importAuthorizer.isUriAllowed(schemaResource);
             return Files.newInputStream(fileManager.retrieveCachedRemoteResource(domainConfig, schemaResource));
         }
     }

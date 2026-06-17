@@ -299,6 +299,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
         usageMessage.append("\n").append(PAD).append(PAD).append("- LOCALE is the language code to consider for reporting of results. If the provided locale is not supported by the validator the default locale will be used instead (e.g. 'fr', 'fr_FR').");
         usageMessage.append(parametersMessage);
         usageMessage.append("\n\nThe summary of each validation will be printed and the detailed reports produced in the current directory (as \"report.X.xml\", \"report.X.pdf\" and \"report.X.csv\").");
+        usageMessage.append("\n\nValidator version ").append(appConfig.getVersionNumber()).append(" built on ").append(appConfig.getVersionBuildTimestamp()).append(".");
         System.out.println(usageMessage);
     }
 

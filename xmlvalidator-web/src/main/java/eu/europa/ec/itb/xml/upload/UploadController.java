@@ -313,6 +313,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                             } else {
                                 fileName = "-";
                             }
+                            fileManager.saveReportProperties(new ReportProperties(fileName, specs.getValidationType()), inputID);
                             result.populateCommon(localisationHelper, validationType, config, inputID,
                                     fileName, report, aggregateReport,
                                     new Translations(localisationHelper, report, config));

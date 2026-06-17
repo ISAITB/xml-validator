@@ -25,6 +25,7 @@ import eu.europa.ec.itb.validation.commons.web.errors.NotFoundException;
 import eu.europa.ec.itb.validation.commons.web.rest.BaseRestController;
 import eu.europa.ec.itb.validation.commons.web.rest.model.ApiInfo;
 import eu.europa.ec.itb.validation.commons.web.rest.model.Output;
+import eu.europa.ec.itb.validation.commons.web.rest.model.VersionInfo;
 import eu.europa.ec.itb.xml.*;
 import eu.europa.ec.itb.xml.rest.model.ContextFileInfo;
 import eu.europa.ec.itb.xml.rest.model.Input;
@@ -68,8 +69,6 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
     private ApplicationContext ctx = null;
     @Autowired
     private FileManager fileManager = null;
-    @Autowired
-    private ApplicationConfig appConfig = null;
 
     /**
      * {@inheritDoc}
@@ -96,6 +95,15 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
     @GetMapping(value = {"/rest/api/healthcheck", "/{domain}/api/healthcheck"}, consumes = MediaType.ALL_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> healthCheck(@PathVariable(value = "domain", required = false) String domain) {
         return super.healthCheck(domain);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @GetMapping(value = "/rest/api/version", consumes = MediaType.ALL_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public VersionInfo versionInfo() {
+        return super.versionInfo();
     }
 
     /**

@@ -17,6 +17,7 @@ package eu.europa.ec.itb.xml.email;
 
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
+import eu.europa.ec.itb.validation.commons.ReportProperties;
 import eu.europa.ec.itb.validation.commons.ValidatorChannel;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import eu.europa.ec.itb.xml.*;
@@ -148,6 +149,7 @@ public class MailHandler {
                             try {
                                 Object contentObj = message.getContent();
                                 StringBuilder messageAdditionalText = new StringBuilder();
+                                ReportProperties reportProperties = null;
                                 try {
                                     if (contentObj instanceof Multipart content) {
                                         for (int i=0; i < content.getCount(); i++) {
@@ -160,6 +162,7 @@ public class MailHandler {
                                                 if (acceptableFileType) {
                                                     String fileName = part.getFileName();
                                                     String validationType = inputHelper.validateValidationType(config, fileName.substring(0, fileName.indexOf('.')));
+                                                    reportProperties = new ReportProperties(fileName, validationType);
                                                     try (InputStream is = part.getInputStream()) {
                                                         var input = Files.createTempFile("itb-", "-input");
                                                         IOUtils.copy(is, Files.newOutputStream(input));
@@ -201,7 +204,7 @@ public class MailHandler {
                                 } finally {
                                     logger.info("Sending email response");
                                     try {
-                                        sendEmail(message, reports, messageAdditionalText.toString(), config);
+                                        sendEmail(message, reports, messageAdditionalText.toString(), config, reportProperties);
                                     } catch(MessagingException e) {
                                         logger.error("Failed to send email response", e);
                                     } finally {
@@ -250,7 +253,7 @@ public class MailHandler {
      * @param domainConfig The domain configuration.
      * @throws MessagingException If an error occurs while sending the response.
      */
-    public void sendEmail(Message inputMessage, Collection<FileReport> reports, String messageAdditionalText, DomainConfig domainConfig) throws MessagingException {
+    public void sendEmail(Message inputMessage, Collection<FileReport> reports, String messageAdditionalText, DomainConfig domainConfig, ReportProperties reportProperties) throws MessagingException {
         JavaMailSender mailSender = mailSenders.get(domainConfig.getDomain());
         MimeMessage message = mailSender.createMimeMessage();
         try {
@@ -266,6 +269,7 @@ public class MailHandler {
             for (FileReport report: reports) {
                 String fileID = UUID.randomUUID().toString();
                 fileManager.saveReport(report.getReport(), fileID, domainConfig);
+                fileManager.saveReportProperties(reportProperties, fileID);
                 helper.addAttachment(report.getReportXmlFileName(), fileController.getReportXml(domainConfig.getDomainName(), fileID, false, null));
                 helper.addAttachment(report.getReportPdfFileName(), fileController.getReportPdf(domainConfig.getDomainName(), fileID, false, null, null));
                 sb.append(report).append("\n\n");

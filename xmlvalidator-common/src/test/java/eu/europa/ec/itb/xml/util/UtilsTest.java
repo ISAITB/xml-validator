@@ -161,4 +161,35 @@ class UtilsTest {
             }
         });
     }
+
+    @Test
+    void testSchemaValidationXsd11CtaFullXPathValid() {
+        assertDoesNotThrow(() -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/valid_cta.xml");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/CtaXPath.xsd")
+            ) {
+                Path schemaPath = tempDirectory.resolve(UUID.randomUUID() + ".xsd");
+                Files.copy(Objects.requireNonNull(schemaStream), schemaPath);
+                secureSchemaValidation(inputStream, schemaPath, null, null, null, XmlSchemaVersion.VERSION_1_1);
+            }
+        });
+    }
+
+    @Test
+    void testSchemaValidationXsd11CtaFullXPathInvalid() throws SAXException {
+        // With error handler.
+        var errorHandler = mock(ErrorHandler.class);
+        assertDoesNotThrow(() -> {
+            try (
+                    var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_cta.xml");
+                    var schemaStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/CtaXPath.xsd")
+            ) {
+                Path schemaPath = tempDirectory.resolve(UUID.randomUUID() + ".xsd");
+                Files.copy(Objects.requireNonNull(schemaStream), schemaPath);
+                secureSchemaValidation(inputStream, schemaPath, errorHandler, null, null, XmlSchemaVersion.VERSION_1_1);
+            }
+        });
+        verify(errorHandler, atLeastOnce()).error(any(SAXParseException.class));
+    }
 }

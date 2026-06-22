@@ -86,6 +86,9 @@ public class Utils {
         try (var schemaStream = Files.newInputStream(schemaToValidateWith)) {
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             factory.setFeature(Constants.XERCES_FEATURE_PREFIX + Constants.SCHEMA_FULL_CHECKING, true);
+            if (schemaVersionToUse == XmlSchemaVersion.VERSION_1_1) {
+                factory.setFeature(Constants.XERCES_FEATURE_PREFIX + Constants.CTA_FULL_XPATH_CHECKING_FEATURE, true);
+            }
             schema = factory.newSchema(new StreamSource(schemaStream));
         } catch (SAXException e) {
             throw new IllegalStateException("Unable to configure schema", e);

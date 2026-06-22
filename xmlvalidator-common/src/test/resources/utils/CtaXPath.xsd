@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+           xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+           vc:minVersion="1.1"
+           elementFormDefault="qualified">
+
+    <xs:element name="item">
+        <xs:alternative test="not(@optional)" type="RequiredItem"/>
+        <xs:alternative test="xsd:string(@status) eq 'active'" type="ActiveItem"/>
+        <xs:alternative test="@id and not(xsd:string(@id) eq '00000000-0000-0000-0000-000000000000')" type="IdentifiedItem"/>
+        <xs:alternative type="BaseItem"/>
+    </xs:element>
+
+    <xs:complexType name="BaseItem">
+        <xs:attribute name="optional" type="xs:string"/>
+        <xs:attribute name="status"   type="xs:string"/>
+        <xs:attribute name="id"       type="xs:string"/>
+    </xs:complexType>
+
+    <xs:complexType name="RequiredItem">
+        <xs:complexContent>
+            <xs:extension base="BaseItem">
+                <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="ActiveItem">
+        <xs:complexContent>
+            <xs:extension base="BaseItem">
+                <xs:sequence>
+                    <xs:element name="name" type="xs:string" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="IdentifiedItem">
+        <xs:complexContent>
+            <xs:extension base="BaseItem">
+                <xs:sequence>
+                    <xs:element name="name" type="xs:string" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+</xs:schema>

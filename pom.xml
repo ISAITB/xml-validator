@@ -130,6 +130,21 @@
     </distributionManagement>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <dependencies>
+                        <dependency>
+                            <groupId>eu.europa.ec.itb.commons</groupId>
+                            <artifactId>owasp-suppressions</artifactId>
+                            <version>${version.itbCommons}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <!-- Check and conditionally install Xerces JARs -->
             <plugin>

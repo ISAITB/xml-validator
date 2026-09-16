@@ -45,7 +45,7 @@ import java.util.*;
 @Scope("prototype")
 public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
 
-    private static final String FLAG_NO_REPORTS = "-noreports";
+    private static final String FLAG_NO_REPORTS = "-noReports";
     private static final String FLAG_VALIDATION_TYPE = "-type";
     private static final String FLAG_INPUT = "-input";
     private static final String FLAG_XSD = "-xsd";
@@ -274,7 +274,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
     private void printUsage(boolean requireType) {
         StringBuilder usageMessage = new StringBuilder();
         StringBuilder parametersMessage = new StringBuilder();
-        usageMessage.append("\nExpected usage: java -jar validator.jar ").append(FLAG_INPUT).append(" FILE_OR_URI_1 ... [").append(FLAG_INPUT).append(" FILE_OR_URI_N] [").append(FLAG_NO_REPORTS).append("] [").append(FLAG_LOCALE).append(" LOCALE]");
+        usageMessage.append("\nExpected usage: java -jar validator.jar %s FILE_OR_URI_1 ... [%s FILE_OR_URI_N] [%s] [%s LOCALE]".formatted(FLAG_INPUT, FLAG_INPUT, FLAG_NO_REPORTS, FLAG_LOCALE));
         if (requireType) {
             usageMessage.append(" [").append(FLAG_VALIDATION_TYPE).append(" VALIDATION_TYPE]");
             parametersMessage.append("\n").append(PAD).append(PAD).append("- VALIDATION_TYPE is the type of validation to perform, one of [").append(String.join("|", domainConfig.getType())).append("].");
@@ -296,6 +296,7 @@ public class ValidationRunner extends BaseValidationRunner<DomainConfig> {
         }
         usageMessage.append("\n").append(PAD).append("Where:");
         usageMessage.append("\n").append(PAD).append(PAD).append("- FILE_OR_URI_X is the full file path or URI to the content to validate.");
+        usageMessage.append("\n").append(PAD).append(PAD).append("- %s disables validation report generation as files.".formatted(FLAG_NO_REPORTS));
         usageMessage.append("\n").append(PAD).append(PAD).append("- LOCALE is the language code to consider for reporting of results. If the provided locale is not supported by the validator the default locale will be used instead (e.g. 'fr', 'fr_FR').");
         usageMessage.append(parametersMessage);
         usageMessage.append("\n\nThe summary of each validation will be printed and the detailed reports produced in the current directory (as \"report.X.xml\", \"report.X.pdf\" and \"report.X.csv\").");

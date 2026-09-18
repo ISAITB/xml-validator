@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inv:Invoice xmlns:inv="urn:test:invoice" xmlns:cac="urn:test:cac" xmlns:cbc="urn:test:cbc">
+    <cbc:ID>INV-001</cbc:ID>
+    <cac:Line>
+        <cbc:Quantity>1</cbc:Quantity>
+    </cac:Line>
+    <cac:Line>
+        <cbc:Quantity>0</cbc:Quantity>
+    </cac:Line>
+    <cac:Line>
+        <cbc:Quantity>-3</cbc:Quantity>
+    </cac:Line>
+</inv:Invoice>

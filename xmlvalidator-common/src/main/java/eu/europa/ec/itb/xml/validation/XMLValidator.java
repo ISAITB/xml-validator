@@ -21,6 +21,7 @@ import com.gitb.tr.*;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
 import com.helger.schematron.ISchematronResource;
+import com.helger.schematron.api.xslt.AbstractSchematronXSLTBasedResource;
 import com.helger.schematron.pure.SchematronResourcePure;
 import com.helger.schematron.sch.SchematronResourceSCH;
 import com.helger.schematron.svrl.SVRLMarshaller;
@@ -45,6 +46,7 @@ import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.ls.LSResourceResolver;
 
+import javax.xml.transform.Source;
 import javax.xml.transform.dom.DOMSource;
 import java.io.File;
 import java.io.IOException;
@@ -480,7 +482,21 @@ public class XMLValidator {
      * @throws Exception If a schematron validation error occurred.
      */
     private SchematronOutputType applySchematron(ISchematronResource schematron) throws Exception {
-        Document svrlDocument = schematron.applySchematronValidation(new DOMSource(specs.inputAsDocumentForSchematronValidation()));
+        Source source;
+        if (schematron instanceof AbstractSchematronXSLTBasedResource<?>) {
+            /*
+             * XSLT-based Schematron (i.e. both compiled XSLT and SCH resources, which are compiled to XSLT
+             * internally) transform the input source directly, without ever needing a DOM. Streaming the input
+             * lets Saxon build its own compact, namespace-aware tree instead of adapting the line-numbered DOM
+             * built for error localisation (see inputAsDocumentForSchematronValidation()), which is considerably
+             * faster for large documents.
+             */
+            source = specs.inputSourceForSchematronValidation();
+        } else {
+            // Pure Schematron validation requires a DOM node as its input.
+            source = new DOMSource(specs.inputAsDocumentForSchematronValidation());
+        }
+        Document svrlDocument = schematron.applySchematronValidation(source);
         if (svrlDocument == null) {
             throw new IllegalArgumentException("SVRL output was null");
         }
@@ -538,7 +554,7 @@ public class XMLValidator {
                 throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
             }
         }
-        SchematronReportHandler handler = new SchematronReportHandler(specs.inputAsDocumentForSchematronValidation(), svrlOutput, convertXPathExpressions, specs.getDomainConfig().isIncludeTestDefinition(), specs.getDomainConfig().isIncludeAssertionID(), specs.isLocationAsPath(), specs.isShowLocationPaths(), specs.getLocalisationHelper());
+        SchematronReportHandler handler = new SchematronReportHandler(specs::inputAsDocumentForSchematronValidation, svrlOutput, convertXPathExpressions, specs.getDomainConfig().isIncludeTestDefinition(), specs.getDomainConfig().isIncludeAssertionID(), specs.isLocationAsPath(), specs.isShowLocationPaths(), specs.getLocalisationHelper());
         return handler.createReport();
     }
 

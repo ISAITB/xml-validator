@@ -610,6 +610,10 @@ public class ValidationSpecs {
 
     /**
      * Get the input document as a DOM document with defined lined numbers.
+     * <p/>
+     * This is only needed to localise Schematron findings (line numbers), or for the "pure" Schematron
+     * validation approach which requires a DOM node as its input. It is deliberately not built as part of
+     * running the Schematron validation itself (see {@link #inputSourceForSchematronValidation()}).
      *
      * @return The document.
      */
@@ -622,6 +626,24 @@ public class ValidationSpecs {
             }
         }
         return schematronInputAsDocument;
+    }
+
+    /**
+     * Get the input to use as the source of a XSLT-based Schematron validation.
+     * <p/>
+     * This streams the input directly to the transformation rather than building a DOM upfront, which is
+     * considerably more efficient for large documents (the DOM built by
+     * {@link #inputAsDocumentForSchematronValidation()} is only needed afterwards, to localise findings).
+     * A new source is returned on every call since the underlying stream is consumed by the transformation.
+     *
+     * @return The source to use.
+     */
+    public Source inputSourceForSchematronValidation() {
+        try {
+            return eu.europa.ec.itb.xml.util.Utils.secureSaxSource(getInputStreamForValidation(true));
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to read input file.", e);
+        }
     }
 
     /**

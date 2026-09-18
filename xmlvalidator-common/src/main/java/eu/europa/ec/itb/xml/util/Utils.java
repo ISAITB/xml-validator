@@ -22,16 +22,21 @@ import org.apache.xerces.jaxp.validation.XMLSchema11Factory;
 import org.apache.xerces.jaxp.validation.XMLSchemaFactory;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
+import org.xml.sax.XMLReader;
 
 import jakarta.annotation.Nullable;
 import javax.xml.XMLConstants;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -136,6 +141,35 @@ public class Utils {
             throw new IllegalStateException("Failed to parse schema version from schema file", e);
         } catch (IOException e) {
             throw new IllegalStateException("IO failure when parsing schema version from schema file", e);
+        }
+    }
+
+    /**
+     * Create a secured, namespace-aware SAX source to stream the provided input directly into a transformation
+     * (e.g. a Schematron XSLT run via Saxon), without first building a DOM.
+     * <p/>
+     * This is deliberately not a plain {@link javax.xml.transform.stream.StreamSource}: a default JAXP parser
+     * would process DOCTYPE declarations and external entities. The parser configured here disables both, matching
+     * the hardening applied by {@link eu.europa.ec.itb.validation.commons.Utils#secureSAXParser()} (used when
+     * building the line-numbered DOM), while additionally being namespace-aware so that the receiving transformer
+     * gets proper namespace information without having to reconstruct it from {@code xmlns} attributes.
+     *
+     * @param input The input stream to read the XML content from.
+     * @return The SAX source to use.
+     */
+    public static SAXSource secureSaxSource(InputStream input) {
+        try {
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setNamespaceAware(true);
+            factory.setXIncludeAware(false);
+            factory.setValidating(false);
+            XMLReader reader = factory.newSAXParser().getXMLReader();
+            InputSource inputSource = new InputSource(new BomStrippingReader(input));
+            return new SAXSource(reader, inputSource);
+        } catch (ParserConfigurationException | SAXException e) {
+            throw new IllegalStateException("Could not create secure XML SAX source", e);
         }
     }
 

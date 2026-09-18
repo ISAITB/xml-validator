@@ -7,14 +7,19 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.dom.DOMResult;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
 
+import static eu.europa.ec.itb.validation.commons.Utils.secureTransformer;
+import static eu.europa.ec.itb.xml.util.Utils.secureSaxSource;
 import static eu.europa.ec.itb.xml.util.Utils.secureSchemaValidation;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class UtilsTest {
@@ -191,5 +196,31 @@ class UtilsTest {
             }
         });
         verify(errorHandler, atLeastOnce()).error(any(SAXParseException.class));
+    }
+
+    @Test
+    void testSecureSaxSourceParsesNamespacedContent() throws TransformerException {
+        String xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <ns:root xmlns:ns="urn:test:namespace">
+                    <ns:child>value</ns:child>
+                </ns:root>
+                """;
+        var result = new DOMResult();
+        secureTransformer().transform(secureSaxSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))), result);
+        var document = (org.w3c.dom.Document) result.getNode();
+        var root = document.getDocumentElement();
+        assertEquals("urn:test:namespace", root.getNamespaceURI());
+        assertEquals("root", root.getLocalName());
+        assertEquals("child", root.getFirstChild().getNextSibling().getLocalName());
+    }
+
+    @Test
+    void testSecureSaxSourceRejectsDoctype() {
+        assertThrows(TransformerException.class, () -> {
+            try (var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("utils/testFiles/invalid_xxe.xml")) {
+                secureTransformer().transform(secureSaxSource(inputStream), new DOMResult());
+            }
+        });
     }
 }

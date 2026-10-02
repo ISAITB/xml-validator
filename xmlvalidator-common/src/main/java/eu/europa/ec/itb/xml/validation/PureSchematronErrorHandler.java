@@ -16,8 +16,8 @@
 package eu.europa.ec.itb.xml.validation;
 
 import com.helger.diagnostics.error.IError;
-import com.helger.schematron.pure.errorhandler.LoggingPSErrorHandler;
 
+import com.helger.schematron.errorhandler.LoggingPSErrorHandler;
 import jakarta.annotation.Nonnull;
 
 /**

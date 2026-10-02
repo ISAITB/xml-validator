@@ -73,6 +73,10 @@
             <artifactId>ph-schematron-pure</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.helger.schematron</groupId>
+            <artifactId>ph-schematron-isosch</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>

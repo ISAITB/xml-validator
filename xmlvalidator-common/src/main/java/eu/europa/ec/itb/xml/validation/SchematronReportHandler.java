@@ -221,14 +221,11 @@ public class SchematronReportHandler {
             if (message.getID() != null && includeAssertionID) {
                 reportItem.setAssertionID(message.getID());
             }
-            int level = message.getFlag().getNumericLevel();
-            if (level == EErrorLevel.SUCCESS.getNumericLevel()) {
+            if (message.getFlag().isLE(EErrorLevel.INFO)) {
                 element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(reportItem);
-            } else if (level == EErrorLevel.INFO.getNumericLevel()) {
-                element = this.objectFactory.createTestAssertionGroupReportsTypeInfo(reportItem);
-            } else if (level == EErrorLevel.WARN.getNumericLevel()) {
+            } else if (message.getFlag().isLE(EErrorLevel.WARN)) {
                 element = this.objectFactory.createTestAssertionGroupReportsTypeWarning(reportItem);
-            } else { // ERROR, FATAL_ERROR
+            } else {
                 element = this.objectFactory.createTestAssertionGroupReportsTypeError(reportItem);
             }
         }
@@ -276,8 +273,9 @@ public class SchematronReportHandler {
             var diagnostics = svrlMessage.getDiagnosticReferences();
             if (diagnostics.isNotEmpty()) {
                 for (var diagnostic: diagnostics) {
-                    if (localiser.getLocale().getLanguage().equalsIgnoreCase(diagnostic.getLang()) && diagnostic.hasContentEntries()) {
-                        for (var content: diagnostic.getContent()) {
+                    var diagnosticText = diagnostic.getText();
+                    if (diagnosticText != null && localiser.getLocale().getLanguage().equalsIgnoreCase(diagnosticText.getLang()) && diagnosticText.hasContentEntries()) {
+                        for (var content: diagnosticText.getContent()) {
                             String messageText = diagnosticContentAsString(content);
                             if (message == null) {
                                 message = new StringBuilder(messageText);

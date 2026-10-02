@@ -20,14 +20,14 @@ import com.gitb.core.ValueEmbeddingEnumeration;
 import com.gitb.tr.*;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
+import com.helger.io.resource.FileSystemResource;
 import com.helger.schematron.ISchematronResource;
 import com.helger.schematron.api.xslt.AbstractSchematronXSLTBasedResource;
-import com.helger.schematron.pure.SchematronResourcePure;
+import com.helger.schematron.api.xslt.SchematronXSLTBaseURL;
+import com.helger.schematron.pure.SchematronResourcePureXPath;
 import com.helger.schematron.sch.SchematronResourceSCH;
-import com.helger.schematron.svrl.SVRLMarshaller;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
-import com.helger.xml.transform.DefaultTransformURIResolver;
 import eu.europa.ec.itb.validation.commons.*;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
@@ -43,7 +43,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import org.w3c.dom.Document;
 import org.w3c.dom.ls.LSResourceResolver;
 
 import javax.xml.transform.Source;
@@ -56,6 +55,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -112,11 +112,19 @@ public class XMLValidator {
     /**
      * Create a URI resolver for Schematron files.
      *
-     * @param schematronFile The Schematron file.
+     * @param schematronResource The Schematron file resource.
+     *
      * @return The resolver.
      */
-    private SchematronURIResolver getURIResolver(File schematronFile) {
-        return new SchematronURIResolver(schematronFile, ImportedFileAuthorizer.from(appConfig, specs.getDomainConfig()));
+    private SchematronURIResolver getURIResolver(FileSystemResource schematronResource) {
+        var resolver = new SchematronURIResolver(
+                schematronResource.getAsFile(),
+                ImportedUriAuthorizer.from(appConfig, specs.getDomainConfig(), specs.getValidationType()).orElse(null),
+                ImportedFileAuthorizer.from(appConfig, specs.getDomainConfig())
+        );
+        resolver.setDefaultBase(SchematronXSLTBaseURL.findBaseURL(schematronResource));
+        resolver.setAllowedRemoteSchemes("http", "https"); // Explicitly allow (needed post ph-schematron v10) given that we restrict by means of the ImportedUriAuthorizer.
+        return resolver;
     }
 
     /**
@@ -430,20 +438,30 @@ public class XMLValidator {
     }
 
     /**
+     * Only cache compilation results for Schematron files that are defined under the validator's internal configuration.
+     * This excludes remotely loaded files and user-provided files (if supported).
+     *
+     * @param schematronFile The Schematron file to consider.
+     * @return The cache verdict.
+     */
+    private boolean useCache(File schematronFile) {
+        Path tmp = Path.of(appConfig.getTmpFolder()).toAbsolutePath().normalize();
+        return !schematronFile.toPath().toAbsolutePath().normalize().startsWith(tmp);
+    }
+
+    /**
      * Treat the schematron file as XSLT.
      *
      * @param schematronFile The schematron file.
      * @return The schematron.
      */
     private ISchematronResource schematronAsXSLT(File schematronFile) {
-        var schematron = SchematronResourceXSLT.fromFile(schematronFile);
-        var newResolver = getURIResolver(schematronFile);
-        var resolver = schematron.getURIResolver();
-        if (resolver instanceof DefaultTransformURIResolver defaultResolver) {
-            newResolver.setDefaultBase(defaultResolver.getDefaultBase());
-        }
-        schematron.setURIResolver(newResolver);
-        return schematron;
+        var schematronResource = new FileSystemResource(schematronFile);
+        return SchematronResourceXSLT.builder(schematronResource)
+                .uriResolver(getURIResolver(schematronResource))
+                .validateSVRL(false)
+                .useCache(useCache(schematronFile))
+                .build();
     }
 
     /**
@@ -461,16 +479,17 @@ public class XMLValidator {
              * is provided as an external input, it is anyway not possible to provide additional files and
              * use such functions. In such cases we should be able to use the pure approach without issues.
              */
-            return SchematronResourcePure.fromFile(schematronFile);
+            return SchematronResourcePureXPath.builderFromFile(schematronFile)
+                    .errorHandler(new PureSchematronErrorHandler())
+                    .useCache(useCache(schematronFile))
+                    .build();
         } else {
-            var schematron = SchematronResourceSCH.fromFile(schematronFile);
-            var newResolver = getURIResolver(schematronFile);
-            var resolver = schematron.getURIResolver();
-            if (resolver instanceof DefaultTransformURIResolver defaultResolver) {
-                newResolver.setDefaultBase(defaultResolver.getDefaultBase());
-            }
-            schematron.setURIResolver(newResolver);
-            return schematron;
+            var schematronResource = new FileSystemResource(schematronFile);
+            return SchematronResourceSCH.builder(schematronResource)
+                    .uriResolver(getURIResolver(schematronResource))
+                    .validateSVRL(false)
+                    .useCache(useCache(schematronFile))
+                    .build();
         }
     }
 
@@ -496,12 +515,11 @@ public class XMLValidator {
             // Pure Schematron validation requires a DOM node as its input.
             source = new DOMSource(specs.inputAsDocumentForSchematronValidation());
         }
-        Document svrlDocument = schematron.applySchematronValidation(source);
-        if (svrlDocument == null) {
+        SchematronOutputType output = schematron.applySchematronValidationToSVRL(source);
+        if (output == null) {
             throw new IllegalArgumentException("SVRL output was null");
         }
-        var marshaller = new SVRLMarshaller(false);
-        return marshaller.read(svrlDocument);
+        return output;
     }
 
     /**
@@ -532,9 +550,6 @@ public class XMLValidator {
                 retryAsXslt = true;
             }
             try {
-                if (schematronResource instanceof SchematronResourcePure pureSchematron) {
-                    pureSchematron.setErrorHandler(new PureSchematronErrorHandler());
-                }
                 svrlOutput = applySchematron(schematronResource);
             } catch (Exception e) {
                 if (retryAsXslt) {
@@ -546,7 +561,7 @@ public class XMLValidator {
                 }
             }
         } catch (Exception e) {
-            if (schematronResource instanceof SchematronResourcePure pureSchematron
+            if (schematronResource instanceof SchematronResourcePureXPath pureSchematron
                     && pureSchematron.getErrorHandler() instanceof PureSchematronErrorHandler errorHandler
                     && errorHandler.isDueToExternalFunctionCall()) {
                 throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is provided in pure Schematron format (as a .sch file) and contains references to functions (built-in or external). To be able to use functions you must convert the Schematron file to its XSLT representation and use the XSLT file instead", e);

@@ -493,6 +493,7 @@ public class XMLValidator {
             return schematronFile;
         }
         try {
+            // The file is created next to the original, i.e. within the folder of the current validation run. It is deleted once used.
             var resolvedFile = Files.createTempFile(schematronFile.toPath().getParent(), "resolved-", ".sch");
             Files.writeString(resolvedFile, Objects.requireNonNull(MicroWriter.getNodeAsString(document)), StandardCharsets.UTF_8);
             return resolvedFile.toFile();
@@ -606,6 +607,13 @@ public class XMLValidator {
                 throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is provided in pure Schematron format (as a .sch file) and contains references to functions (built-in or external). To be able to use functions you must convert the Schematron file to its XSLT representation and use the XSLT file instead", e);
             } else {
                 throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
+            }
+        } finally {
+            if (schematronResource instanceof SchematronResourcePureXPath pureSchematron
+                    && pureSchematron.getResource() instanceof FileSystemResource resource
+                    && !resource.getAsFile().equals(schematronFile)) {
+                // Remove the temporary Schematron file produced when resolving includes.
+                FileUtils.deleteQuietly(resource.getAsFile());
             }
         }
         SchematronReportHandler handler = new SchematronReportHandler(specs::inputAsDocumentForSchematronValidation, svrlOutput, convertXPathExpressions, specs.getDomainConfig().isIncludeTestDefinition(), specs.getDomainConfig().isIncludeAssertionID(), specs.isLocationAsPath(), specs.isShowLocationPaths(), specs.getLocalisationHelper());

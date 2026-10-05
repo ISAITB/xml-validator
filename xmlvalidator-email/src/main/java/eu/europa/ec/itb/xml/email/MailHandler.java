@@ -27,7 +27,7 @@ import eu.europa.ec.itb.xml.validation.XMLValidator;
 import jakarta.annotation.PostConstruct;
 import jakarta.mail.*;
 import jakarta.mail.internet.MimeMessage;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.Tika;
@@ -42,6 +42,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -163,16 +164,20 @@ public class MailHandler {
                                                     String fileName = part.getFileName();
                                                     String validationType = inputHelper.validateValidationType(config, fileName.substring(0, fileName.indexOf('.')));
                                                     reportProperties = new ReportProperties(fileName, validationType);
+                                                    // Use a folder specific to this validation under the validator's temp folder.
+                                                    File tempFolder = fileManager.createTemporaryFolderPath();
                                                     try (InputStream is = part.getInputStream()) {
-                                                        var input = Files.createTempFile("itb-", "-input");
-                                                        IOUtils.copy(is, Files.newOutputStream(input));
-                                                        ValidationSpecs specs = ValidationSpecs.builder(input.toFile(), new LocalisationHelper(config, Locale.ENGLISH), config, applicationContext).withValidationType(validationType).build();
+                                                        var input = fileManager.createFile(tempFolder, ".xml");
+                                                        Files.copy(is, input);
+                                                        ValidationSpecs specs = ValidationSpecs.builder(input.toFile(), new LocalisationHelper(config, Locale.ENGLISH), config, applicationContext).withValidationType(validationType).withTempFolder(tempFolder.toPath()).build();
                                                         XMLValidator validator = applicationContext.getBean(XMLValidator.class, specs);
                                                         TAR report = validator.validateAll();
                                                         reports.add(new FileReport(part.getFileName(), report));
                                                     } catch (Exception e) {
                                                         messageAdditionalText.append("Failed to validate file [%s]: %s%n".formatted(part.getFileName(), e.getMessage()));
                                                         logger.warn("Failed to validate file", e);
+                                                    } finally {
+                                                        FileUtils.deleteQuietly(tempFolder);
                                                     }
                                                 } else {
                                                     logger.info("Ignoring file.");

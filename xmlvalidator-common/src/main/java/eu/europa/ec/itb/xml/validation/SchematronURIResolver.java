@@ -15,14 +15,10 @@
 
 package eu.europa.ec.itb.xml.validation;
 
-import com.helger.io.resource.FileSystemResource;
-import com.helger.io.resource.IReadableResource;
-import com.helger.io.resource.URLResource;
 import com.helger.io.resourceresolver.DefaultResourceResolver;
 import com.helger.xml.transform.DefaultTransformURIResolver;
 import eu.europa.ec.itb.validation.commons.ImportedFileAuthorizer;
 import eu.europa.ec.itb.validation.commons.ImportedUriAuthorizer;
-import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -36,7 +32,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Locale;
 
 /**
  * URI resolver to lookup references resources from the local file system during Schematron processing.
@@ -46,7 +41,7 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
     private static final Logger LOG = LoggerFactory.getLogger(SchematronURIResolver.class);
     private final File schematronFile;
     private final ImportedFileAuthorizer importFileAuthorizer;
-    private final ImportedUriAuthorizer importUriAuthorizer;
+    private final SchematronReferenceAuthorizer referenceAuthorizer;
 
     /**
      * Constructor.
@@ -58,7 +53,7 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
     public SchematronURIResolver(File schematronFile, ImportedUriAuthorizer importUriAuthorizer, ImportedFileAuthorizer importFileAuthorizer) {
         this.schematronFile = schematronFile;
         this.importFileAuthorizer = importFileAuthorizer;
-        this.importUriAuthorizer = importUriAuthorizer;
+        this.referenceAuthorizer = new SchematronReferenceAuthorizer(importUriAuthorizer, importFileAuthorizer);
     }
 
     /**
@@ -86,27 +81,11 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
      * @param base The base.
      */
     private void checkOkToResolve(String href, String base) {
-        if (importUriAuthorizer != null || importFileAuthorizer != null) {
-            String baseToUse = base;
-            if (StringUtils.isEmpty(baseToUse)) {
-                baseToUse = getDefaultBase();
-            }
-            IReadableResource resource = DefaultResourceResolver.getResolvedResource(href, baseToUse);
-            if (resource instanceof URLResource urlResource) {
-                URI resourceUri = urlResource.getAsURI();
-                String scheme = resourceUri == null || resourceUri.getScheme() == null ? "" : resourceUri.getScheme().toLowerCase(Locale.ROOT);
-                if (scheme.equals("http") || scheme.equals("https")) {
-                    if (importUriAuthorizer != null) {
-                        importUriAuthorizer.isUriAllowed(resourceUri);
-                    }
-                } else if (!scheme.equals("file")) {
-                    // Other schemes (e.g. "jar:file:" or "zip:file:") would be treated as local resources and bypass the file checks.
-                    throw new ValidatorException("validator.label.exception.notAllowedToReadImportedUri", String.valueOf(resourceUri));
-                }
-            } else if (importFileAuthorizer != null && resource instanceof FileSystemResource fileResource) {
-                importFileAuthorizer.isPathAllowed(fileResource.getAsFile().toPath());
-            }
+        String baseToUse = base;
+        if (StringUtils.isEmpty(baseToUse)) {
+            baseToUse = getDefaultBase();
         }
+        referenceAuthorizer.check(DefaultResourceResolver.getResolvedResource(href, baseToUse));
     }
 
     /**

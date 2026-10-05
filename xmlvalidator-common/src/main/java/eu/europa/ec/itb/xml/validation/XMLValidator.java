@@ -21,13 +21,18 @@ import com.gitb.tr.*;
 import com.gitb.vs.ValidateRequest;
 import com.gitb.vs.ValidationResponse;
 import com.helger.io.resource.FileSystemResource;
+import com.helger.schematron.CSchematron;
 import com.helger.schematron.ISchematronResource;
+import com.helger.schematron.SchematronHelper;
 import com.helger.schematron.api.xslt.AbstractSchematronXSLTBasedResource;
 import com.helger.schematron.api.xslt.SchematronXSLTBaseURL;
 import com.helger.schematron.pure.SchematronResourcePureXPath;
 import com.helger.schematron.sch.SchematronResourceSCH;
 import com.helger.schematron.svrl.jaxb.SchematronOutputType;
 import com.helger.schematron.xslt.SchematronResourceXSLT;
+import com.helger.xml.microdom.IMicroDocument;
+import com.helger.xml.microdom.serialize.MicroWriter;
+import com.helger.xml.serialize.read.SAXReaderSettings;
 import eu.europa.ec.itb.validation.commons.*;
 import eu.europa.ec.itb.validation.commons.config.DomainPluginConfigProvider;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
@@ -58,6 +63,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -465,6 +471,37 @@ public class XMLValidator {
     }
 
     /**
+     * Resolve the includes of a schematron to be processed as "pure" schematron. The pure approach resolves includes
+     * without allowing them to be restricted, so we resolve them ourselves (checking each one with the URI and file
+     * authorizers) and provide the resulting schematron, if different, for further processing.
+     *
+     * @param schematronFile The schematron file.
+     * @param errorHandler The error handler to use.
+     * @return The file to use for the pure schematron processing (the original if there are no includes).
+     */
+    private File resolveIncludes(File schematronFile, PureSchematronErrorHandler errorHandler) {
+        var includeResolver = new SchematronIncludeResolver(schematronFile, new SchematronReferenceAuthorizer(
+                ImportedUriAuthorizer.from(appConfig, specs.getDomainConfig(), specs.getValidationType()).orElse(null),
+                ImportedFileAuthorizer.from(appConfig, specs.getDomainConfig())
+        ));
+        IMicroDocument document = SchematronHelper.getWithResolvedSchematronIncludes(new FileSystemResource(schematronFile), new SAXReaderSettings(), errorHandler, includeResolver, CSchematron.DEFAULT_ALLOW_DEPRECATED_NAMESPACES);
+        if (document == null || document.getDocumentElement() == null) {
+            throw new IllegalStateException("Unable to resolve the includes of Schematron file [%s]".formatted(schematronFile.getName()));
+        }
+        if (!includeResolver.hasResolvedIncludes()) {
+            // Nothing to resolve.
+            return schematronFile;
+        }
+        try {
+            var resolvedFile = Files.createTempFile(schematronFile.toPath().getParent(), "resolved-", ".sch");
+            Files.writeString(resolvedFile, Objects.requireNonNull(MicroWriter.getNodeAsString(document)), StandardCharsets.UTF_8);
+            return resolvedFile.toFile();
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to store the resolved Schematron file [%s]".formatted(schematronFile.getName()), e);
+        }
+    }
+
+    /**
      * Treat the schematron file as raw/pure schematron.
      *
      * @param schematronFile The schematron file.
@@ -479,9 +516,11 @@ public class XMLValidator {
              * is provided as an external input, it is anyway not possible to provide additional files and
              * use such functions. In such cases we should be able to use the pure approach without issues.
              */
-            return SchematronResourcePureXPath.builderFromFile(schematronFile)
-                    .errorHandler(new PureSchematronErrorHandler())
-                    .useCache(useCache(schematronFile))
+            var errorHandler = new PureSchematronErrorHandler();
+            var schematronFileToUse = resolveIncludes(schematronFile, errorHandler);
+            return SchematronResourcePureXPath.builderFromFile(schematronFileToUse)
+                    .errorHandler(errorHandler)
+                    .useCache(useCache(schematronFileToUse))
                     .build();
         } else {
             var schematronResource = new FileSystemResource(schematronFile);

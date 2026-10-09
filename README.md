@@ -10,6 +10,7 @@
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=ISAITB_xml-validator&metric=bugs)](https://sonarcloud.io/summary/new_code?id=ISAITB_xml-validator)
 [![licence](https://img.shields.io/github/license/ISAITB/xml-validator.svg?color=blue)](https://github.com/ISAITB/xml-validator/blob/master/LICENCE.txt)
 [![docs](https://img.shields.io/static/v1?label=docs&message=Test%20Bed%20guides&color=blue)](https://www.itb.ec.europa.eu/docs/guides/latest/validatingXML/)
+[![reports](https://img.shields.io/static/v1?label=reports&message=SBOM%20%26%20VDR&color=blue)](https://github.com/ISAITB/release-reports/tree/master/reports/xml-validator)
 [![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20ITB%20Guru-006BFF?color=blue)](https://gurubase.io/g/itb)
 [![docker](https://img.shields.io/docker/pulls/isaitb/xml-validator?color=blue&logo=docker&logoColor=white)](https://hub.docker.com/r/isaitb/xml-validator)
 
@@ -154,6 +155,17 @@ and `validator.plugins` properties where you list each plugin by providing:
 
 * The path to its JAR file.
 * The fully qualified class name of the plugin entry point.
+
+# Security
+
+To report a security vulnerability please follow this repository's [security policy](SECURITY.md).
+
+To support transparency and the security monitoring needs of downstream users, signed **Software Bill of Materials (SBOM)**
+and **Vulnerability Disclosure Report (VDR)** documents in [CycloneDX](https://cyclonedx.org/) format are published for every
+release of the XML validator in the [release-reports](https://github.com/ISAITB/release-reports) repository:
+- The [reports of the XML validator](https://github.com/ISAITB/release-reports/tree/master/reports/xml-validator).
+- An [overview of the vulnerability status](https://github.com/ISAITB/release-reports/blob/master/VULNERABILITY_STATUS.md) of all releases.
+- A mirror of the reports for automated integrations, with a machine-readable index, at https://www.itb.ec.europa.eu/release-reports/reports/index.json.
 
 # Licence
 

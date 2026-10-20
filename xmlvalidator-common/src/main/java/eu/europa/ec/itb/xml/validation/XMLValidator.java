@@ -463,8 +463,12 @@ public class XMLValidator {
      */
     private ISchematronResource schematronAsXSLT(File schematronFile) {
         var schematronResource = new FileSystemResource(schematronFile);
+        var importUriAuthorizer = ImportedUriAuthorizer.from(appConfig, specs.getDomainConfig(), specs.getValidationType()).orElse(null);
+        var importFileAuthorizer = ImportedFileAuthorizer.from(appConfig, specs.getDomainConfig());
         return SchematronResourceXSLT.builder(schematronResource)
                 .uriResolver(getURIResolver(schematronResource))
+                // Collections (collection() and uri-collection()) are not resolved via the URI resolver so we restrict them separately.
+                .transformerFactoryCustomizer(factory -> SchematronCollectionAuthorizer.install(factory, importUriAuthorizer, importFileAuthorizer))
                 .validateSVRL(false)
                 .useCache(useCache(schematronFile))
                 .build();

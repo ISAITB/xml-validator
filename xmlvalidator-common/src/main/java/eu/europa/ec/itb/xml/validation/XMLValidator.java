@@ -128,6 +128,7 @@ public class XMLValidator {
                 ImportedUriAuthorizer.from(appConfig, specs.getDomainConfig(), specs.getValidationType()).orElse(null),
                 ImportedFileAuthorizer.from(appConfig, specs.getDomainConfig())
         );
+        resolver.setHttpVersion(specs.getDomainConfig().getHttpVersion());
         resolver.setDefaultBase(SchematronXSLTBaseURL.findBaseURL(schematronResource));
         resolver.setAllowedRemoteSchemes("http", "https"); // Explicitly allow (needed post ph-schematron v10) given that we restrict by means of the ImportedUriAuthorizer.
         return resolver;
@@ -487,8 +488,14 @@ public class XMLValidator {
         var includeResolver = new SchematronIncludeResolver(schematronFile, new SchematronReferenceAuthorizer(
                 ImportedUriAuthorizer.from(appConfig, specs.getDomainConfig(), specs.getValidationType()).orElse(null),
                 ImportedFileAuthorizer.from(appConfig, specs.getDomainConfig())
-        ));
-        IMicroDocument document = SchematronHelper.getWithResolvedSchematronIncludes(new FileSystemResource(schematronFile), new SAXReaderSettings(), errorHandler, includeResolver, CSchematron.DEFAULT_ALLOW_DEPRECATED_NAMESPACES);
+        ), new URLReader(), specs.getDomainConfig().getHttpVersion());
+        IMicroDocument document;
+        try {
+            document = SchematronHelper.getWithResolvedSchematronIncludes(new FileSystemResource(schematronFile), new SAXReaderSettings(), errorHandler, includeResolver, CSchematron.DEFAULT_ALLOW_DEPRECATED_NAMESPACES);
+        } finally {
+            // Remote includes are inlined in the resulting document so their files are no longer needed.
+            includeResolver.cleanup();
+        }
         if (document == null || document.getDocumentElement() == null) {
             throw new IllegalStateException("Unable to resolve the includes of Schematron file [%s]".formatted(schematronFile.getName()));
         }

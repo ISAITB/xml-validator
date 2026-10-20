@@ -16,6 +16,7 @@
 package eu.europa.ec.itb.xml.util;
 
 import eu.europa.ec.itb.validation.commons.BaseFileManager;
+import eu.europa.ec.itb.validation.commons.RemoteRequestGuard;
 import eu.europa.ec.itb.validation.commons.StreamInfo;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
@@ -58,9 +59,10 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
      *
      * @param domain The current domain configuration.
      * @param uri The resource to retrieve.
+     * @param guard The restrictions to apply to the requests made to retrieve the resource (may be null).
      * @return The local resource.
      */
-    public Path retrieveCachedRemoteResource(DomainConfig domain, URI uri) {
+    public Path retrieveCachedRemoteResource(DomainConfig domain, URI uri, RemoteRequestGuard guard) {
         String key = "%s|%s".formatted(domain.getDomain(), Objects.requireNonNull(uri));
         return remoteResourceCache.compute(key, (k, existingPath) -> {
             if (existingPath == null || !Files.exists(existingPath)) {
@@ -68,7 +70,7 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("No cached resource found for [{}]. Downloading...", uri);
                     }
-                    return writeResourceToCache(domain, uri);
+                    return writeResourceToCache(domain, uri, guard);
                 } catch (IOException e) {
                     throw new IllegalStateException("Unable to read remote resource from [%s]".formatted(uri), e);
                 }
@@ -86,13 +88,14 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
      *
      * @param domain The current domain.
      * @param uri The remote resource to write.
+     * @param guard The restrictions to apply to the requests made to retrieve the resource (may be null).
      * @return The local cached path.
      * @throws IOException If an IO error occurs.
      */
-    private Path writeResourceToCache(DomainConfig domain, URI uri) throws IOException {
+    private Path writeResourceToCache(DomainConfig domain, URI uri, RemoteRequestGuard guard) throws IOException {
         StreamInfo streamInfo = null;
         try {
-            streamInfo = getInputStreamFromURL(uri.toString(), null, domain.getHttpVersion());
+            streamInfo = getInputStreamFromURL(uri.toString(), null, domain.getHttpVersion(), null, guard);
             Path parentFolder = getTempFolder().toPath().resolve("remote_cache").resolve(domain.getDomain());
             Files.createDirectories(parentFolder);
             Path targetFile = parentFolder.resolve(UUID.randomUUID().toString());

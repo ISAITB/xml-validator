@@ -17,6 +17,7 @@ package eu.europa.ec.itb.xml.validation;
 
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.validation.commons.ArtifactPreprocessor;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,12 @@ import org.springframework.stereotype.Component;
 import javax.xml.transform.*;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+import static eu.europa.ec.itb.xml.util.Utils.secureSaxSource;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -52,13 +58,21 @@ public class XSLTPreprocessor implements ArtifactPreprocessor {
      */
     @Override
     public File preprocessFile(File fileToProcess, File preProcessorFile, String outputFileExtension) {
-        Source inputSource = new StreamSource(fileToProcess);
         File outputFile = new File(fileToProcess.getParentFile(), UUID.randomUUID() +"."+outputFileExtension);
-        try {
+        // The file to process may be user-provided so we parse it securely (e.g. without DOCTYPE and external entity processing).
+        try (InputStream in = Files.newInputStream(fileToProcess.toPath()); OutputStream out = Files.newOutputStream(outputFile.toPath())) {
+            Source inputSource = secureSaxSource(in);
             LOG.info("Pre-processing [{}] using [{}] to produce [{}]", fileToProcess.getName(), preProcessorFile.getName(), outputFile.getName());
-            getTransformer(preProcessorFile).transform(inputSource, new StreamResult(outputFile));
+            getTransformer(preProcessorFile).transform(inputSource, new StreamResult(out));
         } catch (TransformerException e) {
+            FileUtils.deleteQuietly(outputFile);
             throw new IllegalArgumentException("Error while performing transformation", e);
+        } catch (IOException e) {
+            FileUtils.deleteQuietly(outputFile);
+            throw new IllegalStateException("Unable to read the file to pre-process", e);
+        } catch (RuntimeException e) {
+            FileUtils.deleteQuietly(outputFile);
+            throw e;
         }
         return outputFile;
     }

@@ -52,6 +52,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import static eu.europa.ec.itb.xml.util.Utils.secureSaxSource;
 import static eu.europa.ec.itb.xml.util.Utils.secureSchemaValidation;
 
 /**
@@ -258,7 +259,8 @@ public class ValidationSpecs {
                     var inputStream = Files.newInputStream(originalFile.toPath());
                     var outputStream = Files.newOutputStream(inputToReturn.toPath())
             ) {
-                var result = xPath.evaluate(new StreamSource(inputStream), XPathConstants.NODE);
+                // The input is user-provided so we parse it securely (e.g. without DOCTYPE and external entity processing).
+                var result = xPath.evaluate(secureSaxSource(inputStream), XPathConstants.NODE);
                 if (result instanceof NodeInfo nodeInfo) {
                     int resultKind = nodeInfo.getNodeKind();
                     if (resultKind == Type.ELEMENT || resultKind == Type.DOCUMENT || resultKind == Type.NODE) {
@@ -564,7 +566,8 @@ public class ValidationSpecs {
                                 inputStream,
                                 schemaFile.toPath(),
                                 errorHandler,
-                                applicationContext.getBean(XSDFileResolver.class, getDomainConfig(), schemaFile.toURI(),
+                                // The schema is pre-configured, so there is no request decorator (the arguments must match all constructor parameters).
+                                applicationContext.getBean(XSDFileResolver.class, getDomainConfig(), schemaFile.toURI(), null,
                                         ImportedUriAuthorizer.from(getApplicationConfig(), getDomainConfig(), getValidationType()).orElse(null),
                                         ImportedFileAuthorizer.from(getApplicationConfig(), getDomainConfig())
                                 ),

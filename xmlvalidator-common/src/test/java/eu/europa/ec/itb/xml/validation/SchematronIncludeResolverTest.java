@@ -111,9 +111,26 @@ class SchematronIncludeResolverTest {
 
     @Test
     void testWhitelistedInternalUriIsAllowed() throws Exception {
-        var resolver = resolver("http://127.0.0.1:9/allowed/");
-        var resource = resolver.getResolvedSchematronResource("http://127.0.0.1:9/allowed/rules.sch");
-        assertInstanceOf(URLResource.class, resource);
+        var server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        server.createContext("/allowed/rules.sch", exchange -> {
+            byte[] bytes = RULES.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+        server.start();
+        try {
+            String base = "http://127.0.0.1:" + server.getAddress().getPort() + "/allowed/";
+            var resolver = resolver(base);
+            // The remote include is downloaded (so that redirects can be checked) and used from the downloaded file.
+            var resource = resolver.getResolvedSchematronResource(base + "rules.sch");
+            assertInstanceOf(FileSystemResource.class, resource);
+            assertEquals(RULES, Files.readString(resource.getAsFile().toPath()));
+            resolver.cleanup();
+            assertFalse(resource.getAsFile().exists());
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test

@@ -17,6 +17,7 @@ package eu.europa.ec.itb.xml.email;
 
 import com.gitb.tr.TAR;
 import eu.europa.ec.itb.validation.commons.LocalisationHelper;
+import eu.europa.ec.itb.validation.commons.RemoteResourceBudget;
 import eu.europa.ec.itb.validation.commons.ReportProperties;
 import eu.europa.ec.itb.validation.commons.ValidatorChannel;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
@@ -166,7 +167,8 @@ public class MailHandler {
                                                     reportProperties = new ReportProperties(fileName, validationType);
                                                     // Use a folder specific to this validation under the validator's temp folder.
                                                     File tempFolder = fileManager.createTemporaryFolderPath();
-                                                    try (InputStream is = part.getInputStream()) {
+                                                    // Each validation has its own limits on the remote resources it may load.
+                                                    try (InputStream is = part.getInputStream(); var ignored = RemoteResourceBudget.open(appConfig.getRemoteLimits())) {
                                                         var input = fileManager.createFile(tempFolder, ".xml");
                                                         Files.copy(is, input);
                                                         ValidationSpecs specs = ValidationSpecs.builder(input.toFile(), new LocalisationHelper(config, Locale.ENGLISH), config, applicationContext).withValidationType(validationType).withTempFolder(tempFolder.toPath()).build();

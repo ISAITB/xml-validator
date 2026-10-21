@@ -15,10 +15,13 @@
 
 package eu.europa.ec.itb.xml.validation;
 
+import com.helger.io.resource.IReadableResource;
+import com.helger.io.resource.URLResource;
 import com.helger.io.resourceresolver.DefaultResourceResolver;
 import com.helger.xml.transform.DefaultTransformURIResolver;
 import eu.europa.ec.itb.validation.commons.ImportedFileAuthorizer;
 import eu.europa.ec.itb.validation.commons.ImportedUriAuthorizer;
+import eu.europa.ec.itb.validation.commons.URLReader;
 import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -32,6 +35,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.util.Objects;
 
 /**
  * URI resolver to lookup references resources from the local file system during Schematron processing.
@@ -42,6 +47,8 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
     private final File schematronFile;
     private final ImportedFileAuthorizer importFileAuthorizer;
     private final SchematronReferenceAuthorizer referenceAuthorizer;
+    private final URLReader urlReader = new URLReader();
+    private HttpClient.Version httpVersion = HttpClient.Version.HTTP_2;
 
     /**
      * Constructor.
@@ -75,17 +82,29 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
     }
 
     /**
+     * Set the HTTP version to use when loading remote resources.
+     *
+     * @param httpVersion The HTTP version.
+     */
+    public void setHttpVersion(HttpClient.Version httpVersion) {
+        this.httpVersion = httpVersion;
+    }
+
+    /**
      * Checks a remote URL resource reference to see if loading can proceed.
      *
      * @param href The href.
      * @param base The base.
+     * @return The resolved resource.
      */
-    private void checkOkToResolve(String href, String base) {
+    private IReadableResource checkOkToResolve(String href, String base) {
         String baseToUse = base;
         if (StringUtils.isEmpty(baseToUse)) {
             baseToUse = getDefaultBase();
         }
-        referenceAuthorizer.check(DefaultResourceResolver.getResolvedResource(href, baseToUse));
+        IReadableResource resource = DefaultResourceResolver.getResolvedResource(href, baseToUse);
+        referenceAuthorizer.check(resource);
+        return resource;
     }
 
     /**
@@ -99,7 +118,16 @@ public class SchematronURIResolver extends DefaultTransformURIResolver {
     @Nullable
     @Override
     protected Source internalResolve(String href, String base) throws TransformerException {
-        checkOkToResolve(href, base);
+        IReadableResource resource = checkOkToResolve(href, base);
+        if (referenceAuthorizer.isRestrictedRemoteResource(resource)) {
+            /*
+             * Remote resources that are restricted are loaded by us (not the default resolution) so that any redirects
+             * are also checked.
+             */
+            URI remoteUri = Objects.requireNonNull(((URLResource) resource).getAsURI());
+            var streamInfo = urlReader.stream(remoteUri, null, httpVersion, null, referenceAuthorizer.remoteGuard());
+            return new StreamSource(streamInfo.stream(), remoteUri.toString());
+        }
         Source result = super.internalResolve(href, base);
         if (result != null) {
             return result;

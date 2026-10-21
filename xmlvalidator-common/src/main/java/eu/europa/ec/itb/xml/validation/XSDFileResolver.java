@@ -17,6 +17,7 @@ package eu.europa.ec.itb.xml.validation;
 
 import eu.europa.ec.itb.validation.commons.ImportedFileAuthorizer;
 import eu.europa.ec.itb.validation.commons.ImportedUriAuthorizer;
+import eu.europa.ec.itb.validation.commons.RemoteRequestGuard;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
 import eu.europa.ec.itb.xml.util.FileManager;
@@ -57,6 +58,7 @@ public class XSDFileResolver implements LSResourceResolver {
     private final Consumer<HttpRequest.Builder> requestDecorator;
     private final ImportedUriAuthorizer importAuthorizer;
     private final ImportedFileAuthorizer importFileAuthorizer;
+    private boolean userProvidedSchema = false;
 
     @Autowired
     ApplicationConfig config;
@@ -76,6 +78,16 @@ public class XSDFileResolver implements LSResourceResolver {
         this.requestDecorator = requestDecorator;
         this.importAuthorizer = importAuthorizer;
         this.importFileAuthorizer = importFileAuthorizer;
+    }
+
+    /**
+     * Set whether the schema that the resolved resources are imported by was provided by the user (as opposed to being
+     * pre-configured). This determines whether resources downloaded for it can be evicted from the cache.
+     *
+     * @param userProvidedSchema True if the schema was provided by the user.
+     */
+    public void setUserProvidedSchema(boolean userProvidedSchema) {
+        this.userProvidedSchema = userProvidedSchema;
     }
 
     /**
@@ -194,16 +206,22 @@ public class XSDFileResolver implements LSResourceResolver {
             // Read from a local file mapping defined in the domain configuration.
             LOG.debug("Retrieving resource [{}] from local mapped file", schemaResource);
             return Files.newInputStream(domainConfig.getRemoteSchemaImportMappings().get(uriAsString));
-        } else if (domainConfig.isSkipRemoteSchemaImportCaching()) {
-            // Read from the remote URI directly.
-            LOG.debug("Retrieving resource [{}] remotely due to disabled caching", schemaResource);
-            if (importAuthorizer != null) importAuthorizer.isUriAllowed(schemaResource);
-            return fileManager.getInputStreamFromURL(uriAsString, null, domainConfig.getHttpVersion(), requestDecorator).stream();
         } else {
-            // Go through our caching layer.
-            LOG.debug("Retrieving resource [{}] from cache", schemaResource);
-            if (importAuthorizer != null) importAuthorizer.isUriAllowed(schemaResource);
-            return Files.newInputStream(fileManager.retrieveCachedRemoteResource(domainConfig, schemaResource));
+            /*
+             * Every request (including redirects) is checked by the guard. Credentials configured for the schema are only
+             * sent to the host the schema itself was retrieved from, and not to any other host it references.
+             */
+            var guard = RemoteRequestGuard.forArtefact(importAuthorizer, schemaSource);
+            if (domainConfig.isSkipRemoteSchemaImportCaching()) {
+                // Read from the remote URI directly.
+                LOG.debug("Retrieving resource [{}] remotely due to disabled caching", schemaResource);
+                return fileManager.getInputStreamFromURL(uriAsString, null, domainConfig.getHttpVersion(), requestDecorator, guard).stream();
+            } else {
+                // Go through our caching layer (the URI is checked also if the resource is already cached).
+                LOG.debug("Retrieving resource [{}] from cache", schemaResource);
+                guard.check(schemaResource);
+                return Files.newInputStream(fileManager.retrieveCachedRemoteResource(domainConfig, schemaResource, guard, userProvidedSchema));
+            }
         }
     }
 

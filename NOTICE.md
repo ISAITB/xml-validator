@@ -24,34 +24,36 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | bucket4j_jdk17-core | com.bucket4j:bucket4j_jdk17-core | 8.20.0 | http://github.com/bucket4j/bucket4j/bucket4j_jdk17-core |
 | Apache License, Version 2.0 | ClassMate | com.fasterxml:classmate | 1.7.3 | https://github.com/FasterXML/java-classmate |
 | Apache License, Version 2.0 | Jackson-annotations | com.fasterxml.jackson.core:jackson-annotations | 2.22 | https://github.com/FasterXML/jackson |
-| Apache License, Version 2.0 | Jackson-core | com.fasterxml.jackson.core:jackson-core | 2.22.3 | https://github.com/FasterXML/jackson-core |
-| Apache License, Version 2.0 | jackson-databind | com.fasterxml.jackson.core:jackson-databind | 2.22.3 | https://github.com/FasterXML/jackson |
-| Apache License, Version 2.0 | Jackson-dataformat-YAML | com.fasterxml.jackson.dataformat:jackson-dataformat-yaml | 2.22.3 | https://github.com/FasterXML/jackson-dataformats-text |
-| Apache License, Version 2.0 | Jackson datatype: JSR310 | com.fasterxml.jackson.datatype:jackson-datatype-jsr310 | 2.22.3 | https://github.com/FasterXML/jackson-modules-java8/jackson-datatype-jsr310 |
-| Apache License, Version 2.0 | Woodstox | com.fasterxml.woodstox:woodstox-core | 7.2.1 | https://github.com/FasterXML/woodstox |
+| Apache License, Version 2.0 | Jackson-core | com.fasterxml.jackson.core:jackson-core | 2.22.4 | https://github.com/FasterXML/jackson-core |
+| Apache License, Version 2.0 | jackson-databind | com.fasterxml.jackson.core:jackson-databind | 2.22.4 | https://github.com/FasterXML/jackson |
+| Apache License, Version 2.0 | Jackson-dataformat-YAML | com.fasterxml.jackson.dataformat:jackson-dataformat-yaml | 2.22.4 | https://github.com/FasterXML/jackson-dataformats-text |
+| Apache License, Version 2.0 | Jackson datatype: JSR310 | com.fasterxml.jackson.datatype:jackson-datatype-jsr310 | 2.22.4 | https://github.com/FasterXML/jackson-modules-java8/jackson-datatype-jsr310 |
+| Apache License, Version 2.0 | Woodstox | com.fasterxml.woodstox:woodstox-core | 7.2.2 | https://github.com/FasterXML/woodstox |
 | Apache License, Version 2.0 | Caffeine cache | com.github.ben-manes.caffeine:caffeine | 3.3.0 | https://github.com/ben-manes/caffeine |
 | Apache License, Version 2.0 | JCIP Annotations under Apache License | com.github.stephenc.jcip:jcip-annotations | 1.0-1 | http://stephenc.github.com/jcip-annotations |
 | Apache License, Version 2.0 | error-prone annotations | com.google.errorprone:error_prone_annotations | 2.50.0 | https://errorprone.info/error_prone_annotations |
-| Apache License, Version 2.0 | Java 10 Shim | com.googlecode.owasp-java-html-sanitizer:java10-shim | 20260313.1 | https://github.com/OWASP/java-html-sanitizer |
-| Apache License, Version 2.0 | Java 8 Shim | com.googlecode.owasp-java-html-sanitizer:java8-shim | 20260313.1 | https://github.com/OWASP/java-html-sanitizer |
-| Apache License, Version 2.0 | OWASP Java HTML Sanitizer | com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer | 20260313.1 | https://github.com/OWASP/java-html-sanitizer |
-| Apache License, Version 2.0 | ph-annotations | com.helger.commons:ph-annotations | 12.2.6 | https://github.com/phax/ph-commons/ph-annotations |
-| Apache License, Version 2.0 | ph-base | com.helger.commons:ph-base | 12.2.6 | https://github.com/phax/ph-commons/ph-base |
-| Apache License, Version 2.0 | ph-cache | com.helger.commons:ph-cache | 12.2.6 | https://github.com/phax/ph-commons/ph-cache |
-| Apache License, Version 2.0 | ph-collection | com.helger.commons:ph-collection | 12.2.6 | https://github.com/phax/ph-commons/ph-collection |
-| Apache License, Version 2.0 | ph-datetime | com.helger.commons:ph-datetime | 12.2.6 | https://github.com/phax/ph-commons/ph-datetime |
-| Apache License, Version 2.0 | ph-diagnostics | com.helger.commons:ph-diagnostics | 12.2.6 | https://github.com/phax/ph-commons/ph-diagnostics |
-| Apache License, Version 2.0 | ph-io | com.helger.commons:ph-io | 12.2.6 | https://github.com/phax/ph-commons/ph-io |
-| Apache License, Version 2.0 | ph-jaxb | com.helger.commons:ph-jaxb | 12.2.6 | https://github.com/phax/ph-commons/ph-jaxb |
-| Apache License, Version 2.0 | ph-jaxb-adapter | com.helger.commons:ph-jaxb-adapter | 12.2.6 | https://github.com/phax/ph-commons/ph-jaxb-adapter |
-| Apache License, Version 2.0 | ph-mime | com.helger.commons:ph-mime | 12.2.6 | https://github.com/phax/ph-commons/ph-mime |
-| Apache License, Version 2.0 | ph-statistics | com.helger.commons:ph-statistics | 12.2.6 | https://github.com/phax/ph-commons/ph-statistics |
-| Apache License, Version 2.0 | ph-text | com.helger.commons:ph-text | 12.2.6 | https://github.com/phax/ph-commons/ph-text |
-| Apache License, Version 2.0 | ph-typeconvert | com.helger.commons:ph-typeconvert | 12.2.6 | https://github.com/phax/ph-commons/ph-typeconvert |
-| Apache License, Version 2.0 | ph-xml | com.helger.commons:ph-xml | 12.2.6 | https://github.com/phax/ph-commons/ph-xml |
-| Apache License, Version 2.0 | ph-schematron-api | com.helger.schematron:ph-schematron-api | 9.2.0 | https://github.com/phax/ph-schematron/ph-schematron-api |
-| Apache License, Version 2.0 | ph-schematron-pure | com.helger.schematron:ph-schematron-pure | 9.2.0 | https://github.com/phax/ph-schematron/ph-schematron-pure |
-| Apache License, Version 2.0 | ph-schematron-xslt | com.helger.schematron:ph-schematron-xslt | 9.2.0 | https://github.com/phax/ph-schematron/ph-schematron-xslt |
+| Apache License, Version 2.0, BSD 2-Clause License | OWASP Java HTML Sanitizer | com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer | 20261011.1 | https://github.com/OWASP/java-html-sanitizer |
+| Apache License, Version 2.0 | ph-annotations | com.helger.commons:ph-annotations | 12.5.0 | https://github.com/phax/ph-commons/ph-annotations |
+| Apache License, Version 2.0 | ph-base | com.helger.commons:ph-base | 12.5.0 | https://github.com/phax/ph-commons/ph-base |
+| Apache License, Version 2.0 | ph-cache | com.helger.commons:ph-cache | 12.5.0 | https://github.com/phax/ph-commons/ph-cache |
+| Apache License, Version 2.0 | ph-collection | com.helger.commons:ph-collection | 12.5.0 | https://github.com/phax/ph-commons/ph-collection |
+| Apache License, Version 2.0 | ph-datetime | com.helger.commons:ph-datetime | 12.5.0 | https://github.com/phax/ph-commons/ph-datetime |
+| Apache License, Version 2.0 | ph-diagnostics | com.helger.commons:ph-diagnostics | 12.5.0 | https://github.com/phax/ph-commons/ph-diagnostics |
+| Apache License, Version 2.0 | ph-io | com.helger.commons:ph-io | 12.5.0 | https://github.com/phax/ph-commons/ph-io |
+| Apache License, Version 2.0 | ph-jaxb | com.helger.commons:ph-jaxb | 12.5.0 | https://github.com/phax/ph-commons/ph-jaxb |
+| Apache License, Version 2.0 | ph-jaxb-adapter | com.helger.commons:ph-jaxb-adapter | 12.5.0 | https://github.com/phax/ph-commons/ph-jaxb-adapter |
+| Apache License, Version 2.0 | ph-mime | com.helger.commons:ph-mime | 12.5.0 | https://github.com/phax/ph-commons/ph-mime |
+| Apache License, Version 2.0 | ph-statistics | com.helger.commons:ph-statistics | 12.5.0 | https://github.com/phax/ph-commons/ph-statistics |
+| Apache License, Version 2.0 | ph-text | com.helger.commons:ph-text | 12.5.0 | https://github.com/phax/ph-commons/ph-text |
+| Apache License, Version 2.0 | ph-typeconvert | com.helger.commons:ph-typeconvert | 12.5.0 | https://github.com/phax/ph-commons/ph-typeconvert |
+| Apache License, Version 2.0 | ph-xml | com.helger.commons:ph-xml | 12.5.0 | https://github.com/phax/ph-commons/ph-xml |
+| Apache License, Version 2.0 | ph-schematron-api | com.helger.schematron:ph-schematron-api | 10.2.0 | https://github.com/phax/ph-schematron/ph-schematron-api |
+| Apache License, Version 2.0 | ph-schematron-isosch | com.helger.schematron:ph-schematron-isosch | 10.2.0 | https://github.com/phax/ph-schematron/ph-schematron-isosch |
+| Apache License, Version 2.0 | ph-schematron-model | com.helger.schematron:ph-schematron-model | 10.2.0 | https://github.com/phax/ph-schematron/ph-schematron-model |
+| Apache License, Version 2.0 | ph-schematron-pure-xpath | com.helger.schematron:ph-schematron-pure | 10.2.0 | https://github.com/phax/ph-schematron/ph-schematron-pure-xpath |
+| Apache License, Version 2.0 | ph-schematron-saxon | com.helger.schematron:ph-schematron-saxon | 10.2.0 | https://github.com/phax/ph-schematron/ph-schematron-saxon |
+| Apache License, Version 2.0 | ph-schematron-xslt | com.helger.schematron:ph-schematron-xslt | 10.2.0 | https://github.com/phax/ph-schematron/ph-schematron-xslt |
+| Apache License, Version 2.0 | ph-telemetry | com.helger.telemetry:ph-telemetry | 1.1.1 | https://github.com/phax/ph-telemetry/ph-telemetry |
 | Apache License, Version 2.0 | ph-xsds-xml | com.helger.xsd:ph-xsds-xml | 4.1.0 | https://github.com/phax/ph-xsds/ph-xsds-xml |
 | Apache License, Version 2.0 | MaxMind DB Reader | com.maxmind.db:maxmind-db | 4.1.0 | http://dev.maxmind.com/ |
 | Apache License, Version 2.0 | MaxMind GeoIP API | com.maxmind.geoip2:geoip2 | 5.2.0 | https://dev.maxmind.com/geoip/?lang=en |
@@ -94,19 +96,19 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | Apache Commons CSV | org.apache.commons:commons-csv | 1.14.1 | https://commons.apache.org/proper/commons-csv/ |
 | Apache License, Version 2.0 | Apache Commons Lang | org.apache.commons:commons-lang3 | 3.20.0 | https://commons.apache.org/proper/commons-lang/ |
 | Apache License, Version 2.0 | Apache Commons Text | org.apache.commons:commons-text | 1.15.0 | https://commons.apache.org/proper/commons-text |
-| Apache License, Version 2.0 | Apache CXF Core | org.apache.cxf:cxf-core | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Runtime SOAP Binding | org.apache.cxf:cxf-rt-bindings-soap | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Runtime XML Binding | org.apache.cxf:cxf-rt-bindings-xml | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Runtime JAXB DataBinding | org.apache.cxf:cxf-rt-databinding-jaxb | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Metrics Feature | org.apache.cxf:cxf-rt-features-metrics | 4.2.3 | https://cxf.apache.org/cxf-rt-features-metrics |
-| Apache License, Version 2.0 | Apache CXF Runtime JAX-WS Frontend | org.apache.cxf:cxf-rt-frontend-jaxws | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Runtime Simple Frontend | org.apache.cxf:cxf-rt-frontend-simple | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Runtime HTTP Transport | org.apache.cxf:cxf-rt-transports-http | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Runtime WS Addressing | org.apache.cxf:cxf-rt-ws-addr | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Runtime WS Policy | org.apache.cxf:cxf-rt-ws-policy | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Runtime Core for WSDL | org.apache.cxf:cxf-rt-wsdl | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Spring Boot Autoconfigure | org.apache.cxf:cxf-spring-boot-autoconfigure | 4.2.3 | https://cxf.apache.org |
-| Apache License, Version 2.0 | Apache CXF Spring Boot Starter JAX-WS | org.apache.cxf:cxf-spring-boot-starter-jaxws | 4.2.3 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Core | org.apache.cxf:cxf-core | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Runtime SOAP Binding | org.apache.cxf:cxf-rt-bindings-soap | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Runtime XML Binding | org.apache.cxf:cxf-rt-bindings-xml | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Runtime JAXB DataBinding | org.apache.cxf:cxf-rt-databinding-jaxb | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Metrics Feature | org.apache.cxf:cxf-rt-features-metrics | 4.2.4 | https://cxf.apache.org/cxf-rt-features-metrics |
+| Apache License, Version 2.0 | Apache CXF Runtime JAX-WS Frontend | org.apache.cxf:cxf-rt-frontend-jaxws | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Runtime Simple Frontend | org.apache.cxf:cxf-rt-frontend-simple | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Runtime HTTP Transport | org.apache.cxf:cxf-rt-transports-http | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Runtime WS Addressing | org.apache.cxf:cxf-rt-ws-addr | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Runtime WS Policy | org.apache.cxf:cxf-rt-ws-policy | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Runtime Core for WSDL | org.apache.cxf:cxf-rt-wsdl | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Spring Boot Autoconfigure | org.apache.cxf:cxf-spring-boot-autoconfigure | 4.2.4 | https://cxf.apache.org |
+| Apache License, Version 2.0 | Apache CXF Spring Boot Starter JAX-WS | org.apache.cxf:cxf-spring-boot-starter-jaxws | 4.2.4 | https://cxf.apache.org |
 | Apache License, Version 2.0 | Apache Log4j API | org.apache.logging.log4j:log4j-api | 2.25.5 | https://logging.apache.org/log4j/2.x/ |
 | Apache License, Version 2.0 | Log4j API to SLF4J Adapter | org.apache.logging.log4j:log4j-to-slf4j | 2.25.5 | https://logging.apache.org/log4j/2.x/ |
 | Apache License, Version 2.0 | Apache Neethi | org.apache.neethi:neethi | 3.2.4 | https://ws.apache.org/neethi/ |
@@ -115,10 +117,10 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | Apache PDFBox io | org.apache.pdfbox:pdfbox-io | 3.0.8 | https://www.apache.org/pdfbox-parent/pdfbox-io/ |
 | Apache License, Version 2.0 | Apache XmpBox | org.apache.pdfbox:xmpbox | 3.0.8 | https://www.apache.org/pdfbox-parent/xmpbox/ |
 | Apache License, Version 2.0 | Apache Tika core | org.apache.tika:tika-core | 3.3.2 | https://tika.apache.org/ |
-| Apache License, Version 2.0 | tomcat-embed-core | org.apache.tomcat.embed:tomcat-embed-core | 11.0.26 | https://tomcat.apache.org/ |
-| Apache License, Version 2.0 | tomcat-embed-el | org.apache.tomcat.embed:tomcat-embed-el | 11.0.26 | https://tomcat.apache.org/ |
-| Apache License, Version 2.0 | tomcat-embed-websocket | org.apache.tomcat.embed:tomcat-embed-websocket | 11.0.26 | https://tomcat.apache.org/ |
-| Apache License, Version 2.0 | XmlSchema Core | org.apache.ws.xmlschema:xmlschema-core | 2.3.2 | https://ws.apache.org/commons/xmlschema20/xmlschema-core/ |
+| Apache License, Version 2.0 | tomcat-embed-core | org.apache.tomcat.embed:tomcat-embed-core | 11.0.27 | https://tomcat.apache.org/ |
+| Apache License, Version 2.0 | tomcat-embed-el | org.apache.tomcat.embed:tomcat-embed-el | 11.0.27 | https://tomcat.apache.org/ |
+| Apache License, Version 2.0 | tomcat-embed-websocket | org.apache.tomcat.embed:tomcat-embed-websocket | 11.0.27 | https://tomcat.apache.org/ |
+| Apache License, Version 2.0 | XmlSchema Core | org.apache.ws.xmlschema:xmlschema-core | 2.3.3 | https://ws.apache.org/commons/xmlschema20/xmlschema-core/ |
 | Apache License, Version 2.0 | org.apache.xmlgraphics:batik-anim | org.apache.xmlgraphics:batik-anim | 1.19 | http://xmlgraphics.apache.org/batik/batik-anim/ |
 | Apache License, Version 2.0 | org.apache.xmlgraphics:batik-awt-util | org.apache.xmlgraphics:batik-awt-util | 1.19 | http://xmlgraphics.apache.org/batik/batik-awt-util/ |
 | Apache License, Version 2.0 | org.apache.xmlgraphics:batik-bridge | org.apache.xmlgraphics:batik-bridge | 1.19 | http://xmlgraphics.apache.org/batik/batik-bridge/ |
@@ -151,7 +153,7 @@ This product depends on software developed by third parties as listed in the fol
 | Apache License, Version 2.0 | JBoss Logging 3 | org.jboss.logging:jboss-logging | 3.6.3.Final | https://www.jboss.org |
 | MIT License | jsoup Java HTML Parser | org.jsoup:jsoup | 1.23.2 | https://jsoup.org/ |
 | Apache License, Version 2.0 | JSpecify annotations | org.jspecify:jspecify | 1.0.1 | https://jspecify.dev/ |
-| The 3-Clause BSD License | asm | org.ow2.asm:asm | 9.10.1 | http://asm.ow2.io/ |
+| The 3-Clause BSD License | asm | org.ow2.asm:asm | 9.11.1 | http://asm.ow2.io/ |
 | MIT License | JUL to SLF4J bridge | org.slf4j:jul-to-slf4j | 2.0.18 | http://www.slf4j.org |
 | MIT License | SLF4J API Module | org.slf4j:slf4j-api | 2.0.18 | http://www.slf4j.org |
 | Apache License, Version 2.0 | springdoc-openapi-starter-common | org.springdoc:springdoc-openapi-starter-common | 3.1.1 | https://springdoc.org/springdoc-openapi-starter-common/ |
@@ -209,8 +211,8 @@ This product depends on software developed by third parties as listed in the fol
 | MIT License | webjars-locator-lite | org.webjars:webjars-locator-lite | 1.1.4 | https://webjars.org |
 | Apache License, Version 2.0 | XML Resolver | org.xmlresolver:xmlresolver | 5.3.3 | https://github.com/xmlresolver/xmlresolver |
 | Apache License, Version 2.0 | SnakeYAML | org.yaml:snakeyaml | 2.6 | https://bitbucket.org/snakeyaml/snakeyaml |
-| Apache License, Version 2.0 | Jackson-core | tools.jackson.core:jackson-core | 3.2.3 | https://github.com/FasterXML/jackson-core |
-| Apache License, Version 2.0 | jackson-databind | tools.jackson.core:jackson-databind | 3.2.3 | https://github.com/FasterXML/jackson |
+| Apache License, Version 2.0 | Jackson-core | tools.jackson.core:jackson-core | 3.2.4 | https://github.com/FasterXML/jackson-core |
+| Apache License, Version 2.0 | jackson-databind | tools.jackson.core:jackson-databind | 3.2.4 | https://github.com/FasterXML/jackson |
 | Common Public License 1.0 | WSDL4J | wsdl4j:wsdl4j | 1.6.3 | http://sf.net/projects/wsdl4j |
 | Apache License, Version 2.0 | serializer | xalan:serializer | 2.7.3 | no url defined |
 | Apache License, Version 2.0 | XML Commons External Components XML APIs | xml-apis:xml-apis | 1.0.b2 | http://xml.apache.org/commons/#external |

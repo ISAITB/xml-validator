@@ -16,6 +16,7 @@
 package eu.europa.ec.itb.xml.util;
 
 import eu.europa.ec.itb.validation.commons.BaseFileManager;
+import eu.europa.ec.itb.validation.commons.RemoteRequestGuard;
 import eu.europa.ec.itb.validation.commons.StreamInfo;
 import eu.europa.ec.itb.xml.ApplicationConfig;
 import eu.europa.ec.itb.xml.DomainConfig;
@@ -35,6 +36,10 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,24 +56,44 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
     public static final String EXTERNAL_FILE = "external";
     private static final Logger LOG = LoggerFactory.getLogger(FileManager.class);
 
+    /**
+     * Resources used within this period are not evicted from the cache, so that a resource is not removed between being
+     * returned to a validation and being read by it.
+     */
+    long cacheEvictionGraceMillis = 30000L;
+
     private final ConcurrentHashMap<String, Path> remoteResourceCache = new ConcurrentHashMap<>();
+    // The size and last use of the cached resources, in order of use (least recently used first). Guarded by itself.
+    private final Map<String, CachedResource> remoteResourceUsage = new LinkedHashMap<>(16, 0.75f, true);
 
     /**
      * Retrieve an external resource from the cache.
+     * <p>
+     * Resources imported by pre-configured schemas are kept in the cache indefinitely. Resources imported by user-provided
+     * schemas are, however, subject to a limit on the size of the cache (see the configured remote limits), whereby the least
+     * recently used ones are evicted.
      *
      * @param domain The current domain configuration.
      * @param uri The resource to retrieve.
+     * @param guard The restrictions to apply to the requests made to retrieve the resource (may be null).
+     * @param userProvided Whether the resource is imported by a user-provided schema (as opposed to a pre-configured one).
      * @return The local resource.
      */
-    public Path retrieveCachedRemoteResource(DomainConfig domain, URI uri) {
+    public Path retrieveCachedRemoteResource(DomainConfig domain, URI uri, RemoteRequestGuard guard, boolean userProvided) {
         String key = "%s|%s".formatted(domain.getDomain(), Objects.requireNonNull(uri));
-        return remoteResourceCache.compute(key, (k, existingPath) -> {
+        Path result = remoteResourceCache.compute(key, (k, existingPath) -> {
             if (existingPath == null || !Files.exists(existingPath)) {
                 try {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("No cached resource found for [{}]. Downloading...", uri);
                     }
-                    return writeResourceToCache(domain, uri);
+                    Path downloaded = writeResourceToCache(domain, uri, guard);
+                    if (userProvided) {
+                        recordCachedResource(k, downloaded);
+                    } else {
+                        forgetCachedResource(k);
+                    }
+                    return downloaded;
                 } catch (IOException e) {
                     throw new IllegalStateException("Unable to read remote resource from [%s]".formatted(uri), e);
                 }
@@ -76,9 +101,104 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Returning [{}] from cache", uri);
                 }
+                if (userProvided) {
+                    touchCachedResource(k);
+                } else {
+                    // Needed by a pre-configured schema, so it is no longer subject to eviction.
+                    forgetCachedResource(k);
+                }
                 return existingPath;
             }
         });
+        if (userProvided) {
+            evictCachedResources(key);
+        }
+        return result;
+    }
+
+    /**
+     * Record the size and use of a resource, imported by a user-provided schema, that was added to the cache.
+     *
+     * @param key The cache key.
+     * @param path The cached file.
+     * @throws IOException If the file's size cannot be determined.
+     */
+    private void recordCachedResource(String key, Path path) throws IOException {
+        long size = Files.size(path);
+        synchronized (remoteResourceUsage) {
+            remoteResourceUsage.put(key, new CachedResource(size, System.currentTimeMillis()));
+        }
+    }
+
+    /**
+     * Stop considering a cached resource for eviction (it is kept in the cache indefinitely).
+     *
+     * @param key The cache key.
+     */
+    private void forgetCachedResource(String key) {
+        synchronized (remoteResourceUsage) {
+            remoteResourceUsage.remove(key);
+        }
+    }
+
+    /**
+     * Record the use of a cached resource.
+     *
+     * @param key The cache key.
+     */
+    private void touchCachedResource(String key) {
+        synchronized (remoteResourceUsage) {
+            var resource = remoteResourceUsage.get(key);
+            if (resource != null) {
+                resource.lastUsed = System.currentTimeMillis();
+            }
+        }
+    }
+
+    /**
+     * Remove the least recently used resources from the cache until its size is within the configured limit.
+     *
+     * @param justAddedKey The key of the resource being returned, which is never evicted.
+     */
+    private void evictCachedResources(String justAddedKey) {
+        long maxSize = config.getRemoteLimits().getCacheMaxSize().toBytes();
+        List<String> evictedKeys = new ArrayList<>();
+        synchronized (remoteResourceUsage) {
+            long totalSize = remoteResourceUsage.values().stream().mapToLong(resource -> resource.size).sum();
+            long now = System.currentTimeMillis();
+            var iterator = remoteResourceUsage.entrySet().iterator();
+            while (totalSize > maxSize && iterator.hasNext()) {
+                var entry = iterator.next();
+                if (!entry.getKey().equals(justAddedKey) && now - entry.getValue().lastUsed >= cacheEvictionGraceMillis) {
+                    totalSize -= entry.getValue().size;
+                    evictedKeys.add(entry.getKey());
+                    iterator.remove();
+                }
+            }
+        }
+        // The files are removed outside of the synchronisation to avoid holding it while locking the cache entries.
+        for (String evictedKey: evictedKeys) {
+            Path evicted = remoteResourceCache.remove(evictedKey);
+            if (evicted != null) {
+                LOG.debug("Evicted [{}] from the cache", evictedKey);
+                FileUtils.deleteQuietly(evicted.toFile());
+            }
+        }
+    }
+
+    /**
+     * A resource in the cache.
+     */
+    private static final class CachedResource {
+
+        private final long size;
+        private long lastUsed;
+
+        private CachedResource(long size, long lastUsed) {
+            this.size = size;
+            this.lastUsed = lastUsed;
+        }
+
     }
 
     /**
@@ -86,17 +206,24 @@ public class FileManager extends BaseFileManager<ApplicationConfig> {
      *
      * @param domain The current domain.
      * @param uri The remote resource to write.
+     * @param guard The restrictions to apply to the requests made to retrieve the resource (may be null).
      * @return The local cached path.
      * @throws IOException If an IO error occurs.
      */
-    private Path writeResourceToCache(DomainConfig domain, URI uri) throws IOException {
+    private Path writeResourceToCache(DomainConfig domain, URI uri, RemoteRequestGuard guard) throws IOException {
         StreamInfo streamInfo = null;
         try {
-            streamInfo = getInputStreamFromURL(uri.toString(), null, domain.getHttpVersion());
+            streamInfo = getInputStreamFromURL(uri.toString(), null, domain.getHttpVersion(), null, guard);
             Path parentFolder = getTempFolder().toPath().resolve("remote_cache").resolve(domain.getDomain());
             Files.createDirectories(parentFolder);
             Path targetFile = parentFolder.resolve(UUID.randomUUID().toString());
-            Files.copy(streamInfo.stream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+            try {
+                Files.copy(streamInfo.stream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException | RuntimeException e) {
+                // Do not leave partial downloads (e.g. due to exceeding a limit) behind in the cache folder.
+                FileUtils.deleteQuietly(targetFile.toFile());
+                throw e;
+            }
             return targetFile;
         } finally {
             if (streamInfo != null) IOUtils.close(streamInfo.stream());

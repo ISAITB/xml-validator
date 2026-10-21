@@ -20,6 +20,7 @@ import com.helger.io.resource.IReadableResource;
 import com.helger.io.resource.URLResource;
 import eu.europa.ec.itb.validation.commons.ImportedFileAuthorizer;
 import eu.europa.ec.itb.validation.commons.ImportedUriAuthorizer;
+import eu.europa.ec.itb.validation.commons.RemoteRequestGuard;
 import eu.europa.ec.itb.validation.commons.error.ValidatorException;
 
 import java.net.URI;
@@ -43,6 +44,31 @@ public class SchematronReferenceAuthorizer {
     public SchematronReferenceAuthorizer(ImportedUriAuthorizer importUriAuthorizer, ImportedFileAuthorizer importFileAuthorizer) {
         this.importUriAuthorizer = importUriAuthorizer;
         this.importFileAuthorizer = importFileAuthorizer;
+    }
+
+    /**
+     * Get the restrictions to apply to the requests made to load remote resources.
+     *
+     * @return The restrictions, or null if remote resources are trusted.
+     */
+    public RemoteRequestGuard remoteGuard() {
+        return importUriAuthorizer == null ? null : RemoteRequestGuard.forArtefact(importUriAuthorizer, null);
+    }
+
+    /**
+     * Check whether the provided resource is a remote one that must be loaded in a restricted manner (i.e. such that
+     * redirects can be checked).
+     *
+     * @param resource The resource to check.
+     * @return The check result.
+     */
+    public boolean isRestrictedRemoteResource(IReadableResource resource) {
+        if (importUriAuthorizer != null && resource instanceof URLResource urlResource) {
+            URI resourceUri = urlResource.getAsURI();
+            String scheme = resourceUri == null || resourceUri.getScheme() == null ? "" : resourceUri.getScheme().toLowerCase(Locale.ROOT);
+            return scheme.equals("http") || scheme.equals("https");
+        }
+        return false;
     }
 
     /**

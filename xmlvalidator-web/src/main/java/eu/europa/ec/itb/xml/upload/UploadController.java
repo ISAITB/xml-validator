@@ -388,7 +388,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                         }
                         case CONTENT_TYPE_URI -> {
                             if (StringUtils.isNotBlank(contextFileUris[index]) && appConfig.isUriReadAllowed(contextFileUris[index])) {
-                                var file = fileManager.getFileFromURL(targetFile.getParentFile(), contextFileUris[index], "", targetFile.getName(), config.getHttpVersion());
+                                var file = fileManager.getFileFromURL(targetFile.getParentFile(), contextFileUris[index], "", targetFile.getName(), null, null, null, null, config.getHttpVersion(), null, fileManager.userInputGuard(contextFileUris[index])).getFile();
                                 contextFiles.add(new ContextFileData(file.toPath(), contextFileConfig));
                             }
                         }
@@ -538,7 +538,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                         }
                     } else {
                         if (StringUtils.isNotBlank(externalUri[i]) && appConfig.isUriReadAllowed(externalUri[i])) {
-                            fileInfo = fileManager.getFileFromURL(parentFolder, externalUri[i], null, null, null, null, artifactType, null, domainConfig.getHttpVersion(), requestDecorator);
+                            fileInfo = fileManager.getFileFromURL(parentFolder, externalUri[i], null, null, null, null, artifactType, null, domainConfig.getHttpVersion(), requestDecorator, fileManager.userInputGuard(externalUri[i]));
                         }
                     }
                     if (fileInfo != null) {
@@ -627,7 +627,7 @@ public class UploadController extends BaseUploadController<DomainConfig, DomainC
                 break;
             case CONTENT_TYPE_URI:
                 if (appConfig.isUriReadAllowed(uri)) {
-                    inputFile = fileManager.getFileFromURL(parentFolder, uri, httpVersion);
+                    inputFile = fileManager.getFileFromURL(parentFolder, uri, null, null, null, null, null, null, httpVersion, null, fileManager.userInputGuard(uri)).getFile();
                 }
                 break;
             case CONTENT_TYPE_STRING:

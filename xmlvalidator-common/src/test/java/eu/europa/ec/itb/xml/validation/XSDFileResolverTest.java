@@ -89,17 +89,28 @@ class XSDFileResolverTest {
     void testInternalImportIsRejectedBeforeAnyLookup() throws Exception {
         var resolver = resolver(false, null);
         assertThrows(ValidatorException.class, () -> resolver.resolveResource("http://www.w3.org/2001/XMLSchema", null, null, "http://169.254.169.254/latest/meta-data/", SCHEMA_SOURCE));
-        verify(fileManager, never()).retrieveCachedRemoteResource(any(), any(), any());
+        verify(fileManager, never()).retrieveCachedRemoteResource(any(), any(), any(), anyBoolean());
         verify(fileManager, never()).getInputStreamFromURL(any(), any(), any(), any(), any(RemoteRequestGuard.class));
     }
 
     @Test
     void testCachedImportIsLoadedWithGuard() throws Exception {
         var cached = Files.writeString(root.resolve("cached.xsd"), "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"/>");
-        when(fileManager.retrieveCachedRemoteResource(any(), any(), any())).thenReturn(cached);
+        when(fileManager.retrieveCachedRemoteResource(any(), any(), any(), anyBoolean())).thenReturn(cached);
         var input = resolver(false, null).resolveResource("http://www.w3.org/2001/XMLSchema", null, null, "https://93.184.216.34/imported.xsd", SCHEMA_SOURCE);
         assertNotNull(input);
-        verify(fileManager).retrieveCachedRemoteResource(eq(domainConfig), eq(URI.create("https://93.184.216.34/imported.xsd")), any(RemoteRequestGuard.class));
+        // Imports are by default considered to be those of a pre-configured schema.
+        verify(fileManager).retrieveCachedRemoteResource(eq(domainConfig), eq(URI.create("https://93.184.216.34/imported.xsd")), any(RemoteRequestGuard.class), eq(false));
+    }
+
+    @Test
+    void testCachedImportOfUserProvidedSchemaIsFlaggedAsSuch() throws Exception {
+        var cached = Files.writeString(root.resolve("cached.xsd"), "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"/>");
+        when(fileManager.retrieveCachedRemoteResource(any(), any(), any(), anyBoolean())).thenReturn(cached);
+        var resolver = resolver(false, null);
+        resolver.setUserProvidedSchema(true);
+        resolver.resolveResource("http://www.w3.org/2001/XMLSchema", null, null, "https://93.184.216.34/imported.xsd", SCHEMA_SOURCE);
+        verify(fileManager).retrieveCachedRemoteResource(eq(domainConfig), eq(URI.create("https://93.184.216.34/imported.xsd")), any(RemoteRequestGuard.class), eq(true));
     }
 
 }

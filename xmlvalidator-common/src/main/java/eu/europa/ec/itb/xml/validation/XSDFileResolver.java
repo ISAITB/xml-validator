@@ -58,6 +58,7 @@ public class XSDFileResolver implements LSResourceResolver {
     private final Consumer<HttpRequest.Builder> requestDecorator;
     private final ImportedUriAuthorizer importAuthorizer;
     private final ImportedFileAuthorizer importFileAuthorizer;
+    private boolean userProvidedSchema = false;
 
     @Autowired
     ApplicationConfig config;
@@ -77,6 +78,16 @@ public class XSDFileResolver implements LSResourceResolver {
         this.requestDecorator = requestDecorator;
         this.importAuthorizer = importAuthorizer;
         this.importFileAuthorizer = importFileAuthorizer;
+    }
+
+    /**
+     * Set whether the schema that the resolved resources are imported by was provided by the user (as opposed to being
+     * pre-configured). This determines whether resources downloaded for it can be evicted from the cache.
+     *
+     * @param userProvidedSchema True if the schema was provided by the user.
+     */
+    public void setUserProvidedSchema(boolean userProvidedSchema) {
+        this.userProvidedSchema = userProvidedSchema;
     }
 
     /**
@@ -209,7 +220,7 @@ public class XSDFileResolver implements LSResourceResolver {
                 // Go through our caching layer (the URI is checked also if the resource is already cached).
                 LOG.debug("Retrieving resource [{}] from cache", schemaResource);
                 guard.check(schemaResource);
-                return Files.newInputStream(fileManager.retrieveCachedRemoteResource(domainConfig, schemaResource, guard));
+                return Files.newInputStream(fileManager.retrieveCachedRemoteResource(domainConfig, schemaResource, guard, userProvidedSchema));
             }
         }
     }

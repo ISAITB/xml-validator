@@ -368,7 +368,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
                             case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
                             case URI -> {
                                 if (appConfig.isUriReadAllowed(receivedContextFile.getContent())) {
-                                    fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), config.getHttpVersion());
+                                    fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), null, null, null, null, config.getHttpVersion(), null, fileManager.userInputGuard(receivedContextFile.getContent()));
                                 }
                             }
                             default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());

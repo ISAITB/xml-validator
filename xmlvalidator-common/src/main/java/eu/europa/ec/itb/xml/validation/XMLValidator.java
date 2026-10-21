@@ -106,13 +106,16 @@ public class XMLValidator {
      *
      * @param schemaSource The source from which the schema was initially loaded.
      * @param requestDecorator The request decorator to use.
+     * @param userProvided Whether the schema was provided by the user (as opposed to being pre-configured).
      * @return The resolver.
      */
-    private LSResourceResolver getXSDResolver(URI schemaSource, Consumer<HttpRequest.Builder> requestDecorator) {
-        return ctx.getBean(XSDFileResolver.class, specs.getDomainConfig(), schemaSource, requestDecorator,
+    private LSResourceResolver getXSDResolver(URI schemaSource, Consumer<HttpRequest.Builder> requestDecorator, boolean userProvided) {
+        var resolver = ctx.getBean(XSDFileResolver.class, specs.getDomainConfig(), schemaSource, requestDecorator,
                 ImportedUriAuthorizer.from(appConfig, specs.getDomainConfig(), specs.getValidationType()).orElse(null),
                 ImportedFileAuthorizer.from(appConfig, specs.getDomainConfig())
         );
+        resolver.setUserProvidedSchema(userProvided);
+        return resolver;
     }
 
     /**
@@ -167,7 +170,8 @@ public class XMLValidator {
                     XmlSchemaVersion version = specs.getDomainConfig().getSchemaVersionForValidationType(specs.getValidationType());
                     logger.info("Validating against [{}]{}", aSchemaFile.getFile().getName(), (version == null)?"":" (XML Schema %s)".formatted(version));
                 }
-                TAR report = validateSchema(specs.getInputStreamForValidation(false), aSchemaFile);
+                boolean userProvided = specs.getExternalSchemas() != null && specs.getExternalSchemas().contains(aSchemaFile);
+                TAR report = validateSchema(specs.getInputStreamForValidation(false), aSchemaFile, userProvided);
                 logReport(report, aSchemaFile.getFile().getName());
                 reports.add(report);
                 if (specs.isLogProgress()) {
@@ -183,18 +187,21 @@ public class XMLValidator {
      *
      * @param inputStream The input to validate.
      * @param schemaFile The XSD to use.
+     * @param userProvided Whether the XSD was provided by the user (as opposed to being pre-configured).
      *
      * @return The TAR validation report.
      * @throws XMLInvalidException If the XML cannot be parsed.
      */
-    private TAR validateSchema(InputStream inputStream, FileInfo schemaFile) throws XMLInvalidException {
+    private TAR validateSchema(InputStream inputStream, FileInfo schemaFile, boolean userProvided) throws XMLInvalidException {
         // Validate XML content against given XSD schema.
         var errorHandler = new XSDReportHandler();
         try {
-            secureSchemaValidation(inputStream, schemaFile.getFile().toPath(), errorHandler, getXSDResolver(schemaFile.getSource(), schemaFile.getRequestDecorator()), specs.getLocalisationHelper().getLocale(), specs.getDomainConfig().getSchemaVersionForValidationType(getValidationType()));
+            secureSchemaValidation(inputStream, schemaFile.getFile().toPath(), errorHandler, getXSDResolver(schemaFile.getSource(), schemaFile.getRequestDecorator(), userProvided), specs.getLocalisationHelper().getLocale(), specs.getDomainConfig().getSchemaVersionForValidationType(getValidationType()));
         } catch (ValidatorException e) {
             throw e;
         } catch (Exception e) {
+            // If a limit on remote resources was exceeded (and the failure wrapped by the parser) this is the reason to report.
+            RemoteResourceBudget.rethrowIfExceeded();
             throw new XMLInvalidException(e);
         }
         return errorHandler.createReport();
@@ -612,6 +619,8 @@ public class XMLValidator {
                 }
             }
         } catch (Exception e) {
+            // If a limit on remote resources was exceeded this is the reason to report, as opposed to the Schematron being invalid.
+            RemoteResourceBudget.rethrowIfExceeded();
             if (schematronResource instanceof SchematronResourcePureXPath pureSchematron
                     && pureSchematron.getErrorHandler() instanceof PureSchematronErrorHandler errorHandler
                     && errorHandler.isDueToExternalFunctionCall()) {

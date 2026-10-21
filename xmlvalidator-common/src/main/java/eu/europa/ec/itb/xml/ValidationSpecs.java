@@ -566,7 +566,8 @@ public class ValidationSpecs {
                                 inputStream,
                                 schemaFile.toPath(),
                                 errorHandler,
-                                applicationContext.getBean(XSDFileResolver.class, getDomainConfig(), schemaFile.toURI(),
+                                // The schema is pre-configured, so there is no request decorator (the arguments must match all constructor parameters).
+                                applicationContext.getBean(XSDFileResolver.class, getDomainConfig(), schemaFile.toURI(), null,
                                         ImportedUriAuthorizer.from(getApplicationConfig(), getDomainConfig(), getValidationType()).orElse(null),
                                         ImportedFileAuthorizer.from(getApplicationConfig(), getDomainConfig())
                                 ),

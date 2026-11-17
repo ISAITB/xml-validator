@@ -140,6 +140,7 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
                     .showLocationPaths(showLocationPaths)
                     .withContextFiles(contextFiles)
                     .withTempFolder(tempFolderPath.toPath())
+                    .withContentInputReference(ValidationConstants.INPUT_XML)
                     .build();
             XMLValidator validator = ctx.getBean(XMLValidator.class, specs);
             TAR report = validator.validateAll();
@@ -221,14 +222,23 @@ public class ValidationServiceImpl implements com.gitb.vs.ValidationService, Web
                 for (var contextFileConfig: contextFileConfigs) {
                     var targetFile = Path.of(parentFolder.getPath(), "contextFiles").resolve(contextFileConfig.path()).toFile();
                     var receivedContextFile = receivedContextFiles.get(index);
-                    switch (receivedContextFile.getEmbeddingMethod()) {
-                        case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
-                        case URI -> {
-                            if (appConfig.isUriReadAllowed(receivedContextFile.getContent())) {
-                                fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), null, null, null, null, domainConfig.getHttpVersion(), null, fileManager.userInputGuard(receivedContextFile.getContent()));
-                            }
+                    try {
+                        if (receivedContextFile.getEmbeddingMethod() == null) {
+                            throw new ValidatorException("validator.label.exception.embeddingMethodEitherAsInputOrAttribute", ValidationConstants.INPUT_EMBEDDING_METHOD);
                         }
-                        default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
+                        switch (receivedContextFile.getEmbeddingMethod()) {
+                            case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
+                            case URI -> {
+                                if (appConfig.isUriReadAllowed(receivedContextFile.getContent())) {
+                                    fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), null, null, null, null, domainConfig.getHttpVersion(), null, fileManager.userInputGuard(receivedContextFile.getContent()));
+                                }
+                            }
+                            default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
+                        }
+                    } catch (ValidatorException e) {
+                        throw e.withInputReference(receivedContextFile.getInputReference());
+                    } catch (IOException | RuntimeException e) {
+                        throw new ValidatorException("validator.label.exception.unableToSaveContent", e).withInputReference(receivedContextFile.getInputReference());
                     }
                     contextFiles.add(new ContextFileData(targetFile.toPath(), contextFileConfig));
                     index += 1;

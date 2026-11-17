@@ -83,6 +83,7 @@ public class ValidationSpecs {
     private boolean validateAgainstSchematrons = true;
     private boolean validateAgainstPlugins = true;
     private boolean logProgress = true;
+    private String contentInputReference = "contentToValidate";
 
     /**
      * Private constructor to prevent direct initialisation.
@@ -220,13 +221,12 @@ public class ValidationSpecs {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.transform(new StAXSource(reader), new StreamResult(outputFile.toFile()));
         } catch (Exception e) {
-            var errorMessage = new StringBuilder();
-            if (exposeTransformationInError) {
-                errorMessage.append("Unable to apply XSLT transformation");
-            } else {
-                errorMessage.append("Unable to process as XML");
-            }
             var cause = e.getMessage();
+            if (!exposeTransformationInError) {
+                // The content could not be processed as XML (e.g. a syntax error).
+                throw new ValidatorException("validator.label.exception.errorDueToProblemInXMLWithDetails", e, StringUtils.isNotBlank(cause) ? cause.trim() : e.getClass().getSimpleName()).withInputReference(contentInputReference);
+            }
+            var errorMessage = new StringBuilder("Unable to apply XSLT transformation");
             if (StringUtils.isNotBlank(cause)) {
                 errorMessage.append(" [").append(cause.trim()).append(']');
             }
@@ -435,7 +435,7 @@ public class ValidationSpecs {
                         Path originalPath = originalFileInfo.getFile().toPath();
                         Path pathInTempDomainFolder = Path.of(tmpDomain.toString(), originalPath.getFileName().toString());
                         Files.move(originalPath, pathInTempDomainFolder);
-                        schematronFiles.add(new SchematronFileInfo(pathInTempDomainFolder.toFile(), originalFileInfo.getType(), false));
+                        schematronFiles.add(new SchematronFileInfo(pathInTempDomainFolder.toFile(), originalFileInfo.getType(), false, originalFileInfo.getInputReference()));
                     }
                     // Move user-provided context files to domain folder.
                     for (var contextFile: getContextFiles()) {
@@ -558,6 +558,7 @@ public class ValidationSpecs {
             for (var file: files) {
                 if (file.config().schema().isPresent()) {
                     var schemaFile = file.config().schema().get().toFile();
+                    var contextFileReference = "contextFiles[" + file.config().index() + "]";
                     LOG.info("Validating context file against [{}]", schemaFile.getName());
                     // Validate XML content against given XSD schema.
                     var errorHandler = new XSDReportHandler();
@@ -575,7 +576,7 @@ public class ValidationSpecs {
                                 getDomainConfig().getSchemaVersionForValidationType(getValidationType())
                         );
                     } catch (Exception e) {
-                        throw new IllegalStateException("Context file could not be parsed.", e);
+                        throw new ValidatorException("validator.label.exception.contextFileFailedValidation", e).withInputReference(contextFileReference);
                     }
                     boolean contextFileIsValid = false;
                     Optional<BAR> errorToReport = Optional.empty();
@@ -604,7 +605,7 @@ public class ValidationSpecs {
                         } else {
                             msgBuilder.append(getLocalisationHelper().localise("validator.label.exception.contextFileFailedValidation"));
                         }
-                        throw new ValidatorException(msgBuilder.toString(), true);
+                        throw new ValidatorException(msgBuilder.toString(), true).withInputReference(contextFileReference);
                     }
                 }
             }
@@ -624,8 +625,10 @@ public class ValidationSpecs {
         if (schematronInputAsDocument == null) {
             try {
                 schematronInputAsDocument = Utils.readXMLWithLineNumbers(getInputStreamForValidation(true));
+            } catch (ValidatorException e) {
+                throw e;
             } catch (Exception e) {
-                throw new IllegalStateException("Unable to parse input file.", e);
+                throw new ValidatorException("validator.label.exception.errorDueToProblemInXMLWithDetails", e, StringUtils.isNotBlank(e.getMessage()) ? e.getMessage().trim() : e.getClass().getSimpleName()).withInputReference(contentInputReference);
             }
         }
         return schematronInputAsDocument;
@@ -644,8 +647,10 @@ public class ValidationSpecs {
     public Source inputSourceForSchematronValidation() {
         try {
             return eu.europa.ec.itb.xml.util.Utils.secureSaxSource(getInputStreamForValidation(true));
+        } catch (ValidatorException e) {
+            throw e;
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to read input file.", e);
+            throw new ValidatorException("validator.label.exception.errorDueToProblemInXMLWithDetails", e, StringUtils.isNotBlank(e.getMessage()) ? e.getMessage().trim() : e.getClass().getSimpleName()).withInputReference(contentInputReference);
         }
     }
 
@@ -802,6 +807,18 @@ public class ValidationSpecs {
          */
         public Builder withTempFolder(Path tempFolder) {
             instance.tempFolder = tempFolder;
+            return this;
+        }
+
+        /**
+         * Set the name used to identify the content to validate in error messages (e.g. "contentToValidate" for the
+         * REST API or "xml" for the SOAP API).
+         *
+         * @param contentInputReference The name of the input.
+         * @return The builder.
+         */
+        public Builder withContentInputReference(String contentInputReference) {
+            this.instance.contentInputReference = contentInputReference;
             return this;
         }
 

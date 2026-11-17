@@ -33,7 +33,7 @@ public class SchematronFileInfo extends FileInfo {
      * @param supportPureValidation Whether the schematron supports validation as 'pure' schematron.
      */
     public SchematronFileInfo(FileInfo fileInfo, boolean supportPureValidation) {
-        this(fileInfo.getFile(), fileInfo.getType(), supportPureValidation);
+        this(fileInfo.getFile(), fileInfo.getType(), supportPureValidation, fileInfo.getInputReference());
     }
 
     /**
@@ -44,7 +44,19 @@ public class SchematronFileInfo extends FileInfo {
      * @param supportPureValidation Whether the schematron supports validation as 'pure' schematron.
      */
     public SchematronFileInfo(File file, String type, boolean supportPureValidation) {
-        super(file, type);
+        this(file, type, supportPureValidation, null);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param file The schematron file.
+     * @param type The schematron type.
+     * @param supportPureValidation Whether the schematron supports validation as 'pure' schematron.
+     * @param inputReference The reference of the request input the schematron originates from (null for preconfigured schematrons).
+     */
+    public SchematronFileInfo(File file, String type, boolean supportPureValidation, String inputReference) {
+        super(file, type, null, null, inputReference);
         this.supportPureValidation = supportPureValidation;
     }
 

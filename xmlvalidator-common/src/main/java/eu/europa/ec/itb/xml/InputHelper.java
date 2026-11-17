@@ -53,7 +53,7 @@ public class InputHelper extends BaseInputHelper<ApplicationConfig, FileManager,
             if (fileInfo.getFile() != null) {
                 File rootFile = fileManager.unzipFile(parentFolder, fileInfo.getFile());
                 if (rootFile == null) {
-                    artifactsToReturn.add(new FileInfo(fileManager.preprocessFileIfNeeded(domainConfig, validationType, artifactType, fileInfo.getFile(), true), fileInfo.getType(), fileInfo.getSource(), fileInfo.getRequestDecorator()));
+                    artifactsToReturn.add(new FileInfo(fileManager.preprocessFileIfNeeded(domainConfig, validationType, artifactType, fileInfo.getFile(), true), fileInfo.getType(), fileInfo.getSource(), fileInfo.getRequestDecorator(), fileInfo.getInputReference()));
                 } else {
                     // ZIP File
                     boolean proceed;
@@ -63,9 +63,9 @@ public class InputHelper extends BaseInputHelper<ApplicationConfig, FileManager,
                         proceed = true;
                     }
                     if (proceed) {
-                        artifactsToReturn.addAll(fileManager.getLocalValidationArtifacts(rootFile, DomainConfig.ARTIFACT_TYPE_SCHEMA));
+                        fileManager.getLocalValidationArtifacts(rootFile, DomainConfig.ARTIFACT_TYPE_SCHEMA).forEach(extracted -> artifactsToReturn.add(extracted.withInputReference(fileInfo.getInputReference())));
                     } else {
-                        throw new ValidatorException("validator.label.exception.errorDuringExternalXSDValidation");
+                        throw new ValidatorException("validator.label.exception.errorDuringExternalXSDValidation").withInputReference(fileInfo.getInputReference());
                     }
                 }
             }

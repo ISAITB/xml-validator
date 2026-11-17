@@ -177,6 +177,7 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
             HttpServletRequest request
     ) {
         DomainConfig domainConfig = validateDomain(domain);
+        recordErrorLocaliser(domainConfig, in.getLocale());
         // Consider the case that we have a cross-domain alias and resolve the validation type accordingly.
         in.setValidationType(inputHelper.determineValidationType(in.getValidationType(), domain, domainConfig));
         /*
@@ -215,9 +216,9 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
             var showLocationPaths = Objects.requireNonNullElse(in.getShowLocationPaths(), domainConfig.isIncludeLocationPath());
             var contentEmbeddingMethod = inputHelper.getEmbeddingMethod(in.getEmbeddingMethod());
             var externalSchemas = getExternalSchemas(domainConfig, in.getExternalSchemas(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMA, parentFolder);
-            var externalSchematrons = getExternalSchemas(domainConfig, in.getExternalSchematrons(), validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, parentFolder);
+            var externalSchematrons = getExternalSchemas(domainConfig, in.getExternalSchematrons(), "externalSchematrons", validationType, DomainConfig.ARTIFACT_TYPE_SCHEMATRON, parentFolder);
             var contextFiles = getContextFiles(domainConfig, in.getContextFiles(), validationType, parentFolder);
-            var contentToValidate = inputHelper.validateContentToValidate(in.getContentToValidate(), contentEmbeddingMethod, null, parentFolder, domainConfig.getHttpVersion()).getFile();
+            var contentToValidate = inputHelper.validateContentToValidate(in.getContentToValidate(), contentEmbeddingMethod, null, parentFolder, domainConfig.getHttpVersion(), "contentToValidate").getFile();
             // Validate.
             ValidationSpecs specs = ValidationSpecs.builder(contentToValidate, localiser, domainConfig, ctx)
                     .withValidationType(validationType)
@@ -320,11 +321,20 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
     ) {
         DomainConfig domainConfig = validateDomain(domain);
         var outputs = new ArrayList<Output>(inputs.length);
+        int inputIndex = 0;
         for (Input input: inputs) {
+            recordErrorLocaliser(domainConfig, input.getLocale());
             Output output = new Output();
             // Consider the case that we have a cross-domain alias and resolve the validation type accordingly.
             input.setValidationType(inputHelper.determineValidationType(input.getValidationType(), domain, domainConfig));
-            var report = executeValidationProcess(input, domainConfig);
+            TAR report;
+            try {
+                report = executeValidationProcess(input, domainConfig);
+            } catch (ValidatorException e) {
+                // Identify which of the provided inputs failed.
+                throw e.withInputReferencePrefix("[" + inputIndex + "]");
+            }
+            inputIndex += 1;
             try (var bos = new ByteArrayOutputStream()) {
                 var wrapReportDataInCDATA = Objects.requireNonNullElse(input.getWrapReportDataInCDATA(), false);
                 fileManager.saveReport(report, bos, domainConfig, wrapReportDataInCDATA);
@@ -362,19 +372,26 @@ public class RestValidationController extends BaseRestController<DomainConfig, A
                 List<ContextFileData> contextFiles = new ArrayList<>();
                 for (var contextFileConfig: contextFileConfigs) {
                     var targetFile = Path.of(parentFolder.getPath(), "contextFiles").resolve(contextFileConfig.path()).toFile();
-                    var receivedContextFile = receivedContextFiles.get(index).toFileContent();
-                    if (receivedContextFile.getEmbeddingMethod() != null) {
-                        switch (receivedContextFile.getEmbeddingMethod()) {
-                            case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
-                            case URI -> {
-                                if (appConfig.isUriReadAllowed(receivedContextFile.getContent())) {
-                                    fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), null, null, null, null, config.getHttpVersion(), null, fileManager.userInputGuard(receivedContextFile.getContent()));
+                    var inputReference = "contextFiles[" + index + "]";
+                    try {
+                        var receivedContextFile = receivedContextFiles.get(index).toFileContent();
+                        if (receivedContextFile.getEmbeddingMethod() != null) {
+                            switch (receivedContextFile.getEmbeddingMethod()) {
+                                case BASE_64 -> fileManager.getFileFromBase64(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
+                                case URI -> {
+                                    if (appConfig.isUriReadAllowed(receivedContextFile.getContent())) {
+                                        fileManager.getFileFromURL(targetFile.getParentFile(), receivedContextFile.getContent(), "", targetFile.getName(), null, null, null, null, config.getHttpVersion(), null, fileManager.userInputGuard(receivedContextFile.getContent()));
+                                    }
                                 }
+                                default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
                             }
-                            default -> fileManager.getFileFromString(targetFile.getParentFile(), receivedContextFile.getContent(), FileManager.EXTERNAL_FILE, targetFile.getName());
+                        } else {
+                            fileManager.getFileFromURLOrBase64(targetFile.getParentFile(), receivedContextFile.getContent(), null, null, targetFile.getName(), config.getHttpVersion());
                         }
-                    } else {
-                        fileManager.getFileFromURLOrBase64(targetFile.getParentFile(), receivedContextFile.getContent(), null, null, targetFile.getName(), config.getHttpVersion());
+                    } catch (ValidatorException e) {
+                        throw e.withInputReference(inputReference);
+                    } catch (IOException | RuntimeException e) {
+                        throw new ValidatorException("validator.label.exception.unableToSaveContent", e).withInputReference(inputReference);
                     }
                     contextFiles.add(new ContextFileData(targetFile.toPath(), contextFileConfig));
                     index += 1;

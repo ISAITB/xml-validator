@@ -308,7 +308,7 @@ public class XMLValidator {
                 if (specs.isLogProgress()) {
                     logger.info("Validating against [{}]", aSchematronFile.getFile().getName());
                 }
-                TAR report = validateSchematron(aSchematronFile.getFile(), aSchematronFile.isSupportPureValidation());
+                TAR report = validateSchematron(aSchematronFile.getFile(), aSchematronFile.isSupportPureValidation(), aSchematronFile.getInputReference());
                 logReport(report, aSchematronFile.getFile().getName());
                 reports.add(report);
                 if (specs.isLogProgress()) {
@@ -585,9 +585,10 @@ public class XMLValidator {
      *
      * @param schematronFile The Schematron file.
      * @param supportPureValidationApproach Whether the schematron file can be processed using the 'pure' approach.
+     * @param schematronInputReference The reference of the request input the Schematron originates from (null if not user-provided).
      * @return The validation report.
      */
-    private TAR validateSchematron(File schematronFile, boolean supportPureValidationApproach) {
+    private TAR validateSchematron(File schematronFile, boolean supportPureValidationApproach, String schematronInputReference) {
         SchematronOutputType svrlOutput;
         boolean convertXPathExpressions = false;
         boolean retryAsXslt = false;
@@ -621,10 +622,17 @@ public class XMLValidator {
         } catch (Exception e) {
             // If a limit on remote resources was exceeded this is the reason to report, as opposed to the Schematron being invalid.
             RemoteResourceBudget.rethrowIfExceeded();
+            if (e instanceof ValidatorException validatorException) {
+                // Errors linked to the input (that is not the Schematron) are reported as-is.
+                throw validatorException;
+            }
             if (schematronResource instanceof SchematronResourcePureXPath pureSchematron
                     && pureSchematron.getErrorHandler() instanceof PureSchematronErrorHandler errorHandler
                     && errorHandler.isDueToExternalFunctionCall()) {
                 throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is provided in pure Schematron format (as a .sch file) and contains references to functions (built-in or external). To be able to use functions you must convert the Schematron file to its XSLT representation and use the XSLT file instead", e);
+            } else if (schematronInputReference != null) {
+                // A user-provided Schematron that cannot be used.
+                throw new ValidatorException("validator.label.exception.providedSchematronInvalid", e, schematronFile.getName()).withInputReference(schematronInputReference);
             } else {
                 throw new IllegalStateException("Schematron file ["+schematronFile.getName()+"] is invalid", e);
             }
